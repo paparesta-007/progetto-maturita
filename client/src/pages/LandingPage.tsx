@@ -21,7 +21,7 @@ import {
     EyeOff,
     User
 } from 'lucide-react';
-import { Link } from "react-router-dom";
+import { Link, redirect } from "react-router-dom";
 
 /* --- Fonts & Global Styles Injection --- */
 const GlobalStyles = () => (
@@ -44,7 +44,7 @@ const FadeIn = ({ children, delay = 0, className = "" }: { children: React.React
     </motion.div>
 );
 
-const Button = ({ children, variant = "primary", className = "", icon = false }: { children: React.ReactNode; variant?: "primary" | "secondary" | "ghost"; className?: string; icon?: boolean })    => {
+const Button = ({ children, variant = "primary", className = "", icon = false, onClick }: { children: React.ReactNode; variant?: "primary" | "secondary" | "ghost"; className?: string; icon?: boolean; onClick?: () => void })    => {
     const baseStyle = "px-6 py-3 rounded-md font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 border";
 
     const variants = {
@@ -54,7 +54,7 @@ const Button = ({ children, variant = "primary", className = "", icon = false }:
     };
 
     return (
-        <button className={`${baseStyle} ${variants[variant]} ${className}`}>
+        <button className={`${baseStyle} ${variants[variant]} ${className}`} onClick={onClick}>
             {children}
             {icon && <ArrowRight size={16} />}
         </button>
@@ -94,7 +94,8 @@ const Navbar = () => {
 
                 <div className="hidden md:flex items-center gap-4">
                     <Link to="/login" className="text-sm font-medium text-neutral-900">Log in</Link>
-                    <Button variant="primary" className="!py-2 !px-4">Get Started</Button>
+                    <Button variant="primary" className="!py-2 !px-4"
+                    onClick={() => {window.location.href = "/app"}}>Get Started</Button>
                 </div>
 
                 {/* Mobile Toggle */}
