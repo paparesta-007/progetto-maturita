@@ -18,6 +18,7 @@ const LoginPage = () => {
     useEffect(() => {
         if (!loading && user) {
            console.log("Utente loggato:", user);
+           navigate("/app");
         }
         
     }, [user, loading]);

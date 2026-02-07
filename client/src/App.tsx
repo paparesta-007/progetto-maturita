@@ -4,6 +4,7 @@ import AppLayout from './layouts/AppLayout';
 import ProtectedRoute from './components/ProtectedRoute'; // Importalo!
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
+import ChatPage from './pages/ChatPage';
 
 // Placeholder
 const Documents = () => <div><h1>Documenti</h1></div>;
@@ -27,7 +28,7 @@ function App() {
             <Route path='/app' element={<AppLayout />}>
               <Route index element={<Navigate to="/app/chat" replace />} />
               <Route path='documents' element={<Documents />} />
-              <Route path='chat' element={<Chat />} />
+              <Route path='chat' element={<ChatPage />} />
               <Route path='calendar' element={<Calendar />} />
             </Route>
 
