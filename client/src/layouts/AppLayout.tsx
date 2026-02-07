@@ -5,12 +5,12 @@ import Sidebar from '../components/Sidebar';
 const AppLayout = () => {
 
   return (
-    <div style={{ display: 'flex', height: '100vh' }}>
+    <div className="flex h-screen">
       {/* SIDEBAR FISSA */}
       <Sidebar />
 
       {/* CONTENITORE DINAMICO (A DESTRA) */}
-      <main style={{ flex: 1, padding: '20px', overflowY: 'auto' }}>
+      <main className="flex-1 ">
         {/* L'Outlet è il buco dove verranno renderizzati i figli (Chat, Documents, ecc.) */}
         <Outlet />
       </main>

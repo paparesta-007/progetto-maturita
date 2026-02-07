@@ -1,7 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect,useRef } from "react";
 import { NavLink, redirect, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext"; // Assumo esista
-import { motion } from "framer-motion";
+import { AnimatePresence, motion } from "framer-motion";
 import {
     MessageSquare,
     FileText,
@@ -10,7 +10,9 @@ import {
     Plus,
     Search,
     BrainCircuit,
-   
+    LogOut,
+    User,
+
 } from 'lucide-react';
 import { DotsThreeIcon, SidebarSimpleIcon } from "@phosphor-icons/react";
 import { auth } from "../services/firebase";
@@ -21,6 +23,22 @@ const Sidebar = () => {
     const [searchFocused, setSearchFocused] = useState(false);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const navigate = useNavigate();
+    const menuRef = useRef<HTMLDivElement>(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setIsUserMenuOpen(false);
+            }
+        };
+
+        if (isUserMenuOpen) {
+            document.addEventListener("mousedown", handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [isUserMenuOpen]);
     const menuItems = [
         { path: "/app/chat", label: "Chatbot AI", icon: <MessageSquare size={18} /> },
         { path: "/app/documents", label: "Knowledge Base", icon: <FileText size={18} /> },
@@ -50,7 +68,7 @@ const Sidebar = () => {
             ]
         }
     ];
-    const handleLogOut=async()=>{
+    const handleLogOut = async () => {
         try {
             await auth.signOut();
             navigate("/login");
@@ -60,7 +78,7 @@ const Sidebar = () => {
     }
     return (
         <nav className="w-[280px] h-screen bg-neutral-50 flex flex-col border-r border-neutral-200 font-sans text-sm">
-            
+
             {/* --- Header & Brand --- */}
             <div className="p-3 pb-2">
                 <div className="flex items-center gap-2 mb-6 text-neutral-900 flex items-center gap-2 justify-between">
@@ -68,7 +86,7 @@ const Sidebar = () => {
                         <BrainCircuit size={16} />
                     </div>
                     <div className="w-6 h-6 text-neutral-500 rounded-md flex items-center justify-center ">
-                        
+
                         <SidebarSimpleIcon size={24} />
                     </div>
                 </div>
@@ -112,9 +130,9 @@ const Sidebar = () => {
                                         />
                                     )}
                                     <span className="relative z-10 flex items-center gap-3">
-                                        {React.cloneElement(item.icon as React.ReactElement, { 
-                                            size: 18, 
-                                            className: isActive ? "text-neutral-900" : "text-neutral-400 group-hover:text-neutral-600 transition-colors" 
+                                        {React.cloneElement(item.icon as React.ReactElement, {
+                                            size: 18,
+                                            className: isActive ? "text-neutral-900" : "text-neutral-400 group-hover:text-neutral-600 transition-colors"
                                         })}
                                         {item.label}
                                     </span>
@@ -151,10 +169,53 @@ const Sidebar = () => {
                 </div>
             </div>
 
-            {/* --- Footer / User Profile --- */}
-            <div className="p-2 border-t border-neutral-200 bg-neutral-50">
-                <div className="flex items-center justify-between p-2 select-none rounded-lg hover:bg-neutral-200/50 transition-colors cursor-pointer group"
-                onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}>
+            <div className="p-2 border-t border-neutral-200 bg-neutral-50 relative">
+
+                {/* Menu Popover */}
+                <AnimatePresence>
+                    {isUserMenuOpen && (
+                        <motion.div
+                            ref={menuRef}
+                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                            transition={{ duration: 0.2, ease: "easeOut" }}
+                            className="absolute bottom-full left-0 w-[calc(100%-16px)] mx-2 mb-2 z-50 origin-bottom"
+                        >
+                            <div className="bg-white rounded-xl shadow-xl border border-neutral-200 overflow-hidden ring-1 ring-black/5">
+                                <div className="p-1 flex flex-col gap-0.5">
+                                    <button className="flex items-center gap-2 w-full px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors text-left">
+                                        <Settings size={16} className="text-neutral-500" />
+                                        <span>Impostazioni</span>
+                                    </button>
+                                    <button className="flex items-center gap-2 w-full px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors text-left">
+                                        <User size={16} className="text-neutral-500" />
+                                        <span>Il mio account</span>
+                                    </button>
+                                </div>
+
+                                <div className="h-px bg-neutral-100 my-0.5 mx-2" />
+
+                                <div className="p-1">
+                                    <button
+                                        onClick={handleLogOut}
+                                        className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors text-left"
+                                    >
+                                        <LogOut size={16} />
+                                        <span>Esci</span>
+                                    </button>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+
+                {/* User Button */}
+                <button
+                    className={`w-full flex items-center justify-between p-2 select-none rounded-lg transition-all duration-200 group text-left
+        ${isUserMenuOpen ? "bg-white shadow-sm ring-1 ring-neutral-200" : "hover:bg-neutral-200/50"}`}
+                    onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
+                >
                     <div className="flex items-center gap-3 overflow-hidden">
                         <img
                             src={user?.photoURL || `https://ui-avatars.com/api/?name=${user?.displayName || 'User'}&background=random`}
@@ -165,19 +226,18 @@ const Sidebar = () => {
                             <span className="text-sm font-semibold text-neutral-900 truncate">
                                 {user?.displayName || "Utente"}
                             </span>
-                            <span className="text-xs text-neutral-500 font-medium truncate flex items-center gap-1">
+                            <span className="text-xs text-neutral-500 font-medium truncate">
                                 Pro Plan
                             </span>
                         </div>
                     </div>
-                    <Settings size={16} className="text-neutral-400 group-hover:text-neutral-700 transition-colors" />
-                </div>
+                    <Settings
+                        size={16}
+                        className={`text-neutral-400 transition-transform duration-200 
+            ${isUserMenuOpen ? "rotate-90 text-neutral-600" : "group-hover:text-neutral-700"}`}
+                    />
+                </button>
             </div>
-            {isUserMenuOpen && <div className="fixed bg-white w-48 shadow border border-neutral-200 rounded-md bottom-16 left-4 flex flex-col gap-2">
-                <button className="text-neutral-700">Settings</button>
-                <button className="text-neutral-700">About</button>
-                <button className="text-red-600" onClick={handleLogOut}>Logout</button>
-            </div>}
         </nav>
     );
 };
