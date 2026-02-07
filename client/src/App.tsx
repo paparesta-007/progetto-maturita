@@ -1,40 +1,44 @@
-import './App.css'
-import { AuthProvider } from './context/AuthContext'
-import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom'
-import AppLayout from './layouts/AppLayout'
+import { AuthProvider } from './context/AuthContext';
+import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
+import AppLayout from './layouts/AppLayout';
+import ProtectedRoute from './components/ProtectedRoute'; // Importalo!
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 
-// Componenti Placeholder (da creare poi)
-const Documents = () => <div><h1>Gestione PDF & RAG</h1><p>Qui carichi i file...</p></div>;
-const Chat = () => <div><h1>Chatbot AI</h1><p>Analizza i tuoi PDF qui.</p></div>;
-const Calendar = () => <div><h1>Integrazione Google Calendar</h1><p>Gestisci i tuoi appuntamenti.</p></div>;
+// Placeholder
+const Documents = () => <div><h1>Documenti</h1></div>;
+const Chat = () => <div><h1>Chat</h1></div>;
+const Calendar = () => <div><h1>Calendar</h1></div>;
 
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Routes>
-          {/* Rotta Home / Landing */}
+          {/* ROTTE PUBBLICHE */}
           <Route path='/' element={<LandingPage />} />
-          <Route path='/login' element={<LoginPage/>} />
+          <Route path='/login' element={<LoginPage />} />
 
-          {/* Rotta Base /app con Layout e Figli */}
-          <Route path='/app' element={<AppLayout />}>
-            {/* Quando vai su /app, ti reindirizza automaticamente alla chat o ai documenti */}
-            <Route index element={<Navigate to="/app/chat" />} />
+          {/* ROTTE PROTETTE (Layout + Guard) */}
+          {/* Il ProtectedRoute avvolge tutto ciò che deve essere privato */}
+          <Route element={<ProtectedRoute />}>
             
-            <Route path='documents' element={<Documents />} />
-            <Route path='chat' element={<Chat />} />
-            <Route path='calendar' element={<Calendar />} />
+            {/* Se passi il controllo, entri nel Layout */}
+            <Route path='/app' element={<AppLayout />}>
+              <Route index element={<Navigate to="/app/chat" replace />} />
+              <Route path='documents' element={<Documents />} />
+              <Route path='chat' element={<Chat />} />
+              <Route path='calendar' element={<Calendar />} />
+            </Route>
+
           </Route>
 
-          {/* Fallback per rotte inesistenti */}
-          <Route path='*' element={<Navigate to="/" />} />
+          {/* 404 */}
+          <Route path='*' element={<Navigate to="/404" />} />
         </Routes>
       </BrowserRouter>
     </AuthProvider>
-  )
+  );
 }
 
-export default App
+export default App;
