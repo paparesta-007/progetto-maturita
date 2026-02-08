@@ -18,10 +18,10 @@ const ChatContent = () => {
                     <h1 className="text-2xl font-bold mb-4">Chat</h1>
                     <div className="space-y-4">
                         {Array.from({ length: 20 }).map((_, i) => (
-                            <>
-                                <UserMessage key={i} i={i} htmlContent={`<strong>Messaggio ${i + 1}:</strong> Questo è un messaggio di esempio con <em>HTML</em>.`} />
-                                <BotMessage key={i} i={i} htmlContent={`<strong>Messaggio ${i + 1}:</strong> Questo è un messaggio di esempio con <em>HTML</em>.`} />
-                            </>
+                            <React.Fragment key={i}>
+                                <UserMessage i={i} htmlContent={`<strong>Messaggio ${i + 1}:</strong> Questo è un messaggio di esempio con <em>HTML</em>.`} />
+                                <BotMessage i={i} htmlContent={`<strong>Messaggio ${i + 1}:</strong> Questo è un messaggio di esempio con <em>HTML</em>.`} />
+                            </React.Fragment>
                         ))}
                     </div>
                 </div>

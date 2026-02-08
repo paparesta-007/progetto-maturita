@@ -15,7 +15,7 @@ import {
 
 } from 'lucide-react';
 import { DotsThreeIcon, SidebarSimpleIcon } from "@phosphor-icons/react";
-import { auth } from "../services/firebase";
+import supabase from "../library/supabaseclient";
 
 const Sidebar = () => {
     // Mock user per evitare crash se il context non è pronto
@@ -70,7 +70,7 @@ const Sidebar = () => {
     ];
     const handleLogOut = async () => {
         try {
-            await auth.signOut();
+            await supabase.auth.signOut();
             navigate("/login");
         } catch (error) {
             alert("Errore durante il logout. Riprova.");
