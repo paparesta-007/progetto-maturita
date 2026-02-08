@@ -16,15 +16,24 @@ import {
 } from 'lucide-react';
 import { DotsThreeIcon, SidebarSimpleIcon } from "@phosphor-icons/react";
 import supabase from "../library/supabaseclient";
+import selectUserDetails from "../services/supabase/User/SelectuserDetails";
 
 const Sidebar = () => {
     // Mock user per evitare crash se il context non è pronto
     const { user } = useAuth() || { user: { displayName: "Matteo Rossi", photoURL: null } };
+    const [userDetails, setUserDetails] = useState<{ full_name: string | null, birthday: string | null } | null>(null);
     const [searchFocused, setSearchFocused] = useState(false);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const navigate = useNavigate();
     const menuRef = useRef<HTMLDivElement>(null);
-
+    useEffect(() => {
+        const fetchUserDetails = async () => {
+            const data = await selectUserDetails(user.id);
+            setUserDetails(data);
+            console.log("Fetched user details:", data);
+        };
+        fetchUserDetails();
+    },[])
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -218,13 +227,13 @@ const Sidebar = () => {
                 >
                     <div className="flex items-center gap-3 overflow-hidden">
                         <img
-                            src={user?.photoURL || `https://ui-avatars.com/api/?name=${user?.displayName || 'User'}&background=random`}
+                            src={userDetails?.avatar_url || `https://ui-avatars.com/api/?name=${userDetails?.full_name || 'User'}&background=random`}
                             alt="Profile"
                             className="w-8 h-8 rounded-full border border-neutral-200 object-cover"
                         />
                         <div className="flex flex-col min-w-0">
                             <span className="text-sm font-semibold text-neutral-900 truncate">
-                                {user?.displayName || "Utente"}
+                                {userDetails?.full_name || "Utente"}
                             </span>
                             <span className="text-xs text-neutral-500 font-medium truncate">
                                 Pro Plan

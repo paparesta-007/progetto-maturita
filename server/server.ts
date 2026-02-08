@@ -122,7 +122,7 @@ app.get("/api/gemini/structured-output", async function (req: express.Request, r
         const startTime = Date.now();
 
         const { object, usage } = await generateObject({
-            model: google("gemini-2.0-flash-exp"), // SUGGERIMENTO: Valuta se usare un modello stabile per produzione.
+            model: google("gemini-2.5-flash-lite"), // SUGGERIMENTO: Valuta se usare un modello stabile per produzione.
             temperature: 1.2,
             seed: randomNum,
             schema: z.object({

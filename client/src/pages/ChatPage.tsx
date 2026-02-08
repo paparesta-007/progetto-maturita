@@ -3,11 +3,14 @@ import Textbar from "../components/Textbar";
 import { ChatProvider, useChat } from "../context/ChatContext";
 import BotMessage from "../components/other/BotMessage";
 import UserMessage from "../components/other/UserMessage";
+import { useAuth } from "../context/AuthContext";
 
 // 1. Crea un componente "interno" che gestisce l'UI
 // Questo componente sarà FIGLIO del Provider, quindi può usare useChat
 const ChatContent = () => {
     const { inputValue, clearInput } = useChat();
+    const lorem='Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.'
+    
 
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-white">
@@ -20,7 +23,7 @@ const ChatContent = () => {
                         {Array.from({ length: 20 }).map((_, i) => (
                             <React.Fragment key={i}>
                                 <UserMessage i={i} htmlContent={`<strong>Messaggio ${i + 1}:</strong> Questo è un messaggio di esempio con <em>HTML</em>.`} />
-                                <BotMessage i={i} htmlContent={`<strong>Messaggio ${i + 1}:</strong> Questo è un messaggio di esempio con <em>HTML</em>.`} />
+                                <BotMessage i={i} htmlContent={`<strong>Messaggio ${i + 1}:</strong> ${lorem}`} />
                             </React.Fragment>
                         ))}
                     </div>
