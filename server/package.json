@@ -14,11 +14,17 @@
   "author": "Tommaso Paparesta",
   "license": "ISC",
   "dependencies": {
+    "@ai-sdk/google": "^3.0.22",
+    "ai": "^6.0.77",
+    "cors": "^2.8.6",
+    "dotenv": "^17.2.4",
     "express": "^5.1.0",
     "nodemon": "^3.1.10",
-    "tsx": "^4.20.5"
+    "tsx": "^4.20.5",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "@types/node": "^24.5.2",
     "ts-node": "^10.9.2",

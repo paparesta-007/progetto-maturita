@@ -1,6 +1,8 @@
 import React from "react";
 import Textbar from "../components/Textbar";
 import { ChatProvider, useChat } from "../context/ChatContext";
+import BotMessage from "../components/other/BotMessage";
+import UserMessage from "../components/other/UserMessage";
 
 // 1. Crea un componente "interno" che gestisce l'UI
 // Questo componente sarà FIGLIO del Provider, quindi può usare useChat
@@ -9,16 +11,17 @@ const ChatContent = () => {
 
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-white">
-            
+
             {/* AREA MESSAGGI */}
             <main className="flex-1 overflow-y-auto p-4 custom-scrollbar relative">
                 <div className="max-w-3xl mx-auto">
                     <h1 className="text-2xl font-bold mb-4">Chat</h1>
                     <div className="space-y-4">
                         {Array.from({ length: 20 }).map((_, i) => (
-                            <p key={i} className="p-4 bg-neutral-100 rounded-lg">
-                                Messaggio di esempio #{i + 1}
-                            </p>
+                            <>
+                                <UserMessage key={i} i={i} htmlContent={`<strong>Messaggio ${i + 1}:</strong> Questo è un messaggio di esempio con <em>HTML</em>.`} />
+                                <BotMessage key={i} i={i} htmlContent={`<strong>Messaggio ${i + 1}:</strong> Questo è un messaggio di esempio con <em>HTML</em>.`} />
+                            </>
                         ))}
                     </div>
                 </div>
@@ -35,10 +38,14 @@ const ChatContent = () => {
             </main>
 
             {/* FOOTER / TEXTBAR */}
-            <footer className="flex-shrink-0 w-full bg-white pt-0 px-2 pb-4 border-t border-neutral-100">
-                <div className="max-w-3xl mx-auto mt-4">
-                    <Textbar />
+            <footer className="flex-shrink-0 w-full bg-white pt-0 px-4 pb-4">
+                {/* Contenitore centrato con larghezza massima */}
+                <div className="max-w-3xl mx-auto mt-4 flex justify-center">
+                    <div className="w-full flex items-center justify-center"> {/* Forza il componente a usare lo spazio del max-w-3xl */}
+                        <Textbar />
+                    </div>
                 </div>
+
                 <p className="text-center text-[10px] text-neutral-400 mt-2">
                     IA can make mistakes. Please verify the information provided.
                 </p>

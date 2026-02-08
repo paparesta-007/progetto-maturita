@@ -1,0 +1,82 @@
+body {
+  display: flex;
+  min-height: 100vh;
+  height: 100vh;              /* Prevent body from scrolling */
+  overflow: hidden;           /* No scroll on body */
+  font-family: Arial, sans-serif;
+  background-color: black;
+  color: white;
+  margin: 0;
+  padding: 0px 20px;
+  gap: 20px;
+}
+
+h3 {
+  margin-top: 20px;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+/* Left sidebar */
+.sidebar div:first-child {
+  width: 200px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.sidebar div:first-child input {
+  width: 100%;
+  background-color: transparent;
+  border: 1px solid gray;
+  color: white;
+  box-sizing: border-box;
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 5px;
+  outline: none;
+}
+.sidebar div:first-child input:focus {
+  border-color: white;
+}
+.sidebar div:nth-child(2) span {
+  font-weight: bold;
+  
+}
+
+button {
+  padding: 10px;
+  font-size: 16px;
+  cursor: pointer;
+  border: none;
+  border-radius: 5px;
+  background-color: white;
+  color: black;
+  font-weight: 700;
+  transition: background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: gray;
+  color: white;
+}
+button:disabled {
+  background-color: #cccccc;
+  color: #666666;
+  cursor: not-allowed;
+}
+/* Right content area */
+.playground {
+  flex: 1 1 0;
+  border: 1px dashed rgb(43, 42, 42);
+  border-radius: 10px;
+  padding: 20px;
+  overflow-y: auto;      /* Only this area scrolls */
+  white-space: pre-wrap;
+  height: 100%;          /* Fill parent height */
+  min-height: 0;         /* Prevent flex overflow */
+  box-sizing: border-box;
+}

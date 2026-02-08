@@ -37,7 +37,7 @@ const Textbar = () => {
         setFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
     };
     return (
-        <div className="w-full max-w-2xl border border-neutral-200 shadow-lg rounded-2xl bg-white p-2 flex flex-col gap-2 transition-all">
+        <div className="w-full max-w-2xl border border-neutral-200 shadow-[0_0_15px_0_rgba(0,0,0,0.15)] rounded-2xl bg-white p-2 flex flex-col gap-2">
 
             {/* SEZIONE SUPERIORE: Eventuali allegati*/}
             {files.length > 0 && (

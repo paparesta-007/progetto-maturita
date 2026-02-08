@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gemini Playground</title>
+  <script src="index.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+
+<body>
+
+  <!-- Left buttons -->
+  <div class="sidebar">
+    <div>
+      <h3>Gemini Playground</h3>
+      <input type="text" id="promptInput" placeholder="Inserisci il prompt qui"  />
+      <button id="generateText">Genera testo</button>
+      <button id="generateQuiz">Genera Quiz</button>
+      <button id="generateStream">Genera testo in streaming</button>
+    </div>
+    <div>
+      <h3>Output usage:</h3>
+      <p>Total tokens: <span id="totalTokens">0</span></p>
+      <p>Input tokens: <span id="inputTokens">0</span></p>
+      <p>Output tokens: <span id="outputTokens">0</span></p>
+      <p>Total time: <span id="totalTime">0</span> ms</p>
+    </div>
+  </div>
+
+  <!-- Right playground -->
+  <div class="playground" id="playground">
+
+  </div>
+
+</body>
+
+</html>
