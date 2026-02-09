@@ -6,6 +6,7 @@ interface ChatContextType {
     clearInput: () => void;
     sendMessage: (message: string) => void;
     messageHistory: { role: 'user' | 'bot'; content: string; usage?: any }[];
+    loading: boolean;
 }
 
 // 1. Creazione del Context
@@ -15,7 +16,7 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const [inputValue, setInputValue] = useState("");
     const [messageHistory, setMessageHistory] = useState<{ role: 'user' | 'bot'; content: string; usage?: any }[]>([]); // Per tenere traccia della cronologia dei messaggi
-
+    const [loading, setLoading] = useState(false);
     const clearInput = () => setInputValue("");
     const sendMessage = async (message: string) => {
         if (!message.trim()) return;
@@ -28,6 +29,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         clearInput();
 
         try {
+            setLoading(true);
             // 2. Mappiamo la storia per il backend (cambiamo 'bot' in 'assistant')
             const historyForBackend = messageHistory.map(msg => ({
                 role: msg.role === 'bot' ? 'assistant' : 'user',
@@ -56,10 +58,12 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         } catch (error) {
             console.error("Errore durante l'invio:", error);
             // Opzionale: aggiungi un messaggio di errore nella chat
+        } finally {
+            setLoading(false);
         }
     };
     return (
-        <ChatContext.Provider value={{ inputValue, setInputValue, clearInput, sendMessage, messageHistory }}>
+        <ChatContext.Provider value={{ inputValue, setInputValue, clearInput, sendMessage, messageHistory, loading }}>
             {children}
         </ChatContext.Provider>
     );

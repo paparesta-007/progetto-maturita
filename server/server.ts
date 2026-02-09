@@ -193,7 +193,7 @@ app.post("/api/gemini/chat", async function (req: express.Request, res: express.
         ];
 
         const { text, usage } = await generateText({
-            model: google("gemma-3-12b-it"), // Cast `as any` necessario se `selectedModel` è una stringa generica
+            model: google("gemma-3-27b-it"), // Cast `as any` necessario se `selectedModel` è una stringa generica
             messages: messages,
         });
 
