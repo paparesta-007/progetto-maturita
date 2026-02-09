@@ -122,7 +122,7 @@ app.get("/api/gemini/structured-output", async function (req: express.Request, r
         const startTime = Date.now();
 
         const { object, usage } = await generateObject({
-            model: google("gemini-2.0-flash-exp"), // SUGGERIMENTO: Valuta se usare un modello stabile per produzione.
+            model: google("gemini-2.5-flash-lite"), // SUGGERIMENTO: Valuta se usare un modello stabile per produzione.
             temperature: 1.2,
             seed: randomNum,
             schema: z.object({
@@ -193,7 +193,7 @@ app.post("/api/gemini/chat", async function (req: express.Request, res: express.
         ];
 
         const { text, usage } = await generateText({
-            model: google(selectedModel as any), // Cast `as any` necessario se `selectedModel` è una stringa generica
+            model: google("gemma-3-27b-it"), // Cast `as any` necessario se `selectedModel` è una stringa generica
             messages: messages,
         });
 

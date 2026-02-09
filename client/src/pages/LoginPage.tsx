@@ -1,8 +1,9 @@
 import { Telescope } from "lucide-react";
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import  supabase  from "../library/supabaseclient"; // Assicurati che questo import sia corretto
 import { useAuth } from "../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
+import Header from "../components/other/Header";
 
 const LoginPage = () => {
     const { session, loading } = useAuth();
@@ -21,12 +22,13 @@ const LoginPage = () => {
 
     const socialButtonStyle = "flex items-center justify-center border border-neutral-200 rounded-lg p-3 w-full mt-3 transition-colors hover:bg-neutral-50 active:scale-[0.98]";
 
-    // Reindirizza se l'utente è già loggato
-    useEffect(() => {
-        if (!loading && session?.user) {
-            navigate("/app");
-        }
-    }, [session, loading, navigate]);
+    if (loading) {
+        return null;
+    }
+
+    if (session?.user) {
+        return <Navigate to="/app" replace />;
+    }
 
     // Funzione unica per Login e Registrazione
     const handleAuth = async (e: React.FormEvent) => {
@@ -83,11 +85,7 @@ const LoginPage = () => {
         <div className="border border-neutral-200 text-neutral-900 p-6 max-w-md mx-auto mt-20 rounded-lg shadow-sm bg-white">
             
             {/* Logo e Home Link */}
-            <div className="fixed top-4 left-4 flex items-center gap-2 cursor-pointer"
-                onClick={() => window.location.href = "/"}>
-                <Telescope className="bg-neutral-900 text-white p-2 rounded-md" size={32} />
-                <span className="text-neutral-900 font-semibold text-lg">SmartAI</span>
-            </div>
+            <Header/>
 
             <h1 className="text-2xl font-semibold mb-2">
                 {isSignUp ? "Create an account" : "Welcome back!"}

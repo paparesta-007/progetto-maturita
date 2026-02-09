@@ -10,10 +10,17 @@ interface FileWithPreview {
 }
 
 const Textbar = () => {
-    const { inputValue, setInputValue, clearInput } = useChat();
+    const { inputValue, setInputValue, clearInput,sendMessage } = useChat();
     const [files, setFiles] = useState<FileWithPreview[]>([]);
     const [isGroundingActive, setIsGroundingActive] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage(inputValue);
+            setInputValue("");
+        }
+    };
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFiles = event.target.files;
 
@@ -87,9 +94,17 @@ const Textbar = () => {
                         (e) => setInputValue(e.target.value)
                     }
                     value={inputValue}
+                    onKeyDown={handleKeyPress}
                     className="flex-1 p-3 text-neutral-900 focus:outline-none bg-transparent"
                 />
-                <button className="bg-neutral-900 hover:bg-neutral-800 text-white p-2.5 rounded-xl transition-all active:scale-95 flex items-center justify-center">
+                <button className="bg-neutral-900 hover:bg-neutral-800 text-white p-2.5 rounded-xl transition-all 
+                active:scale-95 flex items-center justify-center"
+                    onClick={() => {
+                        sendMessage(inputValue);
+                        setInputValue("");
+                    }}
+                    
+                >
                     <PaperPlaneTilt size={20} weight="fill" />
                 </button>
             </div>

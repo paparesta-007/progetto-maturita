@@ -5,6 +5,7 @@ import ProtectedRoute from './components/ProtectedRoute'; // Importalo!
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import ChatPage from './pages/ChatPage';
+import CompleteProfile from './pages/CompleteProfilePage';
 
 // Placeholder
 const Documents = () => <div><h1>Documenti</h1></div>;
@@ -23,7 +24,7 @@ function App() {
           {/* ROTTE PROTETTE (Layout + Guard) */}
           {/* Il ProtectedRoute avvolge tutto ciò che deve essere privato */}
           <Route element={<ProtectedRoute />}>
-            
+            <Route path='/complete-profile' element={<CompleteProfile/>} />
             {/* Se passi il controllo, entri nel Layout */}
             <Route path='/app' element={<AppLayout />}>
               <Route index element={<Navigate to="/app/chat" replace />} />
