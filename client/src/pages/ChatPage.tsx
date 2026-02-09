@@ -1,17 +1,31 @@
-import React from "react";
+
 import Textbar from "../components/Textbar";
 import { ChatProvider, useChat } from "../context/ChatContext";
 import BotMessage from "../components/other/BotMessage";
 import UserMessage from "../components/other/UserMessage";
-import { useAuth } from "../context/AuthContext";
-
+import { convertLatexInMarkdown } from "../library/latextToMarkdown";
+import { marked } from "marked";
+import  DOMPurify  from "dompurify";
 // 1. Crea un componente "interno" che gestisce l'UI
 // Questo componente sarà FIGLIO del Provider, quindi può usare useChat
 const ChatContent = () => {
-    const { inputValue, clearInput } = useChat();
-    const lorem='Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.'
-    
+    const { inputValue, clearInput, messageHistory } = useChat();
+    const lorem = 'Lorem ipsum dolor sit amet consectetur adipiscing elit. Quisque faucibus ex sapien vitae pellentesque sem placerat. In id cursus mi pretium tellus duis convallis. Tempus leo eu aenean sed diam urna tempor. Pulvinar vivamus fringilla lacus nec metus bibendum egestas. Iaculis massa nisl malesuada lacinia integer nunc posuere. Ut hendrerit semper vel class aptent taciti sociosqu. Ad litora torquent per conubia nostra inceptos himenaeos.'
 
+    const MarkdownRenderer = ({ text }: { text: string }) => {
+        const safe = text || "";
+        const withLatex = convertLatexInMarkdown(safe);
+        const rawHtml = marked.parse(withLatex) as string;
+        // SANITIZZAZIONE
+        const cleanHtml = DOMPurify.sanitize(rawHtml);
+
+        return (
+            <div
+                className="renderChat"
+                dangerouslySetInnerHTML={{ __html: cleanHtml }}
+            />
+        );
+    };
     return (
         <div className="flex flex-col h-screen overflow-hidden bg-white">
 
@@ -20,12 +34,13 @@ const ChatContent = () => {
                 <div className="max-w-3xl mx-auto">
                     <h1 className="text-2xl font-bold mb-4">Chat</h1>
                     <div className="space-y-4">
-                        {Array.from({ length: 20 }).map((_, i) => (
-                            <React.Fragment key={i}>
-                                <UserMessage i={i} htmlContent={`<strong>Messaggio ${i + 1}:</strong> Questo è un messaggio di esempio con <em>HTML</em>.`} />
-                                <BotMessage i={i} htmlContent={`<strong>Messaggio ${i + 1}:</strong> ${lorem}`} />
-                            </React.Fragment>
-                        ))}
+                        {messageHistory.map((msg, index) => {
+                            if (msg.role === 'user') {
+                                return <UserMessage key={index} i={index} htmlContent={msg.content}></UserMessage>;
+                            } else {
+                                return <BotMessage key={index} i={index} usage={msg.usage}><MarkdownRenderer text={msg.content} /></BotMessage>;
+                            }
+                        })}
                     </div>
                 </div>
 

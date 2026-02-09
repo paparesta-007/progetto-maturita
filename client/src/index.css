@@ -5,3 +5,120 @@
 .f-poppins {
   font-family: 'Poppins', sans-serif;
 }
+
+.renderChat ul,
+.renderChat ol {
+    color: var(--color-chat-primary);
+    padding-left: 20px;
+    margin: 10px 0;
+    /* spazio sopra e sotto */
+    list-style-position: outside;
+}
+
+.renderChat ul li,
+.renderChat ol li {
+    margin-bottom: 6px;
+    /* spazio tra gli elementi della lista */
+    line-height: 1.6;
+    
+    /* migliora leggibilità */
+}
+.renderChat ul li{
+    list-style-type: disc;
+    
+}
+.renderChat ol li{
+    list-style-type: decimal;
+}
+
+.renderChat p {
+    color: var(--color-chat-primary) !important;
+    margin: 10px 0;
+    line-height: 1.6;
+}
+
+.renderChat h1,
+.renderChat h2,
+.renderChat h3,
+.renderChat h4 {
+    margin: 16px 0 12px 0;
+    line-height: 1.3;
+    color: var(--color-primary);
+
+}
+
+.renderChat h1 {
+    font-size: 1.8rem !important;
+    
+    font-weight: 500;
+}
+
+.renderChat h2 {
+    font-size: 1.5rem !important;
+}
+
+.renderChat h3 {
+    font-size: 1.3rem !important;
+}
+
+.renderChat table {
+    color: var(--color-chat-primary) !important;
+    border-collapse: collapse !important;
+    width: 100% !important;
+    margin: 20px 0 !important;
+    table-layout: auto;
+    overflow-x: auto;
+}
+
+.renderChat th {
+    background-color: var(--background-Secondary);
+    padding: 10px 12px;
+    text-align: left;
+}
+
+.renderChat td {
+    padding: 10px 12px;
+    color: var(--color-chat-primary);
+}
+
+.renderChat hr {
+    border: 1px solid var(--border-secondary);
+    margin: 24px 0 !important;
+}
+
+.renderChat small,
+.renderChat time,
+.renderChat .meta {
+    color: var(--color-chat-muted);
+    font-size: 0.8rem;
+    display: inline-block;
+    margin-top: 2px;
+}
+
+.renderChat code {
+    font-family: "Fira Code", monospace;
+    font-size: 0.9rem;
+    color: #a4a463;
+    background-color: var(--background-Secondary);
+    padding: 3px 5px;
+    border-radius: 5px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.renderChat strong {
+    color: var(--color-chat-primary) !important;
+}
+
+.renderChat pre {
+    background-color: var(--background-Secondary);
+    width: auto;
+    padding: 12px;
+    border-radius: 10px;
+    line-height: 1.5;
+    word-break: break-word;
+}
+
+.renderChat blockquote {
+    @apply border-l-2 border-[var(--border-primary)] pl-2;
+}
