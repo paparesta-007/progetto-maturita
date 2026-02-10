@@ -28,6 +28,7 @@ function App() {
             {/* Se passi il controllo, entri nel Layout */}
             <Route path='/app' element={<AppLayout />}>
               <Route index element={<Navigate to="/app/chat" replace />} />
+              <Route path='chat/:conversationId' element={<ChatPage />} />
               <Route path='documents' element={<Documents />} />
               <Route path='chat' element={<ChatPage />} />
               <Route path='calendar' element={<Calendar />} />
