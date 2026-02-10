@@ -16,6 +16,7 @@ import { generateObject } from 'ai';
 
 import { z } from 'zod';
 import path from "path";
+import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 
 // B) configurazione server
 // SUGGERIMENTO: Rendi la porta configurabile tramite variabili d'ambiente per una maggiore flessibilità.
@@ -39,7 +40,9 @@ console.log("Controllo API Key:", process.env.GOOGLE_GENERATIVE_AI_API_KEY ? "Pr
 
 // Update dotenv configuration to load .env.local if it exists
 dotenv.config({ path: path.resolve(__dirname, ".env.local") });
-
+const openrouter = createOpenRouter({
+  apiKey: process.env.VITE_OPENROUTER_API_KEY,
+});
 // C) creazione server e lettura file sincrona
 // SUGGERIMENTO: È meglio leggere i file necessari all'avvio in modo sincrono
 // per evitare race condition in cui il server potrebbe rispondere a una richiesta
@@ -193,7 +196,7 @@ app.post("/api/gemini/chat", async function (req: express.Request, res: express.
         ];
 
         const { text, usage } = await generateText({
-            model: google("gemma-3-27b-it"), // Cast `as any` necessario se `selectedModel` è una stringa generica
+            model: openrouter("google/gemini-2.5-flash-lite"), // Cast `as any` necessario se `selectedModel` è una stringa generica
             messages: messages,
         });
 

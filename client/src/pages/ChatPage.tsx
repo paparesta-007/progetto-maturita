@@ -22,6 +22,7 @@ const ChatContent = () => {
         loadConversation,
         userOwnsConversation,
         loading,
+        setMessageHistory,
         areConversationsLoaded // <--- Prendiamo questo valore dal context
     } = useChat();
 
@@ -85,7 +86,10 @@ const ChatContent = () => {
                 </main>) : (
                 <PromptStarter />
             )}
-
+            <button className="fixed bottom-4 right-4  text-neutral-700 border border-neutral-300 px-4 py-2 rounded"
+            onClick={() => {setMessageHistory([]); }}> {/* Pulsante per resettare le conversazioni e tornare alla home */}
+                Home
+            </button>
             {/* FOOTER / TEXTBAR */}
             <footer className="flex-shrink-0 w-full bg-white pt-0 px-4 pb-4">
                 {/* Contenitore centrato con larghezza massima */}
