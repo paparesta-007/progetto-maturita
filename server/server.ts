@@ -3,7 +3,6 @@
 // (ad es. una cartella 'routes') per migliorare la manutenibilità.
 
 import dotenv from "dotenv";
-
 // A) importing librerie
 import http from "http";
 import { fileURLToPath } from "url";
@@ -46,7 +45,8 @@ dotenv.config({ path: path.resolve(__dirname, ".env.local") });
 // per evitare race condition in cui il server potrebbe rispondere a una richiesta
 // prima che il file sia stato completamente letto.
 try {
-    paginaErr = fs.readFileSync("./static/error.html", "utf-8");
+    const errorPagePath = path.join(__dirname, 'static', 'error.html');
+    paginaErr = fs.readFileSync(errorPagePath, 'utf-8'); // o il tuo metodo di lettura
 } catch (err) {
     paginaErr = "<h1>Risorsa non trovata</h1>";
     console.error("Impossibile leggere la pagina di errore:", err);
