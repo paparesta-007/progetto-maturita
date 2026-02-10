@@ -14,6 +14,7 @@ interface ChatContextType {
     loadConversation: (conversationId: string) => Promise<void>;
     userOwnsConversation: (conversationId: string) => boolean;
     areConversationsLoaded: boolean; // Per sapere quando abbiamo finito di caricare le conversazioni
+    setMessageHistory: React.Dispatch<React.SetStateAction<any[]>>; // Per aggiornare la lista delle conversazioni
 }
 
 // 1. Creazione del Context
@@ -144,7 +145,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         return conversations.some(conv => conv.id === conversationId);
     };
     return (
-        <ChatContext.Provider value={{ inputValue, setInputValue, clearInput, sendMessage, messageHistory, loading, conversations, loadConversation, userOwnsConversation, areConversationsLoaded }}>
+        <ChatContext.Provider value={{ inputValue, setInputValue, clearInput, sendMessage, messageHistory, loading, conversations, loadConversation, userOwnsConversation, 
+        areConversationsLoaded, setMessageHistory }}>
             {children}
         </ChatContext.Provider>
     );

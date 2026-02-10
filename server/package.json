@@ -15,6 +15,7 @@
   "license": "ISC",
   "dependencies": {
     "@ai-sdk/google": "^3.0.22",
+    "@openrouter/ai-sdk-provider": "^2.2.2",
     "ai": "^6.0.77",
     "cors": "^2.8.6",
     "dotenv": "^17.2.4",
