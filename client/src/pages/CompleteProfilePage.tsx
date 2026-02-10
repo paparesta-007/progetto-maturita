@@ -47,7 +47,8 @@ const CompleteProfile = () => {
             console.log("Sending data for:", name, "Date:", dateString);
 
             // 4. Esecuzione insert
-            const data = await insertUserDetails(user.id, name, dateString);
+            const data = await insertUserDetails(user.id, name, dateString)
+            
       
 
             window.location.reload();

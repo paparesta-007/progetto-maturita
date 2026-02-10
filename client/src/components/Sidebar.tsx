@@ -17,10 +17,12 @@ import {
 import { DotsThreeIcon, SidebarSimpleIcon } from "@phosphor-icons/react";
 import supabase from "../library/supabaseclient";
 import selectUserDetails from "../services/supabase/User/SelectuserDetails";
+import { useChat } from "../context/ChatContext";
 
 const Sidebar = () => {
     // Mock user per evitare crash se il context non è pronto
     const { user } = useAuth() || { user: { displayName: "Matteo Rossi", photoURL: null } };
+    const {conversations}=useChat();
     const [userDetails, setUserDetails] = useState<{ full_name: string | null, birthday: string | null } | null>(null);
     const [searchFocused, setSearchFocused] = useState(false);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -33,6 +35,7 @@ const Sidebar = () => {
             console.log("Fetched user details:", data);
         };
         fetchUserDetails();
+        console.log("Conversazioni nel contesto:", conversations);
     },[])
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -54,29 +57,7 @@ const Sidebar = () => {
         { path: "/app/calendar", label: "Agenda", icon: <Calendar size={18} /> },
     ];
 
-    const historyGroups = [
-        {
-            label: "Oggi",
-            items: [
-                "Analisi Q3 Financials",
-                "Email draft per Clienti"
-            ]
-        },
-        {
-            label: "Ieri",
-            items: [
-                "Brainstorming Marketing",
-                "Riassunto Meeting HR"
-            ]
-        },
-        {
-            label: "7 Giorni fa",
-            items: [
-                "Debug React Component",
-                "Traduzione Documenti IT"
-            ]
-        }
-    ];
+  
     const handleLogOut = async () => {
         try {
             await supabase.auth.signOut();
@@ -158,23 +139,22 @@ const Sidebar = () => {
                     Cronologia
                 </p>
                 <div className="flex flex-col gap-4">
-                    {historyGroups.map((group, idx) => (
-                        <div key={idx} className="px-2">
-                            <h4 className="text-[10px] font-medium text-neutral-400 mb-2">{group.label}</h4>
-                            <ul className="flex flex-col gap-1">
-                                {group.items.map((item, i) => (
-                                    <li key={i}>
-                                        <button className="text-left flex items-center justify-between w-full group text-sm text-neutral-600 hover:text-neutral-900 py-1.5 px-2 -mx-2 rounded hover:bg-neutral-200/50 transition-colors truncate">
-                                            {item}
-                                            <div className="hidden group-hover:flex float-right text-neutral-400 group-hover:text-neutral-600 transition-colors">
-                                                <DotsThreeIcon size={16} className="text-neutral-700" />
-                                            </div>
-                                        </button>
+                    <ul className="flex flex-col gap-1">
+                                {conversations.map((conv: any) => (
+                                    <li key={conv.id}>
+                                        <NavLink
+                                            to={`/app/chat/${conv.id}`}
+                                            className={({ isActive }) => `
+                                                flex items-center justify-between group gap-2 px-3 py-2 rounded-md transition-colors text-sm
+                                                ${isActive ? "bg-neutral-200/50 text-neutral-900 font-medium" : "text-neutral-600 hover:bg-neutral-200/50 hover:text-neutral-900"}
+                                            `}
+                                        >
+                                            <span className="truncate">{conv.title || "Chat senza titolo"}</span>
+                                            <DotsThreeIcon  size={20} className="opacity-0 group-hover:opacity-100 hover:text-neutral-900 text-neutral-500 float-right" />
+                                        </NavLink>
                                     </li>
                                 ))}
                             </ul>
-                        </div>
-                    ))}
                 </div>
             </div>
 

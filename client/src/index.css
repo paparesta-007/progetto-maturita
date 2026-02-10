@@ -67,6 +67,7 @@
     width: 100% !important;
     margin: 20px 0 !important;
     table-layout: auto;
+    ;
     overflow-x: auto;
 }
 
@@ -78,6 +79,8 @@
 
 .renderChat td {
     padding: 10px 12px;
+    border: 1px solid lightgray;
+    border-radius: 5px;
     color: var(--color-chat-primary);
 }
 
