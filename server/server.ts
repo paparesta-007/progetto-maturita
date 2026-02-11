@@ -151,26 +151,24 @@ app.post("/api/gemini/chat/stream", async function (req: express.Request, res: e
     try {
         const { message, history, modelName } = req.body;
 
-        // Basic validation
         const allowedModels = ["gemini-2.5-flash-lite", "gemini-2.5-flash"];
         const selectedModel = modelName && allowedModels.includes(modelName) ? modelName : "gemini-2.5-flash-lite";
 
-        // Convert history to Vercel AI SDK format
         const messages = [
             ...history,
             { role: 'user', content: message }
         ];
 
-        // Set headers for streaming
+        // Intestazioni per lo streaming
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
         res.setHeader("Transfer-Encoding", "chunked");
+        res.flushHeaders(); // FONDAMENTALE: forza l'invio immediato degli header e apre il flusso
 
         const { textStream } = streamText({
             model: google(selectedModel as any),
             messages: messages,
         });
 
-        // Loop through the stream and write raw text chunks to the response
         for await (const textPart of textStream) {
             res.write(textPart);
         }
@@ -196,8 +194,9 @@ app.post("/api/gemini/chat", async function (req: express.Request, res: express.
         ];
 
         const { text, usage } = await generateText({
-            model: openrouter("google/gemini-2.5-flash-lite"), // Cast `as any` necessario se `selectedModel` è una stringa generica
+            model: openrouter(modelName), // Cast `as any` necessario se `selectedModel` è una stringa generica
             messages: messages,
+            
         });
 
         res.send({ text, usage });

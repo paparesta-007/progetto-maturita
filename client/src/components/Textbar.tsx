@@ -1,8 +1,10 @@
-import { Paperclip, PaperPlaneTilt, CaretDown, XIcon, GlobeIcon } from "@phosphor-icons/react";
+import { Paperclip, PaperPlaneTilt, CaretDown, XIcon, GlobeIcon, CaretDownIcon } from "@phosphor-icons/react";
 import React, { useState, useEffect, useRef } from "react";
 import Tooltip from "./other/Tooltip";
 import { useChat } from "../context/ChatContext";
-
+import { motion, AnimatePresence } from "framer-motion";
+import getModels from "../services/openRouter/getModels";
+import { img } from "framer-motion/client";
 interface FileWithPreview {
     originalFile: File;
     name: string;
@@ -10,10 +12,19 @@ interface FileWithPreview {
 }
 
 const Textbar = () => {
-    const { inputValue, setInputValue, clearInput,sendMessage } = useChat();
+    const { inputValue, setInputValue, clearInput, sendMessage, model, setModel } = useChat();
     const [files, setFiles] = useState<FileWithPreview[]>([]);
     const [isGroundingActive, setIsGroundingActive] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+    const [models, setModels] = useState<any[]>([]);
+    const [isSelectPopupOpen, setIsSelectPopupOpen] = useState(false);
+    const provider = [
+        { name: "Google", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Google-gemini-icon.svg/960px-Google-gemini-icon.svg.png" },
+        { name: "OpenAI", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQS3PwERLLNB9XKFpeMgAMPxl5VvN3HRJnXQQ&s" },
+        { name: "Anthropic", img: "https://images.yourstory.com/cs/images/companies/anthropicresearchlogo-1699260041449.jpg?fm=auto&ar=1%3A1&mode=fill&fill=solid&fill-color=fff&format=auto&w=1920&q=75" },
+        { name: "Mistral AI", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9tjl3-up4Vemom1ZYPTnWkg5dXOXFtPQDBw&s" },
+        { name: "NVIDIA", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQvkRmsL7mAkXKS19fL0lQAMsck4AjD1WZy4Q&s" },
+    ]
     const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -21,6 +32,15 @@ const Textbar = () => {
             setInputValue("");
         }
     };
+    useEffect(() => {
+        const fetchModels = async () => {
+            const fetchedModels = await getModels();
+
+            setModels(fetchedModels);
+
+        };
+        fetchModels();
+    }, []);
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFiles = event.target.files;
 
@@ -103,7 +123,7 @@ const Textbar = () => {
                         sendMessage(inputValue);
                         setInputValue("");
                     }}
-                    
+
                 >
                     <PaperPlaneTilt size={20} weight="fill" />
                 </button>
@@ -129,13 +149,62 @@ const Textbar = () => {
                     />
 
                     {/* Selezione Modello Styled */}
-                    <div className="relative flex items-center">
-                        <select className="appearance-none border-neutral-200 border text-xs font-medium text-neutral-600 py-1.5 pl-3 pr-8 rounded-full  focus:ring-neutral-300 cursor-pointer outline-none">
-                            <option value="doc1">Gemini 2.5 flash</option>
-                            <option value="doc2">Gemini 2.5 Pro</option>
-                            <option value="doc3">Gemini 3 Pro</option>
-                        </select>
-                        <CaretDown size={12} className="absolute right-3 pointer-events-none text-neutral-500" />
+                    <div className="relative">
+                        <div
+                            className="flex items-center hover:bg-neutral-100 p-1.5 gap-1 select-none rounded cursor-pointer"
+                            onClick={() => setIsSelectPopupOpen((prev) => !prev)}
+                        >
+                            <span className="text-neutral-500 flex items-center">{model ? model.name : "Select a model"}</span>
+                            <motion.div
+                                animate={{ rotate: isSelectPopupOpen ? 180 : 0 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                <CaretDown size={12} />
+                            </motion.div>
+                        </div>
+
+                        {/* MENU POPUP ANIMATO */}
+                        <AnimatePresence>
+                            {isSelectPopupOpen && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                                    animate={{ opacity: 1, y: -4, scale: 1 }}
+                                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                                    transition={{ duration: 0.15, ease: "easeOut" }}
+                                    className="absolute bottom-full left-0 mb-2 w-100 h-100 px-2 overflow-auto bg-white border border-neutral-200 shadow-xl rounded-xl z-50"
+                                ><input
+                                        type="text"
+                                        placeholder="Search models..."
+                                        className="w-full px-3 py-2 mb-2 border-b border-neutral-200 sticky top-0 bg-white focus:outline-none"
+
+                                    />
+                                    <div className="p-1 grid
+                                    sm:grid-cols-2 lg:grid-cols-2 grid-cols-1 ">
+
+                                        {models.length === 0 ? (
+                                            <div className="px-1 py-2 rounded text-sm text-neutral-500">
+                                                No models available
+                                            </div>
+                                        ) : (
+                                            models.map((model,index) => (
+                                                <div key={index} className="px-1 py-2 flex gap-1 rounded hover:bg-neutral-100 cursor-pointer text-neutral-700"
+                                                    onClick={() => {
+                                                        setModel(model);
+                                                        setIsSelectPopupOpen(false);
+                                                    }}
+                                                >
+                                                        <img src={provider.find(p => p.name === model.provider)?.img} alt={model.provider} className="w-4 h-4 object-contain" />
+                                                    <div className="flex flex-col items-start gap-0.5">
+                                                        <span className="text-sm">{model.name}</span>
+                                                    <p className="text-xs text-neutral-400">{model.cost_per_input_token+model.cost_per_output_token}$/1M</p>
+                                                    </div>
+                                                </div>
+                                            ))
+                                        )}
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
                     <button className={`transition-colors relative flex items-center justify-between gap-0 px-2 py-1 rounded-full ${isGroundingActive ? 'bg-blue-50 text-blue-500' : 'text-neutral-400 '}`}
                         onClick={() => setIsGroundingActive((prev) => !prev)}
@@ -160,16 +229,15 @@ const Textbar = () => {
                         content={
                             <div className="text-left">
                                 <b className="block text-neutral-900">Price for 1 million tokens</b>
-                                <span className="text-neutral-500 font-normal">Input: 0.12$ / 1M</span>
+                                <span className="text-neutral-500 font-normal">Input: {model.cost_per_input_token}$ / 1M</span>
                                 <br />
-                                <span className="text-neutral-500 font-normal">Output: 0.57$ / 1M</span>
+                                <span className="text-neutral-500 font-normal">Output: {model.cost_per_output_token}$ / 1M</span>
                                 <br />
-                                <span className="text-neutral-500 font-normal">Cached: 0.61$ / 1M</span>
                             </div>
                         }
                     >
                         <button className="text-sm text-neutral-400 ">
-                            0.56$/1M
+                            {model.cost_per_input_token + model.cost_per_output_token}$/1M
                         </button>
                     </Tooltip>
                 </div>
