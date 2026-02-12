@@ -10,7 +10,7 @@ import BotLoading from "../components/other/BotLoading";
 import PromptStarter from "../components/PromptStarter";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, useParams } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react"
 // 1. Crea un componente "interno" che gestisce l'UI
 // Questo componente sarà FIGLIO del Provider, quindi può usare useChat
 const ChatContent = () => {
@@ -25,7 +25,16 @@ const ChatContent = () => {
         setMessageHistory,
         areConversationsLoaded // <--- Prendiamo questo valore dal context
     } = useChat();
+    const messagesEndRef = useRef<HTMLDivElement | null>(null);
+    const scrollToBottom = () => {
+        if (messagesEndRef.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: "auto" });
+        }
+    };
 
+    useEffect(() => {
+        scrollToBottom();
+    }, [messageHistory, loading]);
     useEffect(() => {
         // 1. Se non abbiamo un ID conversazione, non facciamo nulla
         if (!conversationId) return;
@@ -80,6 +89,7 @@ const ChatContent = () => {
                             {loading && (
                                 <BotLoading />
                             )}
+                            <div ref={messagesEndRef} /> {/* Ancorina per lo scroll automatico */}
                         </div>
                     </div>
 

@@ -30,7 +30,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const [loading, setLoading] = useState(false);
     const [conversations, setConversations] = useState<any[]>([]); // Per tenere traccia delle conversazioni salvate
     const [areConversationsLoaded, setAreConversationsLoaded] = useState(false); // Per sapere quando abbiamo finito di caricare le conversazioni
-    const [model, setModel] = useState<any>({ name: "Gemini 2.5 Flash Lite", provider: "Google",name_id: "gemini-2.5-flash-lite", cost_per_input_token: 0.01, cost_per_output_token: 0.01 });
+    const [model, setModel] = useState<any>({ name: "Gemini 2.5 Flash Lite", provider: "Google",name_id: "google/gemini-2.5-flash-lite", cost_per_input_token: 0.10, cost_per_output_token: 0.40 });
     const clearInput = () => setInputValue("");
     const sendMessage = async (message: string) => {
         if (!message.trim()) return;
@@ -49,7 +49,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
                 role: msg.role === 'bot' ? 'assistant' : 'user',
                 content: msg.content
             }));
-            if(model.cost_per_input_token+model.cost_per_output_token>1){
+            if(model.cost_per_input_token+model.cost_per_output_token>2){
                 alert("This model has a cost of " + (model.cost_per_input_token + model.cost_per_output_token) + "$ per 1 million tokens. Consider upgrading your plan or selecting a different model to avoid unexpected costs.");
                 return
             }

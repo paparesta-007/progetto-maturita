@@ -1,4 +1,4 @@
-import { Paperclip, PaperPlaneTilt, CaretDown, XIcon, GlobeIcon, CaretDownIcon } from "@phosphor-icons/react";
+import { Paperclip, PaperPlaneTilt, CaretDown, XIcon, GlobeIcon, CaretDownIcon, MagnifyingGlass, MagnifyingGlassIcon } from "@phosphor-icons/react";
 import React, { useState, useEffect, useRef } from "react";
 import Tooltip from "./other/Tooltip";
 import { useChat } from "../context/ChatContext";
@@ -17,6 +17,7 @@ const Textbar = () => {
     const [isGroundingActive, setIsGroundingActive] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const [models, setModels] = useState<any[]>([]);
+    const [filteredModels, setFilteredModels] = useState<any[]>([]);
     const [isSelectPopupOpen, setIsSelectPopupOpen] = useState(false);
     const provider = [
         { name: "Google", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Google-gemini-icon.svg/960px-Google-gemini-icon.svg.png" },
@@ -32,14 +33,30 @@ const Textbar = () => {
             setInputValue("");
         }
     };
+
+    const menuRef = useRef<HTMLDivElement | null>(null);
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+                setIsSelectPopupOpen(false);
+            }
+        };
+
+        document.addEventListener("mousedown", handleClickOutside);
+        return () => {
+            document.removeEventListener("mousedown", handleClickOutside);
+        };
+    }, [menuRef]);
     useEffect(() => {
         const fetchModels = async () => {
             const fetchedModels = await getModels();
 
             setModels(fetchedModels);
+            setFilteredModels(fetchedModels);
 
         };
         fetchModels();
+
     }, []);
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFiles = event.target.files;
@@ -64,7 +81,7 @@ const Textbar = () => {
         setFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
     };
     return (
-        <div className="w-full max-w-2xl border border-neutral-200 shadow-[0_0_15px_0_rgba(0,0,0,0.15)] rounded-2xl bg-white p-2 flex flex-col gap-2">
+        <div className="w-full max-w-2xl border border-neutral-200 shadow-[0_0_15px_0_rgba(0,0,0,0.15)] rounded-2xl bg-white p-2 flex flex-col gap-2" ref={menuRef}>
 
             {/* SEZIONE SUPERIORE: Eventuali allegati*/}
             {files.length > 0 && (
@@ -106,6 +123,7 @@ const Textbar = () => {
 
             {/* SEZIONE SUPERIORE: Input e Invio */}
             <div className="flex items-center gap-2">
+
                 <input
                     type="text"
                     placeholder="Type your message here..."
@@ -172,12 +190,24 @@ const Textbar = () => {
                                     exit={{ opacity: 0, y: 10, scale: 0.95 }}
                                     transition={{ duration: 0.15, ease: "easeOut" }}
                                     className="absolute bottom-full left-0 mb-2 w-100 h-100 px-2 overflow-auto bg-white border border-neutral-200 shadow-xl rounded-xl z-50"
-                                ><input
-                                        type="text"
-                                        placeholder="Search models..."
-                                        className="w-full px-3 py-2 mb-2 border-b border-neutral-200 sticky top-0 bg-white focus:outline-none"
-
-                                    />
+                                >
+                                    <div className="sticky top-0 bg-white border-b border-neutral-200 px-3 py-2">
+                                        <div className="flex items-center gap-2 text-neutral-400 rounded-lg px-0 py-2">
+                                            <MagnifyingGlassIcon size={18} />
+                                            <input
+                                                type="text"
+                                                placeholder="Search models..."
+                                                className="flex-1 bg-transparent text-neutral-900 focus:outline-none placeholder-neutral-400 text-sm"
+                                                onChange={(e) => {
+                                                    const query = e.target.value.toLowerCase();
+                                                    setFilteredModels(models.filter(model =>
+                                                        model.name.toLowerCase().includes(query) ||
+                                                        model.provider.toLowerCase().includes(query)
+                                                    ));
+                                                }}
+                                            />
+                                        </div>
+                                    </div>
                                     <div className="p-1 grid
                                     sm:grid-cols-2 lg:grid-cols-2 grid-cols-1 ">
 
@@ -186,17 +216,17 @@ const Textbar = () => {
                                                 No models available
                                             </div>
                                         ) : (
-                                            models.map((model,index) => (
+                                            filteredModels.map((model, index) => (
                                                 <div key={index} className="px-1 py-2 flex gap-1 rounded hover:bg-neutral-100 cursor-pointer text-neutral-700"
                                                     onClick={() => {
                                                         setModel(model);
                                                         setIsSelectPopupOpen(false);
                                                     }}
                                                 >
-                                                        <img src={provider.find(p => p.name === model.provider)?.img} alt={model.provider} className="w-4 h-4 object-contain" />
+                                                    <img src={provider.find(p => p.name === model.provider)?.img ?? "https://images.rawpixel.com/image_png_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDIzLTAxL3JtNjA5LXNvbGlkaWNvbi13LTAwNS1wLnBuZw.png"} alt={model.provider} className="w-4 h-4 object-contain" />
                                                     <div className="flex flex-col items-start gap-0.5">
                                                         <span className="text-sm">{model.name}</span>
-                                                    <p className="text-xs text-neutral-400">{model.cost_per_input_token+model.cost_per_output_token}$/1M</p>
+                                                        <p className="text-xs text-neutral-400">{model.cost_per_input_token + model.cost_per_output_token}$/1M</p>
                                                     </div>
                                                 </div>
                                             ))

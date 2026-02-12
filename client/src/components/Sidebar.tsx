@@ -1,4 +1,4 @@
-import React, { useState, useEffect,useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { NavLink, redirect, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext"; // Assumo esista
 import { AnimatePresence, motion } from "framer-motion";
@@ -22,7 +22,7 @@ import { useChat } from "../context/ChatContext";
 const Sidebar = () => {
     // Mock user per evitare crash se il context non è pronto
     const { user } = useAuth() || { user: { displayName: "Matteo Rossi", photoURL: null } };
-    const {conversations}=useChat();
+    const { conversations, setMessageHistory } = useChat();
     const [userDetails, setUserDetails] = useState<{ full_name: string | null, birthday: string | null } | null>(null);
     const [searchFocused, setSearchFocused] = useState(false);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -36,7 +36,7 @@ const Sidebar = () => {
         };
         fetchUserDetails();
         console.log("Conversazioni nel contesto:", conversations);
-    },[])
+    }, [])
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -57,7 +57,7 @@ const Sidebar = () => {
         { path: "/app/calendar", label: "Agenda", icon: <Calendar size={18} /> },
     ];
 
-  
+
     const handleLogOut = async () => {
         try {
             await supabase.auth.signOut();
@@ -84,8 +84,14 @@ const Sidebar = () => {
                 {/* New Chat Button */}
                 <button className="w-full group relative flex items-center justify-between px-4 py-2.5 bg-white text-neutral-900
                  border border-neutral-200 hover:border-neutral-300 hover:shadow-sm rounded-lg transition-all duration-200 
-                  ">
-                    <div className="flex items-center gap-2 font-medium">
+                  "
+                    onClick={() => {
+                        setMessageHistory([]); // Resetta la cronologia dei messaggi
+                        navigate('/app/chat/'); // Naviga alla pagina di nuova chat
+                    }
+                    }>
+                    <div className="flex items-center gap-2 font-medium"
+                    >
                         <Plus size={16} className="text-neutral-900" />
                         <span>Nuova Chat</span>
                     </div>
@@ -140,21 +146,21 @@ const Sidebar = () => {
                 </p>
                 <div className="flex flex-col gap-4">
                     <ul className="flex flex-col gap-1">
-                                {conversations.map((conv: any) => (
-                                    <li key={conv.id}>
-                                        <NavLink
-                                            to={`/app/chat/${conv.id}`}
-                                            className={({ isActive }) => `
+                        {conversations.map((conv: any) => (
+                            <li key={conv.id}>
+                                <NavLink
+                                    to={`/app/chat/${conv.id}`}
+                                    className={({ isActive }) => `
                                                 flex items-center justify-between group gap-2 px-3 py-2 rounded-md transition-colors text-sm
                                                 ${isActive ? "bg-neutral-200/50 text-neutral-900 font-medium" : "text-neutral-600 hover:bg-neutral-200/50 hover:text-neutral-900"}
                                             `}
-                                        >
-                                            <span className="truncate">{conv.title || "Chat senza titolo"}</span>
-                                            <DotsThreeIcon  size={20} className="opacity-0 group-hover:opacity-100 hover:text-neutral-900 text-neutral-500 float-right" />
-                                        </NavLink>
-                                    </li>
-                                ))}
-                            </ul>
+                                >
+                                    <span className="truncate">{conv.title || "Chat senza titolo"}</span>
+                                    <DotsThreeIcon size={20} className="opacity-0 group-hover:opacity-100 hover:text-neutral-900 text-neutral-500 float-right" />
+                                </NavLink>
+                            </li>
+                        ))}
+                    </ul>
                 </div>
             </div>
 
