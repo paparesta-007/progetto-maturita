@@ -14,7 +14,9 @@ interface ChatContextType {
     loadConversation: (conversationId: string) => Promise<void>;
     userOwnsConversation: (conversationId: string) => boolean;
     areConversationsLoaded: boolean; // Per sapere quando abbiamo finito di caricare le conversazioni
-    setMessageHistory: React.Dispatch<React.SetStateAction<any[]>>; // Per aggiornare la lista delle conversazioni
+    setMessageHistory: React.Dispatch<React.SetStateAction<any[]>>; // Per aggiornare la lista delle 
+    model: any;
+    setModel: React.Dispatch<React.SetStateAction<any>>;
 }
 
 // 1. Creazione del Context
@@ -28,6 +30,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const [loading, setLoading] = useState(false);
     const [conversations, setConversations] = useState<any[]>([]); // Per tenere traccia delle conversazioni salvate
     const [areConversationsLoaded, setAreConversationsLoaded] = useState(false); // Per sapere quando abbiamo finito di caricare le conversazioni
+    const [model, setModel] = useState<any>({ name: "Gemini 2.5 Flash Lite", provider: "Google",name_id: "google/gemini-2.5-flash-lite", cost_per_input_token: 0.10, cost_per_output_token: 0.40 });
     const clearInput = () => setInputValue("");
     const sendMessage = async (message: string) => {
         if (!message.trim()) return;
@@ -46,14 +49,17 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
                 role: msg.role === 'bot' ? 'assistant' : 'user',
                 content: msg.content
             }));
-
+            if(model.cost_per_input_token+model.cost_per_output_token>2){
+                alert("This model has a cost of " + (model.cost_per_input_token + model.cost_per_output_token) + "$ per 1 million tokens. Consider upgrading your plan or selecting a different model to avoid unexpected costs.");
+                return
+            }
             const response = await fetch("http://localhost:3000/api/gemini/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     message,
                     history: historyForBackend, // Inviamo la storia corretta
-                    modelName: "gemini-2.5-flash-lite",
+                    modelName: model.name_id,
                 }),
             });
 
@@ -146,7 +152,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     };
     return (
         <ChatContext.Provider value={{ inputValue, setInputValue, clearInput, sendMessage, messageHistory, loading, conversations, loadConversation, userOwnsConversation, 
-        areConversationsLoaded, setMessageHistory }}>
+        areConversationsLoaded, setMessageHistory, model, setModel }}>
             {children}
         </ChatContext.Provider>
     );

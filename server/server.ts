@@ -151,26 +151,24 @@ app.post("/api/gemini/chat/stream", async function (req: express.Request, res: e
     try {
         const { message, history, modelName } = req.body;
 
-        // Basic validation
         const allowedModels = ["gemini-2.5-flash-lite", "gemini-2.5-flash"];
         const selectedModel = modelName && allowedModels.includes(modelName) ? modelName : "gemini-2.5-flash-lite";
 
-        // Convert history to Vercel AI SDK format
         const messages = [
             ...history,
             { role: 'user', content: message }
         ];
 
-        // Set headers for streaming
+        // Intestazioni per lo streaming
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
         res.setHeader("Transfer-Encoding", "chunked");
+        res.flushHeaders(); // FONDAMENTALE: forza l'invio immediato degli header e apre il flusso
 
         const { textStream } = streamText({
             model: google(selectedModel as any),
             messages: messages,
         });
 
-        // Loop through the stream and write raw text chunks to the response
         for await (const textPart of textStream) {
             res.write(textPart);
         }
@@ -189,15 +187,22 @@ app.post("/api/gemini/chat", async function (req: express.Request, res: express.
         // Ad esempio, assicurati che 'modelName' sia uno dei modelli che intendi esporre.
         const allowedModels = ["gemini-2.5-flash-lite", "gemini-pro"];
         const selectedModel = modelName && allowedModels.includes(modelName) ? modelName : "gemini-2.5-flash-lite";
-
-        const messages = [
+  const systemPrompt = `You are ${selectedModel}, a large language model.
+Formatting Rules:
+- Use Markdown for lists, tables, and styling.
+- Use code fences for all code blocks.
+- Format file names, paths, and function names with inline code backticks.
+- **For all mathematical expressions, you must use dollar-sign delimiters. Use $...$ for inline math and $$...$$ for block math. Do not use (...) or [...] delimiters.**
+- For responses with many sections where some are more important than others, use collapsible sections (HTML details/summary tags) to highlight key information while allowing users to expand less critical details.`;
+       const messages = [
             ...history,
             { role: 'user', content: message }
         ];
 
         const { text, usage } = await generateText({
-            model: openrouter("google/gemini-2.5-flash-lite"), // Cast `as any` necessario se `selectedModel` è una stringa generica
+            model: openrouter(modelName),
             messages: messages,
+            system: systemPrompt,
         });
 
         res.send({ text, usage });
