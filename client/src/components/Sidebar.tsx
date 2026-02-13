@@ -19,6 +19,7 @@ import supabase from "../library/supabaseclient";
 import selectUserDetails from "../services/supabase/User/SelectuserDetails";
 import { useChat } from "../context/ChatContext";
 import deleteConversation from "../services/supabase/Conversation/deleteConversation";
+import { useApp } from "../context/AppContext";
 
 const Sidebar = () => {
     // Mock user per evitare crash se il context non è pronto
@@ -30,6 +31,7 @@ const Sidebar = () => {
     const navigate = useNavigate();
     const [convMenuOpen, setConvMenuOpen] = useState<string | null>(null); // Per tenere traccia di quale menu di conversazione è aperto
     const menuRef = useRef<HTMLDivElement>(null);
+    const {setIsSettingOpen} = useApp();
     useEffect(() => {
         const fetchUserDetails = async () => {
             const data = await selectUserDetails(user.id);
@@ -183,7 +185,7 @@ const Sidebar = () => {
                                 </button>
 
                                 <AnimatePresence>
-                                    {convMenuOpen === conv.id && (
+                                    {convMenuOpen === conv.id && ( 
                                         <motion.div
                                             initial={{ opacity: 0, scale: 0.95, y: -10 }}
                                             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -225,7 +227,8 @@ const Sidebar = () => {
                         >
                             <div className="bg-white rounded-xl shadow-xl border border-neutral-200 overflow-hidden ring-1 ring-black/5">
                                 <div className="p-1 flex flex-col gap-0.5">
-                                    <button className="flex items-center gap-2 w-full px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors text-left">
+                                    <button className="flex items-center gap-2 w-full px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors text-left"
+                                    onClick={() => { setIsSettingOpen(true); setIsUserMenuOpen(false); }}>
                                         <Settings size={16} className="text-neutral-500" />
                                         <span>Impostazioni</span>
                                     </button>

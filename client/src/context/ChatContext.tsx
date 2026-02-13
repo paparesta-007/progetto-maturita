@@ -20,6 +20,7 @@ interface ChatContextType {
     isStreamTextEnabled: boolean;
     setIsStreamTextEnabled: React.Dispatch<React.SetStateAction<boolean>>;
     fetchConversations: () => Promise<void>;
+    
 }
 
 // 1. Creazione del Context
@@ -35,6 +36,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const [areConversationsLoaded, setAreConversationsLoaded] = useState(false); // Per sapere quando abbiamo finito di caricare le conversazioni
     const [model, setModel] = useState<any>({ name: "Gemini 2.5 Flash Lite", provider: "Google",name_id: "google/gemini-2.5-flash-lite", cost_per_input_token: 0.10, cost_per_output_token: 0.40 });
     const [isStreamTextEnabled, setIsStreamTextEnabled] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const clearInput = () => setInputValue("");
    
     const sendMessage = async (message: string) => {
