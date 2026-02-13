@@ -72,7 +72,8 @@ const Sidebar = () => {
             {/* --- Header & Brand --- */}
             <div className="p-3 pb-2">
                 <div className="flex items-center gap-2 mb-6 text-neutral-900 flex items-center gap-2 justify-between">
-                    <div className="w-8 h-8 bg-neutral-900 rounded-md flex items-center justify-center text-white">
+                    <div className="w-8 h-8 bg-neutral-900 rounded-md flex items-center justify-center text-white cursor-pointer"
+                    onClick={()=>{navigate("/")}}>
                         <BrainCircuit size={16} />
                     </div>
                     <div className="w-6 h-6 text-neutral-500 rounded-md flex items-center justify-center ">

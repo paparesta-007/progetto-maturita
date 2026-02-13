@@ -45,6 +45,7 @@
 .renderChat h4 {
     margin: 16px 0 12px 0;
     line-height: 1.3;
+    font-weight: 600;
     color: var(--color-primary);
 
 }
@@ -52,7 +53,7 @@
 .renderChat h1 {
     font-size: 1.8rem !important;
 
-    font-weight: 500;
+    font-weight: bold;
 }
 
 .renderChat h2 {
@@ -76,12 +77,14 @@
 .renderChat th {
     background-color: var(--background-Secondary);
     padding: 10px 12px;
+    border: 1px solid lightgray;
+    background-color: rgb(238, 238, 238);
     text-align: left;
 }
 
 .renderChat td {
     padding: 10px 12px;
-    border: 1px solid lightgray;
+    border: 1px solid rgb(238, 234, 234);
     border-radius: 5px;
     color: var(--color-chat-primary);
 }
@@ -130,6 +133,9 @@
 
 pre {
     border: 1px solid lightgray;
+    overflow-x: auto !important;
+    width: calc(100% - 24px);
+    max-width: 100%;
 }
 
 code {
@@ -138,3 +144,4 @@ code {
     border-radius: 5px;
     padding: 2px 4px;
 }
+

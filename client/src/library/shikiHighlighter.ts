@@ -10,7 +10,7 @@ export const getHighlighter = async () => {
     highlighterInstance = await createHighlighter({
         // Aggiungi qui tutti i temi che vuoi rendere disponibili
         themes: ['vitesse-dark', 'github-light', 'monokai'], 
-        langs: ['javascript', 'typescript', 'tsx', 'jsx', 'python', 'html', 'css', 'json', 'bash']
+        langs: ['javascript', 'typescript', 'tsx', 'jsx', 'python', 'html', 'css', 'json', 'bash', 'java', 'csharp', 'cpp', 'ruby', 'go', 'rust', 'kotlin', 'swift', 'php', 'sql']
     });
 
     return highlighterInstance;
