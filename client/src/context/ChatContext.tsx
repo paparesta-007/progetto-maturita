@@ -19,6 +19,7 @@ interface ChatContextType {
     setModel: React.Dispatch<React.SetStateAction<any>>;
     isStreamTextEnabled: boolean;
     setIsStreamTextEnabled: React.Dispatch<React.SetStateAction<boolean>>;
+    fetchConversations: () => Promise<void>;
 }
 
 // 1. Creazione del Context
@@ -88,9 +89,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
             setLoading(false);
         }
     };
-
-    useEffect(() => {
-        const fetchConversations = async () => {
+    const fetchConversations = async () => {
             try {
                 if (!user?.id) return;
                 const data = await getAllConversation(user?.id);
@@ -104,6 +103,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
                 setAreConversationsLoaded(true);
             }
         }
+    useEffect(() => {
+        
 
         if (user?.id) {
             fetchConversations();
@@ -120,7 +121,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     };
     return (
         <ChatContext.Provider value={{ inputValue, setInputValue, clearInput, sendMessage, messageHistory, loading, conversations, loadConversation, userOwnsConversation, 
-        areConversationsLoaded, setMessageHistory, model, setModel, isStreamTextEnabled, setIsStreamTextEnabled }}>
+        areConversationsLoaded, setMessageHistory, model, setModel, isStreamTextEnabled, setIsStreamTextEnabled, fetchConversations }}>
             {children}
         </ChatContext.Provider>
     );
