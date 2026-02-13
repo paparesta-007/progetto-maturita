@@ -3,7 +3,7 @@
 
 
 .f-poppins {
-  font-family: 'Poppins', sans-serif;
+    font-family: 'Poppins', sans-serif;
 }
 
 .renderChat ul,
@@ -20,14 +20,16 @@
     margin-bottom: 6px;
     /* spazio tra gli elementi della lista */
     line-height: 1.6;
-    
+
     /* migliora leggibilità */
 }
-.renderChat ul li{
+
+.renderChat ul li {
     list-style-type: disc;
-    
+
 }
-.renderChat ol li{
+
+.renderChat ol li {
     list-style-type: decimal;
 }
 
@@ -43,14 +45,15 @@
 .renderChat h4 {
     margin: 16px 0 12px 0;
     line-height: 1.3;
+    font-weight: 600;
     color: var(--color-primary);
 
 }
 
 .renderChat h1 {
     font-size: 1.8rem !important;
-    
-    font-weight: 500;
+
+    font-weight: bold;
 }
 
 .renderChat h2 {
@@ -74,12 +77,14 @@
 .renderChat th {
     background-color: var(--background-Secondary);
     padding: 10px 12px;
+    border: 1px solid lightgray;
+    background-color: rgb(238, 238, 238);
     text-align: left;
 }
 
 .renderChat td {
     padding: 10px 12px;
-    border: 1px solid lightgray;
+    border: 1px solid rgb(238, 234, 234);
     border-radius: 5px;
     color: var(--color-chat-primary);
 }
@@ -115,6 +120,7 @@
 .renderChat blockquote {
     @apply border-l-2 border-[var(--border-primary)] pl-2;
 }
+
 .renderChat summary {
     padding: 8px;
     border: 1px solid lightgray;
@@ -124,15 +130,18 @@
     font-weight: 500;
     color: var(--color-primary);
 }
-.renderChat code {
-    color: red;
-    background-color: white;
+
+pre {
     border: 1px solid lightgray;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-family: monospace;
+    overflow-x: auto !important;
+    width: calc(100% - 24px);
+    max-width: 100%;
 }
 
-.renderChat pre code {
-    color: red;
+code {
+    color: rgb(53, 83, 182);
+    background-color: white;
+    border-radius: 5px;
+    padding: 2px 4px;
 }
+

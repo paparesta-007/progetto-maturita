@@ -41,7 +41,7 @@ console.log("Controllo API Key:", process.env.GOOGLE_GENERATIVE_AI_API_KEY ? "Pr
 // Update dotenv configuration to load .env.local if it exists
 dotenv.config({ path: path.resolve(__dirname, ".env.local") });
 const openrouter = createOpenRouter({
-  apiKey: process.env.VITE_OPENROUTER_API_KEY,
+    apiKey: process.env.VITE_OPENROUTER_API_KEY,
 });
 // C) creazione server e lettura file sincrona
 // SUGGERIMENTO: È meglio leggere i file necessari all'avvio in modo sincrono
@@ -102,7 +102,7 @@ app.get("/api/gemini/generate", async function (req: express.Request, res: expre
     try {
         const startTime = Date.now();
         const prompt = decodeURIComponent(req.query.prompt as string) || "Explain what is climate change like I am 10 years old. short answer.";
-        
+
         // SUGGERIMENTO: Sposta i nomi dei modelli in variabili d'ambiente per non averli hardcoded.
         // const modelName = process.env.GEMINI_GENERATE_MODEL || "gemini-2.5-flash-lite";
         const { text, usage } = await generateText({
@@ -185,16 +185,43 @@ app.post("/api/gemini/chat", async function (req: express.Request, res: express.
 
         // SUGGERIMENTO PER LA SICUREZZA: Valida l'input ricevuto dal client.
         // Ad esempio, assicurati che 'modelName' sia uno dei modelli che intendi esporre.
-        const allowedModels = ["gemini-2.5-flash-lite", "gemini-pro"];
-        const selectedModel = modelName && allowedModels.includes(modelName) ? modelName : "gemini-2.5-flash-lite";
-  const systemPrompt = `You are ${selectedModel}, a large language model.
-Formatting Rules:
-- Use Markdown for lists, tables, and styling.
-- Use code fences for all code blocks.
-- Format file names, paths, and function names with inline code backticks.
-- **For all mathematical expressions, you must use dollar-sign delimiters. Use $...$ for inline math and $$...$$ for block math. Do not use (...) or [...] delimiters.**
-- For responses with many sections where some are more important than others, use collapsible sections (HTML details/summary tags) to highlight key information while allowing users to expand less critical details.`;
-       const messages = [
+
+        const selectedModel = modelName ? modelName : "gemini-2.5-flash-lite";
+ const systemPrompt = `You are ${selectedModel}, an expert AI assistant dedicated to providing precise, high-quality technical and academic responses.
+
+**Core Objective:**
+Your goal is to answer the user's request with maximum clarity, accuracy, and structural organization. You must prioritize the "Answer First" principle—providing the direct solution or conclusion before delving into extensive background, unless specifically asked otherwise.
+
+**Strict Formatting Standards:**
+
+1.  **Mathematical Typesetting (CRITICAL):**
+    -   You MUST use dollar signs for all mathematical expressions.
+    -   Use single dollar signs for inline math: $E=mc^2$
+    -   Use double dollar signs for block equations: $$ \int_{a}^{b} x^2 dx $$
+    -   **PROHIBITED:** Do strictly NOT use \( ... \) or \[ ... \] delimiters.
+
+2.  **Code & Technical Terms:**
+    -   Use standard Markdown code fences (e.g., \`\`\`python) for all code blocks.
+    -   Format all file names, directory paths, variable names, and function names using inline code backticks (e.g., \`data_loader.py\`, \`main()\`).
+    -   Ensure code is commented and modular.
+
+3.  **Structural Organization (Collapsible Sections):**
+    -   For complex responses containing ancillary information (e.g., long mathematical derivations, dependency lists, extensive historical context, or boilerplate code), you MUST use HTML \`<details>\` and \`<summary>\` tags.
+    -   **Rule:** Keep the critical answer/solution visible. Collapse only the supporting details that would otherwise clutter the reading experience.
+    -   *Example:*
+        <details>
+        <summary>Click to view step-by-step derivation</summary>
+        [Detailed content here]
+        </details>
+
+4.  **General Styling:**
+    -   Use Markdown for all headers, lists, and tables.
+    -   Use bolding strategically to highlight key insights, but do not overuse it.
+
+**Response Protocol:**
+-   **Analyze:** Break down the user's request into logical components.
+-   **Synthesize:** If the request is ambiguous, state your assumptions clearly before proceeding.
+-   **Execute:** Generate the response following the formatting rules above. Avoid conversational filler (e.g., "Here is the code you asked for"); simply provide the answer.`;      const messages = [
             ...history,
             { role: 'user', content: message }
         ];
@@ -210,7 +237,95 @@ Formatting Rules:
         next(error);
     }
 });
+app.post("/api/streamingOutput", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
+    try {
+        const { message, history, modelName } = req.body;
+        const selectedModel = modelName ? modelName : "gemini-2.5-flash-lite";
 
+const systemPrompt = `You are ${selectedModel}, an expert AI assistant dedicated to providing precise, high-quality technical and academic responses.
+
+**Core Objective:**
+Your goal is to answer the user's request with maximum clarity, accuracy, and structural organization. You must prioritize the "Answer First" principle—providing the direct solution 
+or conclusion before delving into extensive background, unless specifically asked otherwise.
+
+**Strict Formatting Standards:**
+
+1.  **Mathematical Typesetting (CRITICAL):**
+    -   You MUST use dollar signs for all mathematical expressions.
+    -   Use single dollar signs for inline math: $E=mc^2$
+    -   Use double dollar signs for block equations: $$ \int_{a}^{b} x^2 dx $$
+    -   **PROHIBITED:** Do strictly NOT use \( ... \) or \[ ... \] delimiters.
+
+2.  **Code & Technical Terms:**
+    -   Use standard Markdown code fences (e.g., \`\`\`python) for all code blocks.
+    -   Format all file names, directory paths, variable names, and function names using inline code backticks (e.g., \`data_loader.py\`, \`main()\`).
+    -   Ensure code is commented and modular.
+
+3.  **Structural Organization (Collapsible Sections):**
+    -   For complex responses containing ancillary information (e.g., long mathematical derivations, dependency lists, extensive historical context, or boilerplate code), you MUST use HTML \`<details>\` and \`<summary>\` tags.
+    -   **Rule:** Keep the critical answer/solution visible. Collapse only the supporting details that would otherwise clutter the reading experience.
+    -   *Example:*
+        <details>
+        <summary>Click to view step-by-step derivation</summary>
+        [Detailed content here]
+        </details>
+
+4.  **General Styling:**
+    -   Use Markdown for all headers, lists, and tables.
+    -   Use bolding strategically to highlight key insights, but do not overuse it.
+
+**Response Protocol:**
+-   **Analyze:** Break down the user's request into logical components.
+-   **Language Detection:** If the user's message is in a language other than English, respond in that language.
+-   **Synthesize:** If the request is ambiguous, state your assumptions clearly before proceeding.
+-   **Execute:** Generate the response following the formatting rules above. Avoid conversational filler (e.g., "Here is the code you asked for"); simply provide the answer.`;
+        const messages = [
+            ...history,
+            { role: 'user', content: message }
+        ];
+
+        // 1. Configurazione OpenRouter con Header (FONDAMENTALE per il logging corretto)
+        // Assicurati che l'istanza 'openrouter' sia configurata o passata qui con gli header custom
+        // Se usi createOpenRouter, passali lì. Se non puoi, molti proxy li accettano così:
+        const result = streamText({
+            model: openrouter(selectedModel),
+            messages: messages,
+            system: systemPrompt,
+            // Aggiungiamo callback per debuggare il problema
+            onFinish: ({ usage, text }) => {
+                // SE vedi questo log, la chiamata è finita correttamente.
+                // SE NON lo vedi, il client ha staccato la spina prima.
+                console.log("Stream completato. Usage:", usage);
+                console.log("Token usati:", usage.totalTokens);
+            },
+            headers: {
+                // Questi header aiutano OpenRouter a tracciare la chiamata al tuo account
+                "HTTP-Referer": "https://tuo-sito.com",
+                "X-Title": "NomeTuaApp"
+            }
+        });
+
+        // 2. Imposta gli header della risposta
+        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
+        res.setHeader('Transfer-Encoding', 'chunked');
+
+        // Header opzionali per evitare buffering dei proxy (Nginx, Vercel, ecc.)
+        res.setHeader('X-Accel-Buffering', 'no');
+
+        // 3. Pipe alla risposta
+        result.pipeTextStreamToResponse(res);
+
+        // 4. Gestione disconnessione client (Opzionale ma utile per debug)
+        res.on('close', () => {
+            // Questo scatta se l'utente chiude la connessione
+            // Se scatta PRIMA del console.log di onFinish, hai trovato il colpevole.
+            console.log("Client disconnesso dalla stream.");
+        });
+
+    } catch (error) {
+        next(error);
+    }
+});
 
 // F) Gestione rotta di default (404)
 app.use("/", function (req: express.Request, res: express.Response) {
@@ -226,9 +341,9 @@ app.use("/", function (req: express.Request, res: express.Response) {
 app.use("/", function (err: any, req: express.Request, res: express.Response, next: express.NextFunction) {
     console.error("--- SERVER ERROR DETAIL ---");
     console.error(err); // Questo ti dirà se è un errore di autenticazione o di parsing
-    
-    res.status(500).json({ 
-        error: "Internal Server Error", 
+
+    res.status(500).json({
+        error: "Internal Server Error",
         details: err.message, // Ti aiuta a capire il problema durante lo sviluppo
         path: req.originalUrl
     });

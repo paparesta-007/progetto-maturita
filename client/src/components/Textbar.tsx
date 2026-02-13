@@ -12,13 +12,14 @@ interface FileWithPreview {
 }
 
 const Textbar = () => {
-    const { inputValue, setInputValue, clearInput, sendMessage, model, setModel } = useChat();
+    const { inputValue, setInputValue, clearInput, sendMessage, model, setModel, isStreamTextEnabled, setIsStreamTextEnabled } = useChat();
     const [files, setFiles] = useState<FileWithPreview[]>([]);
     const [isGroundingActive, setIsGroundingActive] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const [models, setModels] = useState<any[]>([]);
     const [filteredModels, setFilteredModels] = useState<any[]>([]);
     const [isSelectPopupOpen, setIsSelectPopupOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState("");
     const provider = [
         { name: "Google", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Google-gemini-icon.svg/960px-Google-gemini-icon.svg.png" },
         { name: "OpenAI", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQS3PwERLLNB9XKFpeMgAMPxl5VvN3HRJnXQQ&s" },
@@ -193,9 +194,10 @@ const Textbar = () => {
                                 >
                                     <div className="sticky top-0 bg-white border-b border-neutral-200 px-3 py-2">
                                         <div className="flex items-center gap-2 text-neutral-400 rounded-lg px-0 py-2">
-                                            <MagnifyingGlassIcon size={18} />
+                                            <label htmlFor="model-search"> <MagnifyingGlassIcon size={18} /></label>
                                             <input
                                                 type="text"
+                                                id="model-search"
                                                 placeholder="Search models..."
                                                 className="flex-1 bg-transparent text-neutral-900 focus:outline-none placeholder-neutral-400 text-sm"
                                                 onChange={(e) => {
@@ -204,7 +206,9 @@ const Textbar = () => {
                                                         model.name.toLowerCase().includes(query) ||
                                                         model.provider.toLowerCase().includes(query)
                                                     ));
+                                                    setSearchQuery(e.target.value);
                                                 }}
+                                                value={searchQuery}
                                             />
                                         </div>
                                     </div>
@@ -252,7 +256,15 @@ const Textbar = () => {
                         </span>
                     </button>
                 </div>
-                <div>
+
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center text-neutral-400 hover:text-neutral-800 transition-colors rounded cursor-pointer">
+                        <input type="checkbox" id="grounding-toggle" className="mr-2"
+                            checked={isStreamTextEnabled}
+                            onChange={(e) => setIsStreamTextEnabled(e.target.checked)}
+                        />
+                        <label htmlFor="grounding-toggle" className="text-sm select-none text-neutral-400 cursor-pointer">Stream text</label>
+                    </div>
                     <Tooltip
                         background="light"
                         position="right"

@@ -14,20 +14,24 @@ import {
     User,
 
 } from 'lucide-react';
-import { DotsThreeIcon, SidebarSimpleIcon } from "@phosphor-icons/react";
+import { DotsThreeIcon, PencilLineIcon, ShareIcon, ShareNetworkIcon, SidebarSimpleIcon, TrashIcon } from "@phosphor-icons/react";
 import supabase from "../library/supabaseclient";
 import selectUserDetails from "../services/supabase/User/SelectuserDetails";
 import { useChat } from "../context/ChatContext";
+import deleteConversation from "../services/supabase/Conversation/deleteConversation";
+import { useApp } from "../context/AppContext";
 
 const Sidebar = () => {
     // Mock user per evitare crash se il context non è pronto
     const { user } = useAuth() || { user: { displayName: "Matteo Rossi", photoURL: null } };
-    const { conversations, setMessageHistory } = useChat();
+    const { conversations, setMessageHistory, fetchConversations } = useChat();
     const [userDetails, setUserDetails] = useState<{ full_name: string | null, birthday: string | null } | null>(null);
     const [searchFocused, setSearchFocused] = useState(false);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const navigate = useNavigate();
+    const [convMenuOpen, setConvMenuOpen] = useState<string | null>(null); // Per tenere traccia di quale menu di conversazione è aperto
     const menuRef = useRef<HTMLDivElement>(null);
+    const {setIsSettingOpen} = useApp();
     useEffect(() => {
         const fetchUserDetails = async () => {
             const data = await selectUserDetails(user.id);
@@ -58,21 +62,36 @@ const Sidebar = () => {
     ];
 
 
-    const handleLogOut = async () => {
+    const handleLogOut = async (conversationId: string | null) => {
         try {
             await supabase.auth.signOut();
+            if (conversationId) await deleteConversation(user.id, conversationId);
+            fetchConversations();
             navigate("/login");
         } catch (error) {
             alert("Errore durante il logout. Riprova.");
         }
     }
+    async function handleDeleteConversation(conversationId: string | null): Promise<void> {
+        console.log("ID conversazione da eliminare (se presente):", conversationId);
+        try {
+            if (!user || !user.id) throw new Error("User ID non disponibile");
+            let a = await deleteConversation(user.id, conversationId!);
+            fetchConversations();
+
+        } catch (error) {
+            alert("Errore durante l'eliminazione della conversazione. Riprova.");
+        }
+    }
+
     return (
         <nav className="w-[280px] h-screen bg-neutral-50 flex flex-col border-r border-neutral-200 font-sans text-sm">
 
             {/* --- Header & Brand --- */}
             <div className="p-3 pb-2">
                 <div className="flex items-center gap-2 mb-6 text-neutral-900 flex items-center gap-2 justify-between">
-                    <div className="w-8 h-8 bg-neutral-900 rounded-md flex items-center justify-center text-white">
+                    <div className="w-8 h-8 bg-neutral-900 rounded-md flex items-center justify-center text-white cursor-pointer"
+                        onClick={() => { navigate("/") }}>
                         <BrainCircuit size={16} />
                     </div>
                     <div className="w-6 h-6 text-neutral-500 rounded-md flex items-center justify-center ">
@@ -145,20 +164,49 @@ const Sidebar = () => {
                     Cronologia
                 </p>
                 <div className="flex flex-col gap-4">
-                    <ul className="flex flex-col gap-1">
+                    <ul className="flex flex-col gap-1 relative">
                         {conversations.map((conv: any) => (
-                            <li key={conv.id}>
+                            <div key={conv.id} className="relative group flex items-center hover:bg-neutral-200/50 rounded-md hover:text-neutral-900">
                                 <NavLink
                                     to={`/app/chat/${conv.id}`}
-                                    className={({ isActive }) => `
-                                                flex items-center justify-between group gap-2 px-3 py-2 rounded-md transition-colors text-sm
-                                                ${isActive ? "bg-neutral-200/50 text-neutral-900 font-medium" : "text-neutral-600 hover:bg-neutral-200/50 hover:text-neutral-900"}
-                                            `}
+                                    className={({ isActive }) => `flex-1 flex items-center px-3 py-2 transition-colors rounded-md text-sm truncate ${isActive ? "bg-neutral-200/50 text-neutral-900 font-medium" : "text-neutral-600 "}`}
                                 >
-                                    <span className="truncate">{conv.title || "Chat senza titolo"}</span>
-                                    <DotsThreeIcon size={20} className="opacity-0 group-hover:opacity-100 hover:text-neutral-900 text-neutral-500 float-right" />
+                                    <span className="truncate pr-8">{conv.title || "Chat senza titolo"}</span>
                                 </NavLink>
-                            </li>
+
+                                <button
+                                    className={`absolute right-2 p-1 cursor-pointer rounded-md transition-all ${convMenuOpen === conv.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+                                    onClick={(e) => {
+                                        e.preventDefault(); e.stopPropagation();
+                                        setConvMenuOpen(convMenuOpen === conv.id ? null : conv.id);
+                                    }}
+                                >
+                                    <DotsThreeIcon size={20} weight="bold" />
+                                </button>
+
+                                <AnimatePresence>
+                                    {convMenuOpen === conv.id && ( 
+                                        <motion.div
+                                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                                            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                            className="absolute right-0 top-full mt-1 w-44 bg-white border border-neutral-200 rounded-lg shadow-xl z-[100] p-1.5"
+                                        >
+                                            <button className="flex items-center gap-2 w-full px-2 py-1.5 text-sm text-neutral-700 rounded-md transition-colors">
+                                                <ShareNetworkIcon size={14} /> Condividi
+                                            </button>
+                                            <button className="flex items-center gap-2 w-full px-2 py-1.5 text-sm text-neutral-700 rounded-md transition-colors">
+                                                <PencilLineIcon size={14} /> Rinomina
+                                            </button>
+                                            <hr className="my-1 border-neutral-300/50" />
+                                            <button className="flex items-center gap-2 w-full px-2 py-1.5 text-sm text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                                onClick={() => handleDeleteConversation(conv.id)}>
+                                                <TrashIcon size={14} /> Elimina
+                                            </button>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            </div>
                         ))}
                     </ul>
                 </div>
@@ -179,7 +227,8 @@ const Sidebar = () => {
                         >
                             <div className="bg-white rounded-xl shadow-xl border border-neutral-200 overflow-hidden ring-1 ring-black/5">
                                 <div className="p-1 flex flex-col gap-0.5">
-                                    <button className="flex items-center gap-2 w-full px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors text-left">
+                                    <button className="flex items-center gap-2 w-full px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors text-left"
+                                    onClick={() => { setIsSettingOpen(true); setIsUserMenuOpen(false); }}>
                                         <Settings size={16} className="text-neutral-500" />
                                         <span>Impostazioni</span>
                                     </button>
@@ -193,7 +242,9 @@ const Sidebar = () => {
 
                                 <div className="p-1">
                                     <button
-                                        onClick={handleLogOut}
+                                        onClick={() => {
+                                            handleLogOut(convMenuOpen);
+                                        }}
                                         className="flex items-center gap-2 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors text-left"
                                     >
                                         <LogOut size={16} />

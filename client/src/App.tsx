@@ -1,4 +1,5 @@
 import { AuthProvider } from './context/AuthContext';
+import { AppProvider } from './context/AppContext';
 import { BrowserRouter, Route, Routes, Navigate } from 'react-router-dom';
 import AppLayout from './layouts/AppLayout';
 import ProtectedRoute from './components/ProtectedRoute'; // Importalo!
@@ -15,7 +16,8 @@ const Calendar = () => <div><h1>Calendar</h1></div>;
 function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <AppProvider>
+        <BrowserRouter>
         <Routes>
           {/* ROTTE PUBBLICHE */}
           <Route path='/' element={<LandingPage />} />
@@ -39,7 +41,8 @@ function App() {
           {/* 404 */}
           <Route path='*' element={<Navigate to="/404" />} />
         </Routes>
-      </BrowserRouter>
+        </BrowserRouter>
+      </AppProvider>
     </AuthProvider>
   );
 }

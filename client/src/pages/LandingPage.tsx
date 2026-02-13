@@ -1,4 +1,4 @@
-import React, {useState,useEffect} from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from 'framer-motion';
 import {
     Shield,
@@ -22,6 +22,7 @@ import {
     User
 } from 'lucide-react';
 import { Link } from "react-router-dom";
+import Tooltip from "../components/other/Tooltip";
 
 /* --- Fonts & Global Styles Injection --- */
 const GlobalStyles = () => (
@@ -29,7 +30,16 @@ const GlobalStyles = () => (
   
   `}</style>
 );
-
+const logos = [
+    { img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT7AvKmIcAF9QUdS96opCZooZxVua16crDwkg&s", provider: "Google" },
+    { img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTBdcgkdcDy5z4PYGx_kDJB1AvvC_x1pCBbbQ&s", provider: "OpenAI" },
+    { img: "https://www.silicon.fr/wp-content/uploads/2025/09/Anthropic-cet-anti-OpenAI-qui-veut-voir-choses-autrement-F.jpg", provider: "Anthropic" },
+    { img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ53JTsKmwYwqgN-wAkAUh9zuhuyTXNcppyTQ&s", provider: "Meta" },
+    { img: "https://img.icons8.com/color/512/nvidia.png", provider: "Nvidia" },
+    { img: "https://www-cdn.morphcast.com/wp-content/uploads/2025/01/deepseek.jpg.webp", provider: "Deepseek" },
+    { img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRNPKTChXqcgiZQIuBJqB143siOoH1jh7ADuQ&s", provider: "Qwen" },
+    { img: "https://upload.wikimedia.org/wikipedia/commons/2/25/XAI.svg", provider: "XAI" }
+];
 /* --- Utility Components --- */
 
 const FadeIn = ({ children, delay = 0, className = "" }: { children: React.ReactNode; delay?: number; className?: string }) => (
@@ -44,7 +54,7 @@ const FadeIn = ({ children, delay = 0, className = "" }: { children: React.React
     </motion.div>
 );
 
-const Button = ({ children, variant = "primary", className = "", icon = false }: { children: React.ReactNode; variant?: "primary" | "secondary" | "ghost"; className?: string; icon?: boolean })    => {
+const Button = ({ children, variant = "primary", className = "", icon = false }: { children: React.ReactNode; variant?: "primary" | "secondary" | "ghost"; className?: string; icon?: boolean }) => {
     const baseStyle = "px-6 py-3 rounded-md font-medium text-sm transition-all duration-200 flex items-center justify-center gap-2 border";
 
     const variants = {
@@ -322,7 +332,85 @@ const Features = () => {
         </section>
     );
 };
+const ModelSelection = () => {
+    return (
+        <section id="features" className="py-36 bg-white overflow-hidden">
+            {/* 1. Stile inline per l'animazione (puoi metterlo nel tuo CSS globale/tailwind config) */}
+            <style>{`
+                @keyframes infinite-scroll {
+                    from { transform: translateX(0); }
+                    to { transform: translateX(-50%); }
+                }
+                .animate-infinite-scroll {
+                    animation: infinite-scroll 25s linear infinite;
+                }
+            `}</style>
 
+            <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+
+                {/* COLONNA SINISTRA: Testo */}
+                <div className="flex flex-col justify-center">
+                    <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-6 tracking-tight">
+                        You choose the model, we deliver.
+                    </h2>
+                    <p className="text-neutral-500 text-lg max-w-2xl font-light">
+                        Scegli tra i modelli di ultima generazione come Google, OpenAI, Anthropic e molto altro. Noi ci occupiamo di connetterli in modo sicuro al tuo workspace.
+                    </p>
+                    <ul className="space-y-4 mt-8">
+                        {[
+                            "Scegli la tua api key, e imposta un budget",
+                            "Tieni sotto controllo i costi, niente sorprese",
+                            "Inizia a chattare in pochi secondi",
+                        ].map((item, i) => (
+                            <li key={i} className="flex items-center gap-3 text-neutral-800 font-medium">
+                                <div className="flex-shrink-0 w-6 h-6 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center text-emerald-600 text-xs font-bold shadow-sm">
+                                    {i + 1}
+                                </div>
+                                {item}
+                            </li>
+                        ))}
+                    </ul>
+                </div>
+
+                {/* COLONNA DESTRA: Carosello Infinito */}
+                <div id="models" className="relative w-full overflow-hidden">
+
+                    {/* Maschere laterali per l'effetto dissolvenza (opzionale ma consigliato) */}
+                    <div className="absolute top-0 left-0 z-10 w-20 h-full bg-gradient-to-r from-white to-transparent pointer-events-none"></div>
+                    <div className="absolute top-0 right-0 z-10 w-20 h-full bg-gradient-to-l from-white to-transparent pointer-events-none"></div>
+
+                    {/* Contenitore che scorre */}
+                    {/* Width max-content è fondamentale per far stare tutto su una riga */}
+                    <div className="flex w-max animate-infinite-scroll hover:[animation-play-state:paused]">
+
+                        {/* PRIMA SERIE DI LOGHI */}
+                        <div className="flex gap-4 px-4 py-12 items-center">
+                            {logos.map((src, index) => (
+                                <LogoCard key={`original-${index}`} src={src.img} provider={src.provider} />
+                            ))}
+                        </div>
+
+                        {/* SECONDA SERIE DI LOGHI (DUPLICATA) per il loop */}
+                        <div className="flex gap-4 px-4 py-12 items-center">
+                            {logos.map((src, index) => (
+                                <LogoCard key={`duplicate-${index}`} src={src.img} provider={src.provider} />
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    );
+};
+
+// Componente helper per le card (per pulizia codice)
+const LogoCard = ({ src, provider }: { src: string; provider: string }) => (
+    <div className="w-20 h-20 md:w-28 md:h-28 bg-white  flex items-center justify-center p-4 hover:scale-105 transition-transform duration-300">
+        <Tooltip content={`Clicca per saperne di più su ${provider}`} position="top">
+            <img src={src} alt={`${provider} Logo`} className="max-w-full max-h-full object-contain" />
+        </Tooltip>
+    </div>
+);
 const PrivacySection = () => {
     return (
         <section id="privacy" className="py-24 bg-neutral-50 border-t border-neutral-200 overflow-hidden relative">
@@ -331,7 +419,7 @@ const PrivacySection = () => {
                     <FadeIn>
                         <h2 className="text-3xl md:text-4xl font-bold text-neutral-900 mb-6 tracking-tight">
                             Non vogliamo i tuoi dati. <br />
-                            <span className="text-neutral-400">Davvero.</span>
+                            <span className="text-neutral-400">Davvero*</span>
                         </h2>
                         <p className="text-lg text-neutral-600 mb-8 leading-relaxed font-light">
                             La maggior parte delle AI impara da te. Noi no.
@@ -352,6 +440,12 @@ const PrivacySection = () => {
                                 </li>
                             ))}
                         </ul>
+                        <p className="text-xs text-neutral-400 mt-4 flex items-start gap-1">
+                            <span>*</span>
+                            <span>Solo i modelli <span className="font-mono underline">free</span> possono essere usati senza inserire una chiave API, e in questo caso i dati 
+                            vengono usati per migliorare quei modelli. Per tutti gli altri modelli, è necessario inserire la propria chiave API, e in quel caso i dati non 
+                            vengono usati per il training di nessun modello.</span>
+                        </p>
                     </FadeIn>
 
                     {/* Visual Animation Diagram */}
@@ -568,6 +662,7 @@ const LandingPage: React.FC = () => {
                 <Hero />
                 <TrustBar />
                 <Features />
+                <ModelSelection />
                 <PrivacySection />
                 <Pricing />
                 <Footer />

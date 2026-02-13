@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import getAllConversation from "../services/supabase/Conversation/getAllConversation";
 import { useAuth } from "./AuthContext";
 import getMessages from "../services/supabase/Conversation/getMessages";
-
+import { sendNormalMessage,sendStreamedMessage } from "../library/sendMessage";
 interface ChatContextType {
     inputValue: string;
     setInputValue: (val: string) => void;
@@ -17,6 +17,10 @@ interface ChatContextType {
     setMessageHistory: React.Dispatch<React.SetStateAction<any[]>>; // Per aggiornare la lista delle 
     model: any;
     setModel: React.Dispatch<React.SetStateAction<any>>;
+    isStreamTextEnabled: boolean;
+    setIsStreamTextEnabled: React.Dispatch<React.SetStateAction<boolean>>;
+    fetchConversations: () => Promise<void>;
+    
 }
 
 // 1. Creazione del Context
@@ -31,54 +35,21 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const [conversations, setConversations] = useState<any[]>([]); // Per tenere traccia delle conversazioni salvate
     const [areConversationsLoaded, setAreConversationsLoaded] = useState(false); // Per sapere quando abbiamo finito di caricare le conversazioni
     const [model, setModel] = useState<any>({ name: "Gemini 2.5 Flash Lite", provider: "Google",name_id: "google/gemini-2.5-flash-lite", cost_per_input_token: 0.10, cost_per_output_token: 0.40 });
+    const [isStreamTextEnabled, setIsStreamTextEnabled] = useState(false);
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
     const clearInput = () => setInputValue("");
+   
     const sendMessage = async (message: string) => {
-        if (!message.trim()) return;
-
-        // 1. Aggiungiamo subito il messaggio dell'utente alla UI per feedback immediato
-        const userMsg = { role: 'user' as const, content: message };
-        setMessageHistory((prev) => [...prev, userMsg]);
-
-        console.log("Invio messaggio:", message);
-        clearInput();
-
         try {
-            setLoading(true);
-            // 2. Mappiamo la storia per il backend (cambiamo 'bot' in 'assistant')
-            const historyForBackend = messageHistory.map(msg => ({
-                role: msg.role === 'bot' ? 'assistant' : 'user',
-                content: msg.content
-            }));
-            if(model.cost_per_input_token+model.cost_per_output_token>2){
-                alert("This model has a cost of " + (model.cost_per_input_token + model.cost_per_output_token) + "$ per 1 million tokens. Consider upgrading your plan or selecting a different model to avoid unexpected costs.");
-                return
+            if (isStreamTextEnabled) {
+                await sendStreamedMessage(message, setMessageHistory, clearInput, setLoading, model, messageHistory);
+            } else {
+                await sendNormalMessage(message, setMessageHistory, clearInput, setLoading, model, messageHistory);
             }
-            const response = await fetch("http://localhost:3000/api/gemini/chat", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    message,
-                    history: historyForBackend, // Inviamo la storia corretta
-                    modelName: model.name_id,
-                }),
-            });
-
-            if (!response.ok) throw new Error(`Errore: ${response.statusText}`);
-
-            const data = await response.json();
-
-            // 3. Aggiungiamo solo la risposta del bot (l'utente è già stato aggiunto sopra)
-            setMessageHistory((prev) => [
-                ...prev,
-                { role: 'bot', content: data.text, usage: data.usage },
-            ]);
         } catch (error) {
-            console.error("Errore durante l'invio:", error);
-            // Opzionale: aggiungi un messaggio di errore nella chat
-        } finally {
-            setLoading(false);
+            console.error("Errore durante l'invio del messaggio:", error);
         }
-    };
+    }
     const loadConversation = async (conversationId: string) => {
         try {
             setLoading(true);
@@ -120,9 +91,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
             setLoading(false);
         }
     };
-
-    useEffect(() => {
-        const fetchConversations = async () => {
+    const fetchConversations = async () => {
             try {
                 if (!user?.id) return;
                 const data = await getAllConversation(user?.id);
@@ -136,6 +105,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
                 setAreConversationsLoaded(true);
             }
         }
+    useEffect(() => {
+        
 
         if (user?.id) {
             fetchConversations();
@@ -152,7 +123,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     };
     return (
         <ChatContext.Provider value={{ inputValue, setInputValue, clearInput, sendMessage, messageHistory, loading, conversations, loadConversation, userOwnsConversation, 
-        areConversationsLoaded, setMessageHistory, model, setModel }}>
+        areConversationsLoaded, setMessageHistory, model, setModel, isStreamTextEnabled, setIsStreamTextEnabled, fetchConversations }}>
             {children}
         </ChatContext.Provider>
     );
