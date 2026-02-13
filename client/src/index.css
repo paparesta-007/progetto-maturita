@@ -3,7 +3,7 @@
 
 
 .f-poppins {
-  font-family: 'Poppins', sans-serif;
+    font-family: 'Poppins', sans-serif;
 }
 
 .renderChat ul,
@@ -20,14 +20,16 @@
     margin-bottom: 6px;
     /* spazio tra gli elementi della lista */
     line-height: 1.6;
-    
+
     /* migliora leggibilità */
 }
-.renderChat ul li{
+
+.renderChat ul li {
     list-style-type: disc;
-    
+
 }
-.renderChat ol li{
+
+.renderChat ol li {
     list-style-type: decimal;
 }
 
@@ -49,7 +51,7 @@
 
 .renderChat h1 {
     font-size: 1.8rem !important;
-    
+
     font-weight: 500;
 }
 
@@ -115,6 +117,7 @@
 .renderChat blockquote {
     @apply border-l-2 border-[var(--border-primary)] pl-2;
 }
+
 .renderChat summary {
     padding: 8px;
     border: 1px solid lightgray;
@@ -124,15 +127,14 @@
     font-weight: 500;
     color: var(--color-primary);
 }
-.renderChat code {
-    color: red;
-    background-color: white;
+
+pre {
     border: 1px solid lightgray;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-family: monospace;
 }
 
-.renderChat pre code {
-    color: red;
+code {
+    color: rgb(53, 83, 182);
+    background-color: white;
+    border-radius: 5px;
+    padding: 2px 4px;
 }

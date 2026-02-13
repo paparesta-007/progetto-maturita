@@ -11,6 +11,7 @@ import PromptStarter from "../components/PromptStarter";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useRef, useState } from "react"
+import { getHighlighter } from "../library/shikiHighlighter";
 // 1. Crea un componente "interno" che gestisce l'UI
 // Questo componente sarà FIGLIO del Provider, quindi può usare useChat
 const ChatContent = () => {
@@ -31,7 +32,9 @@ const ChatContent = () => {
             messagesEndRef.current.scrollIntoView({ behavior: "auto" });
         }
     };
-
+    marked.setOptions({
+        async: true
+    })
     useEffect(() => {
         scrollToBottom();
     }, [messageHistory, loading]);
@@ -58,16 +61,92 @@ const ChatContent = () => {
     }, [conversationId, areConversationsLoaded, user?.id]); // Aggiunto areConversationsLoaded alle dipendenze
 
     const MarkdownRenderer = ({ text }: { text: string }) => {
-        const safe = text || "";
-        const withLatex = convertLatexInMarkdown(safe);
-        const rawHtml = marked.parse(withLatex) as string;
-        // SANITIZZAZIONE
-        const cleanHtml = DOMPurify.sanitize(rawHtml);
+        const [htmlContent, setHtmlContent] = useState<string>("");
+        const [isLoading, setIsLoading] = useState<boolean>(true);
+
+        useEffect(() => {
+            const processMarkdown = async () => {
+                const safe = text || "";
+
+                try {
+                    const highlighter = await getHighlighter();
+                    // 1. Otteniamo i token DAL TESTO GREZZO (senza aver ancora toccato il LaTeX)
+                    const tokens = marked.lexer(safe);
+
+                    const walkTokens = async (tokenList: any[]) => {
+                        for (const token of tokenList) {
+                            // CASO A: È un blocco di codice (```js ...)
+                            if (token.type === 'code') {
+                                // Se non c'è un linguaggio specificato (es. solo ```), usa 'text' o quello che preferisci
+                                const rawLang = token.lang || 'text';
+                                const isSupported = highlighter.getLoadedLanguages().includes(rawLang);
+                                const lang = isSupported ? rawLang : 'text';
+
+                                // Generiamo l'HTML
+                                const highlightedCode = highlighter.codeToHtml(token.text, {
+                                    lang: lang,
+                                    theme: 'github-light'
+                                });
+
+                                // TRUCCO: Se vogliamo aggiungere una nostra classe personalizzata 
+                                // per i blocchi senza linguaggio o per tutti i blocchi
+                                let finalHtml = highlightedCode;
+                                if (!token.lang) {
+                                    // Avvolgiamo il risultato di Shiki in un div con la nostra classe
+                                    finalHtml = `<div class="" style="color:red">${highlightedCode}</div>`;
+                                }
+
+                                token.type = 'html';
+                                token.text = finalHtml;
+                            }
+                            // CASO B: È codice inline (`const x = $...`)
+                            else if (token.type === 'codespan') {
+                                // Non facciamo nulla, lasciamo che marked lo renderizzi come <code>
+                                // ma NON passiamo convertLatexInMarkdown qui.
+                            }
+                            // CASO C: È testo normale, titoli, liste, ecc.
+                            else {
+                                // Applichiamo LaTeX SOLO qui
+                                if (token.text && typeof token.text === 'string' && token.type !== 'html') {
+                                    token.text = convertLatexInMarkdown(token.text);
+                                }
+
+                                // Se ha dei sotto-token (es. grassetto dentro una lista), processali
+                                if (token.tokens) await walkTokens(token.tokens);
+                            }
+
+                            // Gestione liste
+                            if (token.items) await walkTokens(token.items);
+                        }
+                    };
+
+                    await walkTokens(tokens);
+
+                    const rawHtml = marked.parser(tokens);
+                    const cleanHtml = DOMPurify.sanitize(rawHtml, {
+                        ADD_TAGS: ['pre', 'code', 'span'],
+                        ADD_ATTR: ['style', 'class', 'data-language'],
+                    });
+
+                    setHtmlContent(cleanHtml);
+                } catch (error) {
+                    console.error("Errore rendering:", error);
+                    setHtmlContent(DOMPurify.sanitize(safe));
+                } finally {
+                    setIsLoading(false);
+                }
+            };
+
+            processMarkdown();
+        }, [text]);
+        if (isLoading && !htmlContent) {
+            return <div className="renderChat loading">...</div>;
+        }
 
         return (
             <div
                 className="renderChat"
-                dangerouslySetInnerHTML={{ __html: cleanHtml }}
+                dangerouslySetInnerHTML={{ __html: htmlContent }}
             />
         );
     };
@@ -97,7 +176,7 @@ const ChatContent = () => {
                 <PromptStarter />
             )}
             <button className="fixed bottom-4 right-4  text-neutral-700 border border-neutral-300 px-4 py-2 rounded"
-            onClick={() => {setMessageHistory([]); }}> {/* Pulsante per resettare le conversazioni e tornare alla home */}
+                onClick={() => { setMessageHistory([]); }}> {/* Pulsante per resettare le conversazioni e tornare alla home */}
                 Home
             </button>
             {/* FOOTER / TEXTBAR */}
