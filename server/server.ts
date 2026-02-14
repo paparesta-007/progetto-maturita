@@ -194,7 +194,7 @@ const messages = [
         ];
 
         const { text, usage } = await generateText({
-            model: openrouter(modelName),
+            model: openrouter(selectedModel),
             messages: messages,
             system: systemPrompt,
         });
@@ -210,8 +210,8 @@ app.post("/api/gemini/getTitleConversation", async function (req: express.Reques
 
 
         const { text, usage } = await generateText({
-            model: openrouter("mistralai/ministral-3b-2512"),
-            prompt: `Genera un titolo breve (massimo 8 parole) e descrittivo per una conversazione basata su questo messaggio iniziale: "${message}". Il titolo dovrebbe catturare l'essenza del messaggio in modo accattivante e informativo. 
+            model: openrouter("mistralai/mistral-nemo"),
+            prompt: `Genera un titolo breve e coinciso (massimo 8 parole) e descrittivo per una conversazione basata su questo messaggio iniziale: "${message}". Il titolo dovrebbe catturare l'essenza del messaggio in modo accattivante e informativo. 
             EVITA ASSOLUTAMENTE USO MARKDOWN, SOLO PLAIN TEXT, e NON includere virgolette o simboli speciali. Il titolo deve essere adatto per essere visualizzato in una lista di conversazioni.`,
         });
 
@@ -219,134 +219,29 @@ app.post("/api/gemini/getTitleConversation", async function (req: express.Reques
     } catch (error) {
         next(error);
     }
-});
-app.post("/api/streamingOutput", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
+});app.post("/api/streamingOutput", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
     try {
         const { message, history, modelName } = req.body;
         const selectedModel = modelName ? modelName : "gemini-2.5-flash-lite";
 
-        const systemPrompt = `You are ${selectedModel}, an expert AI assistant dedicated to providing precise, high-quality technical and academic responses.
+        // Funzione per il delay
+        const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-**Core Objective:**
-Answer the user's request with maximum clarity, accuracy, and structural organization. Prioritize the "Answer First" principle — provide the direct solution or conclusion before background details, unless asked otherwise.
-
----
-
-## STRICT FORMATTING RULES (MANDATORY — VIOLATIONS CAUSE RENDERING FAILURES)
-
-### 1. MATHEMATICAL TYPESETTING (CRITICAL — READ CAREFULLY)
-
-**Allowed delimiters (ONLY these two):**
-- Inline math: \`$...$\`  — Example: \`$E = mc^2$\`
-- Block math: \`$$...$$\` — Example: \`$$\\int_{a}^{b} x^2 \\, dx$$\`
-
-**ABSOLUTELY PROHIBITED delimiters (NEVER use these):**
-- \\( ... \\) — FORBIDDEN
-- \\[ ... \\] — FORBIDDEN
-- \\begin{equation} ... \\end{equation} outside of $$ blocks — FORBIDDEN
-- Bare LaTeX without dollar-sign wrappers — FORBIDDEN
-
-**Rules to prevent rendering conflicts:**
-- A dollar sign \`$\` used as currency (e.g., $100) must NEVER appear adjacent to another \`$\`. Write "100 USD" or "100 dollari" instead.
-- NEVER place math expressions inside Markdown table cells. If you need a table with math, present the data as a definition list or bullet list instead. Tables with \`|\` and LaTeX \`|\` (e.g., absolute value, set notation) WILL break.
-- Inside $$...$$ blocks, use \\lvert ... \\rvert instead of | for absolute values.
-- Inside $$...$$ blocks, use \\mid instead of | for "such that" or divisibility.
-- Inside $$...$$ blocks, use \\| instead of || for norms.
-- NEVER use raw underscores _ outside of math or code contexts. In prose, use **bold** instead of _italic_ to avoid conflicts with LaTeX subscripts.
-- NEVER start a line with $$ and end it on a different line that also has unrelated $$. Each block equation must be self-contained:
-
-CORRECT:
-$$
-E = mc^2
-$$
-
-INCORRECT:
-$$ E = mc^2
-some text
-$$
-
-### 2. CODE BLOCKS (CRITICAL)
-
-- Use standard fenced code blocks with triple backticks and a language identifier:
-
-\`\`\`python
-def hello():
-    print("Hello")
-\`\`\`
-
-- ALWAYS specify the language after the opening backticks (python, javascript, typescript, bash, sql, json, html, css, text, etc.).
-- If unsure of the language, use \`text\`.
-- NEVER nest fenced code blocks (triple backticks inside triple backticks). This breaks the parser.
-- NEVER place fenced code blocks inside HTML tags like <details>. The Markdown parser cannot handle this correctly.
-- Format file names, paths, variables, and functions with single backticks: \`main.py\`, \`useState()\`.
-- NEVER use $...$ or $$...$$ inside code blocks. Code blocks are literal text, not math.
-
-### 3. STRUCTURAL ORGANIZATION
-
-For complex responses with supporting details (derivations, dependency lists, historical context):
-
-- Use Markdown headers (##, ###) and bullet/numbered lists for organization.
-- Do NOT use HTML <details> or <summary> tags. They conflict with the rendering pipeline.
-- Instead, organize content with clear headers:
-  - Put the main answer under a "## Solution" or "## Answer" header.
-  - Put derivations under "### Derivation" or "### Step-by-step".
-  - Put supplementary info under "### Additional Notes".
-
-### 4. TABLES
-
-- Use Markdown tables ONLY for simple textual/numeric data.
-- NEVER put LaTeX math ($...$) inside table cells.
-- NEVER put code blocks inside table cells.
-- If you need to present mathematical data in tabular form, use a bullet list or definition list:
-
-CORRECT (list format for math data):
-- **x = 1**: $f(1) = 3$
-- **x = 2**: $f(2) = 7$
-
-INCORRECT (math in table):
-| x | f(x) |
-|---|------|
-| $1$ | $3$ |
-
-### 5. GENERAL FORMATTING
-
-- Use Markdown headers, bold, and lists for structure.
-- Use **bold** for emphasis. Avoid _underscores for italics_ (conflicts with LaTeX).
-- Use *single asterisks* if italics are truly needed.
-- Do not use HTML tags except for line breaks (<br>) if absolutely necessary.
-- NEVER produce raw HTML tables (<table>, <tr>, <td>). Use Markdown tables only.
-- Avoid deeply nested lists (more than 3 levels).
-
----
-
-## RESPONSE PROTOCOL
-
-1. **Analyze**: Break down the request into components.
-2. **Language**: Respond in the same language as the user's message.
-3. **Assumptions**: If ambiguous, state assumptions before proceeding.
-4. **Execute**: Generate the response following ALL rules above. No filler phrases. Provide the answer directly.`;
+        const systemPrompt = getSystemPrompt({ selectedModel });
         const messages = [
             ...history,
             { role: 'user', content: message }
         ];
 
-        // 1. Configurazione OpenRouter con Header (FONDAMENTALE per il logging corretto)
-        // Assicurati che l'istanza 'openrouter' sia configurata o passata qui con gli header custom
-        // Se usi createOpenRouter, passali lì. Se non puoi, molti proxy li accettano così:
         const result = streamText({
             model: openrouter(selectedModel),
             messages: messages,
             system: systemPrompt,
-            // Aggiungiamo callback per debuggare il problema
             onFinish: ({ usage, text }) => {
-                // SE vedi questo log, la chiamata è finita correttamente.
-                // SE NON lo vedi, il client ha staccato la spina prima.
-                console.log("Stream completato. Usage:", usage);
-                console.log("Token usati:", usage.totalTokens);
+                console.log("Generazione LLM completata. Usage:", usage);
             },
             headers: {
-                // Questi header aiutano OpenRouter a tracciare la chiamata al tuo account
-                "HTTP-Referer": "https://tuo-sito.com",
+                "HTTP-Referer": "http:localhost:3000",
                 "X-Title": "NomeTuaApp"
             }
         });
@@ -354,17 +249,25 @@ INCORRECT (math in table):
         // 2. Imposta gli header della risposta
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
         res.setHeader('Transfer-Encoding', 'chunked');
-
-        // Header opzionali per evitare buffering dei proxy (Nginx, Vercel, ecc.)
         res.setHeader('X-Accel-Buffering', 'no');
 
-        // 3. Pipe alla risposta
-        result.pipeTextStreamToResponse(res);
+        // 3. Gestione manuale dello stream con Delay
+        // Invece di result.pipeTextStreamToResponse(res), facciamo un ciclo for await:
+        try {
+            for await (const textPart of result.textStream) {
+                res.write(textPart);
+                // Aggiungi il ritardo di 5ms (o più se necessario)
+                await delay(11); 
+            }
+        } catch (streamError) {
+            console.error("Errore durante lo streaming:", streamError);
+        } finally {
+            // Chiudi la risposta alla fine del ciclo
+            res.end();
+        }
 
-        // 4. Gestione disconnessione client (Opzionale ma utile per debug)
+        // 4. Gestione disconnessione client
         res.on('close', () => {
-            // Questo scatta se l'utente chiude la connessione
-            // Se scatta PRIMA del console.log di onFinish, hai trovato il colpevole.
             console.log("Client disconnesso dalla stream.");
         });
 

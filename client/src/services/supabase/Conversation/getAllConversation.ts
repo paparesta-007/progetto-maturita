@@ -8,7 +8,7 @@ const getAllConversation = async (userId: string) => {
             .select('*')
             .eq('user_id', userId)
             .order('created_at', { ascending: false })
-            .limit(10); 
+            .limit(20); 
             
 
         if (error) {
