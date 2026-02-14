@@ -1,12 +1,10 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
 import getAllConversation from "../services/supabase/Conversation/getAllConversation";
 import { useAuth } from "./AuthContext";
 import getMessages from "../services/supabase/Conversation/getMessages";
 import { sendNormalMessage,sendStreamedMessage } from "../library/sendMessage";
+import createMessage from "../services/supabase/Conversation/createMessage";
 interface ChatContextType {
-    inputValue: string;
-    setInputValue: (val: string) => void;
-    clearInput: () => void;
     sendMessage: (message: string) => void;
     messageHistory: { role: 'user' | 'bot'; content: string; usage?: any }[];
     loading: boolean;
@@ -20,6 +18,8 @@ interface ChatContextType {
     isStreamTextEnabled: boolean;
     setIsStreamTextEnabled: React.Dispatch<React.SetStateAction<boolean>>;
     fetchConversations: () => Promise<void>;
+    currentConversationId: string | null;
+    setCurrentConversationId: React.Dispatch<React.SetStateAction<string | null>>;
     
 }
 
@@ -29,28 +29,31 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 // 2. Provider
 export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const { user } = useAuth();
-    const [inputValue, setInputValue] = useState("");
+    // const [inputValue, setInputValue] = useState("");
     const [messageHistory, setMessageHistory] = useState<{ role: 'user' | 'bot'; content: string; usage?: any }[]>([]); // Per tenere traccia della cronologia dei messaggi
     const [loading, setLoading] = useState(false);
     const [conversations, setConversations] = useState<any[]>([]); // Per tenere traccia delle conversazioni salvate
     const [areConversationsLoaded, setAreConversationsLoaded] = useState(false); // Per sapere quando abbiamo finito di caricare le conversazioni
     const [model, setModel] = useState<any>({ name: "Gemini 2.5 Flash Lite", provider: "Google",name_id: "google/gemini-2.5-flash-lite", cost_per_input_token: 0.10, cost_per_output_token: 0.40 });
     const [isStreamTextEnabled, setIsStreamTextEnabled] = useState(false);
-    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-    const clearInput = () => setInputValue("");
+    const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+    
    
-    const sendMessage = async (message: string) => {
+    const sendMessage = useCallback(async (message: string) => {
         try {
             if (isStreamTextEnabled) {
-                await sendStreamedMessage(message, setMessageHistory, clearInput, setLoading, model, messageHistory);
+                await sendStreamedMessage(message, setMessageHistory, setLoading, model, messageHistory);
+                
             } else {
-                await sendNormalMessage(message, setMessageHistory, clearInput, setLoading, model, messageHistory);
+                await sendNormalMessage(message, setMessageHistory, setLoading, model, messageHistory, currentConversationId);
+                
             }
         } catch (error) {
             console.error("Errore durante l'invio del messaggio:", error);
         }
-    }
-    const loadConversation = async (conversationId: string) => {
+    }, [isStreamTextEnabled, model, messageHistory, currentConversationId]);
+    
+    const loadConversation = useCallback(async (conversationId: string) => {
         try {
             setLoading(true);
 
@@ -90,8 +93,9 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         } finally {
             setLoading(false);
         }
-    };
-    const fetchConversations = async () => {
+    }, []);
+    
+    const fetchConversations = useCallback(async () => {
             try {
                 if (!user?.id) return;
                 const data = await getAllConversation(user?.id);
@@ -104,7 +108,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
                 // NUOVO: Segnaliamo che il caricamento è finito (anche se vuoto o errore)
                 setAreConversationsLoaded(true);
             }
-        }
+        }, [user?.id]);
+        
     useEffect(() => {
         
 
@@ -115,15 +120,49 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
             // Di solito qui si aspetta l'auth, ma per sicurezza:
             setAreConversationsLoaded(false);
         }
-    }, [user?.id]);
+    }, [user?.id, fetchConversations]);
 
-    const userOwnsConversation = (conversationId: string) => {
+    const userOwnsConversation = useCallback((conversationId: string) => {
         // Se la lista è vuota, controlliamo se è perché non abbiamo ancora caricato
         return conversations.some(conv => conv.id === conversationId);
-    };
+    }, [conversations]);
+    
+    const contextValue = useMemo(() => ({ 
+        
+        
+        sendMessage, 
+        messageHistory, 
+        loading, 
+        conversations, 
+        loadConversation, 
+        userOwnsConversation, 
+        areConversationsLoaded, 
+        setMessageHistory, 
+        model, 
+        setModel, 
+        isStreamTextEnabled, 
+        setIsStreamTextEnabled, 
+        fetchConversations,
+        currentConversationId, 
+        setCurrentConversationId 
+    }), [
+        
+        
+        sendMessage, 
+        messageHistory, 
+        loading, 
+        conversations, 
+        loadConversation, 
+        userOwnsConversation, 
+        areConversationsLoaded, 
+        model, 
+        isStreamTextEnabled, 
+        fetchConversations,
+        currentConversationId
+    ]);
+    
     return (
-        <ChatContext.Provider value={{ inputValue, setInputValue, clearInput, sendMessage, messageHistory, loading, conversations, loadConversation, userOwnsConversation, 
-        areConversationsLoaded, setMessageHistory, model, setModel, isStreamTextEnabled, setIsStreamTextEnabled, fetchConversations }}>
+        <ChatContext.Provider value={contextValue}>
             {children}
         </ChatContext.Provider>
     );

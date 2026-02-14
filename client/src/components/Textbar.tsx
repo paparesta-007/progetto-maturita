@@ -12,7 +12,7 @@ interface FileWithPreview {
 }
 
 const Textbar = () => {
-    const { inputValue, setInputValue, clearInput, sendMessage, model, setModel, isStreamTextEnabled, setIsStreamTextEnabled } = useChat();
+    const { clearInput, sendMessage, model, setModel, isStreamTextEnabled, setIsStreamTextEnabled } = useChat();
     const [files, setFiles] = useState<FileWithPreview[]>([]);
     const [isGroundingActive, setIsGroundingActive] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -20,6 +20,7 @@ const Textbar = () => {
     const [filteredModels, setFilteredModels] = useState<any[]>([]);
     const [isSelectPopupOpen, setIsSelectPopupOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
+    const [inputValue, setInputValue] = useState("");
     const provider = [
         { name: "Google", img: "https://upload.wikimedia.org/wikipedia/commons/thumb/8/8f/Google-gemini-icon.svg/960px-Google-gemini-icon.svg.png" },
         { name: "OpenAI", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQS3PwERLLNB9XKFpeMgAMPxl5VvN3HRJnXQQ&s" },
@@ -288,4 +289,4 @@ const Textbar = () => {
     );
 };
 
-export default Textbar;
+export default React.memo(Textbar);

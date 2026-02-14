@@ -24,7 +24,7 @@ import { useApp } from "../context/AppContext";
 const Sidebar = () => {
     // Mock user per evitare crash se il context non è pronto
     const { user } = useAuth() || { user: { displayName: "Matteo Rossi", photoURL: null } };
-    const { conversations, setMessageHistory, fetchConversations } = useChat();
+    const { conversations, setMessageHistory, fetchConversations, setCurrentConversationId } = useChat();
     const [userDetails, setUserDetails] = useState<{ full_name: string | null, birthday: string | null } | null>(null);
     const [searchFocused, setSearchFocused] = useState(false);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
@@ -107,6 +107,7 @@ const Sidebar = () => {
                     onClick={() => {
                         setMessageHistory([]); // Resetta la cronologia dei messaggi
                         navigate('/app/chat/'); // Naviga alla pagina di nuova chat
+                        setCurrentConversationId(null); // Resetta l'ID della conversazione corrente
                     }
                     }>
                     <div className="flex items-center gap-2 font-medium"

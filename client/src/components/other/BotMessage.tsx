@@ -1,8 +1,11 @@
 
 import React from "react";
 import Tooltip from "./Tooltip";
-
+import { useEffect } from "react";
 const BotMessage = ({ i, children, usage }: { i: number; children: React.ReactNode; usage?: any }) => {
+    useEffect(() => {
+        console.log(`BotMessage ${i} rendered with usage:`, usage);
+    }, [i, usage]);
     return (
         <div key={i} className="p-4 flex flex-row gap-3 items-start justify-start my-4">
             <div className="flex-shrink-0">
