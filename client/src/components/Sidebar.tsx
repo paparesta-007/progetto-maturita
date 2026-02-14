@@ -32,6 +32,7 @@ const Sidebar = () => {
     const [convMenuOpen, setConvMenuOpen] = useState<string | null>(null); // Per tenere traccia di quale menu di conversazione è aperto
     const menuRef = useRef<HTMLDivElement>(null);
     const {setIsSettingOpen} = useApp();
+    
     useEffect(() => {
         const fetchUserDetails = async () => {
             const data = await selectUserDetails(user.id);
@@ -78,6 +79,9 @@ const Sidebar = () => {
             if (!user || !user.id) throw new Error("User ID non disponibile");
             let a = await deleteConversation(user.id, conversationId!);
             fetchConversations();
+            navigate("/app"); // Redirect alla home dopo l'eliminazione
+            setMessageHistory([]); // Resetta la cronologia dei messaggi dopo l'eliminazione
+            
 
         } catch (error) {
             alert("Errore durante l'eliminazione della conversazione. Riprova.");

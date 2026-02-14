@@ -5,6 +5,7 @@ import { useChat } from "../context/ChatContext";
 import { motion, AnimatePresence } from "framer-motion";
 import getModels from "../services/openRouter/getModels";
 import { img } from "framer-motion/client";
+import { useAuth } from "../context/AuthContext";
 interface FileWithPreview {
     originalFile: File;
     name: string;
@@ -12,7 +13,8 @@ interface FileWithPreview {
 }
 
 const Textbar = () => {
-    const { clearInput, sendMessage, model, setModel, isStreamTextEnabled, setIsStreamTextEnabled } = useChat();
+    const {  sendMessage, model, setModel, isStreamTextEnabled, setIsStreamTextEnabled } = useChat();
+    const {user}=useAuth()
     const [files, setFiles] = useState<FileWithPreview[]>([]);
     const [isGroundingActive, setIsGroundingActive] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -31,7 +33,7 @@ const Textbar = () => {
     const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            sendMessage(inputValue);
+            sendMessage(inputValue, user?.id);
             setInputValue("");
         }
     };
@@ -140,7 +142,7 @@ const Textbar = () => {
                 <button className="bg-neutral-900 hover:bg-neutral-800 text-white p-2.5 rounded-xl transition-all 
                 active:scale-95 flex items-center justify-center"
                     onClick={() => {
-                        sendMessage(inputValue);
+                        sendMessage(inputValue,user?.id);
                         setInputValue("");
                     }}
 

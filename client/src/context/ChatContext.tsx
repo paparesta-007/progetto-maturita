@@ -4,6 +4,7 @@ import { useAuth } from "./AuthContext";
 import getMessages from "../services/supabase/Conversation/getMessages";
 import { sendNormalMessage,sendStreamedMessage } from "../library/sendMessage";
 import createMessage from "../services/supabase/Conversation/createMessage";
+import { useNavigate } from "react-router-dom";
 interface ChatContextType {
     sendMessage: (message: string) => void;
     messageHistory: { role: 'user' | 'bot'; content: string; usage?: any }[];
@@ -37,7 +38,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const [model, setModel] = useState<any>({ name: "Gemini 2.5 Flash Lite", provider: "Google",name_id: "google/gemini-2.5-flash-lite", cost_per_input_token: 0.10, cost_per_output_token: 0.40 });
     const [isStreamTextEnabled, setIsStreamTextEnabled] = useState(false);
     const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
-    
+    const navigate = useNavigate();
    
     const sendMessage = useCallback(async (message: string) => {
         try {
@@ -45,7 +46,18 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
                 await sendStreamedMessage(message, setMessageHistory, setLoading, model, messageHistory);
                 
             } else {
-                await sendNormalMessage(message, setMessageHistory, setLoading, model, messageHistory, currentConversationId);
+                await sendNormalMessage(
+                message,
+                setMessageHistory,
+                setLoading,
+                model,
+                messageHistory,
+                currentConversationId,
+                user?.id, // Assicurati di passare user.id
+                setCurrentConversationId, // <--- NUOVO
+                fetchConversations ,       // <--- NUOVO
+                navigate
+            );
                 
             }
         } catch (error) {

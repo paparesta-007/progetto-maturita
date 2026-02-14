@@ -29,6 +29,10 @@ const BotMessage = ({ i, children, usage }: { i: number; children: React.ReactNo
                         <b className="block text-neutral-900">Tokens used:</b>
                         <span className="text-neutral-500 font-normal">Total: {usage?.totalTokens || 0}</span>
                         <br />
+                        <span className="text-neutral-500 font-normal">Prompt tokens: {usage?.inputTokens || 0}</span>
+                        <br />
+                        <span className="text-neutral-500 font-normal">Output tokens: {usage?.outputTokens || 0}</span>
+                        <br />
                         <span className="text-neutral-500 font-normal">Reasoning tokens: {usage?.reasoningTokens || 0}</span>
                     </div>}>
                     {usage ? `${usage.totalTokens} tokens` : "IA response"}</Tooltip>

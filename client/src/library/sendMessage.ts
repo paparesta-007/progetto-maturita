@@ -1,34 +1,37 @@
+import createConversation from "../services/supabase/Conversation/createConversation";
 import createMessage from "../services/supabase/Conversation/createMessage";
+import {type NavigateFunction } from "react-router-dom";
 export const sendNormalMessage = async (
-    message: string, 
-    setMessageHistory: React.Dispatch<React.SetStateAction<any[]>>, 
-    setLoading: React.Dispatch<React.SetStateAction<boolean>>, 
-    model: any, 
+    message: string,
+    setMessageHistory: React.Dispatch<React.SetStateAction<any[]>>,
+    setLoading: React.Dispatch<React.SetStateAction<boolean>>,
+    model: any,
     messageHistory: any[],
-    currentConversationId: string | null
+    currentConversationId: string | null,
+    userId: string | undefined, // userId è importante
+    // AGGIUNGI QUESTI DUE PARAMETRI:
+    setCurrentConversationId: React.Dispatch<React.SetStateAction<string | null>>,
+    fetchConversations: () => Promise<void>,
+    navigate:NavigateFunction
 ) => {
     if (!message.trim()) return;
 
-    // 1. Aggiornamento UI Immediato (Messaggio Utente)
-    // Nota: Non salviamo ancora su DB, aspettiamo che la chiamata API abbia successo
+    // 1. Aggiornamento UI Immediato
     setMessageHistory((prev) => [...prev, { role: 'user', content: message }]);
 
     try {
         setLoading(true);
 
-        // 2. Preparazione History per il Backend
+        // 2. Preparazione History
         const historyForBackend = messageHistory.map(msg => ({
             role: msg.role === 'bot' ? 'assistant' : 'user',
             content: msg.content
         }));
 
-        // Controllo Costi
-        if ((model.cost_per_input_token + model.cost_per_output_token) > 2) {
-             // Gestisci errore o alert
-             return; 
-        }
+        // Controllo costi...
+        if ((model.cost_per_input_token + model.cost_per_output_token) > 2) return;
 
-        // 3. Chiamata API
+        // 3. Chiamata API Chat
         const response = await fetch("http://localhost:3000/api/gemini/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -42,8 +45,7 @@ export const sendNormalMessage = async (
         if (!response.ok) throw new Error(`Errore API: ${response.statusText}`);
 
         // 4. Ricezione Dati
-        const data = await response.json(); 
-        // data è tipo: { text: "Ciao!", usage: { ... } }
+        const data = await response.json();
 
         // 5. Aggiornamento UI (Messaggio Bot)
         setMessageHistory((prev) => [
@@ -51,20 +53,50 @@ export const sendNormalMessage = async (
             { role: 'bot', content: data.text, usage: data.usage },
         ]);
 
-        // 6. Salvataggio su Supabase (CORREZIONE CRUCIALE)
-        // Usiamo 'data.text' e 'data.usage' direttamente, NON messageHistory!
-        if (currentConversationId) {
-            console.log("Salvataggio su DB per:", currentConversationId);
-            
-            const responseToSave = {
-                sender: message,      // Il messaggio che l'utente ha appena mandato
-                content: data.text,   // La risposta appena arrivata dall'API
-                usage: data.usage     // L'usage appena arrivato dall'API
-            };
+        // PREPARIAMO L'OGGETTO DA SALVARE (serve in entrambi i casi)
+        const messagePayload = {
+            sender: message,
+            content: data.text,
+            usage: data.usage
+        };
 
-            await createMessage(responseToSave, currentConversationId);
-        } else {
-            console.warn("currentConversationId è null, salvataggio saltato.");
+        // 6. Logica di Salvataggio
+        if (currentConversationId && userId) {
+            // --- CASO A: CONVERSAZIONE ESISTENTE ---
+            console.log("Salvataggio su conversazione esistente:", currentConversationId);
+            await createMessage(messagePayload, currentConversationId);
+
+        } else if (userId) {
+            // --- CASO B: NUOVA CONVERSAZIONE ---
+            console.log("Generazione titolo e creazione nuova conversazione...");
+
+            // A. Ottieni il titolo
+            const titleRes = await fetch("http://localhost:3000/api/gemini/getTitleConversation", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message }),
+            });
+            
+            // CORREZIONE 1: Il backend restituisce 'text', non 'title'
+            const { text: newTitle } = await titleRes.json();
+            
+            // B. Crea la conversazione su Supabase
+            const newConvData = await createConversation(userId, newTitle || "New Chat");
+            
+            if (newConvData && newConvData.length > 0) {
+                const newConvId = newConvData[0].id; 
+
+                // 3. Salva messaggio nella nuova conversazione
+                await createMessage(messagePayload, newConvId);
+
+                // 4. Aggiorna stato e lista
+                setCurrentConversationId(newConvId);
+                await fetchConversations();
+
+                // // 5. CAMBIA ROTTA (REDIRECT)
+                // console.log("Navigazione verso:", `/app/chat/${newConvId}`);
+                // navigate(`/chat/${newConvId}`); // <--- QUESTA È LA RIGA MAGICA
+            }
         }
 
     } catch (error) {

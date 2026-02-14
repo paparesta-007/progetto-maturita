@@ -204,6 +204,22 @@ const messages = [
         next(error);
     }
 });
+app.post("/api/gemini/getTitleConversation", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
+    try {
+        const { message } = req.body;// Funzione che genera un prompt di sistema dettagliato e specifico per il modello selezionato. Definita in client/src/library/systemPrompt.ts
+
+
+        const { text, usage } = await generateText({
+            model: openrouter("mistralai/ministral-3b-2512"),
+            prompt: `Genera un titolo breve (massimo 8 parole) e descrittivo per una conversazione basata su questo messaggio iniziale: "${message}". Il titolo dovrebbe catturare l'essenza del messaggio in modo accattivante e informativo. 
+            EVITA ASSOLUTAMENTE USO MARKDOWN, SOLO PLAIN TEXT, e NON includere virgolette o simboli speciali. Il titolo deve essere adatto per essere visualizzato in una lista di conversazioni.`,
+        });
+
+        res.send({ text, usage });
+    } catch (error) {
+        next(error);
+    }
+});
 app.post("/api/streamingOutput", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
     try {
         const { message, history, modelName } = req.body;
