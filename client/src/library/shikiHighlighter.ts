@@ -10,7 +10,7 @@ export async function getHighlighter(): Promise<Highlighter> {
     // entrambe riceveranno la stessa Promise
     if (!highlighterPromise) {
         highlighterPromise = createHighlighter({
-            themes: ['github-light'],
+            themes: ['github-light', 'ayu-dark'], // Assicurati di avere questi temi disponibili
             langs: [
                 'javascript', 'typescript', 'python', 'bash', 'json',
                 'html', 'css', 'sql', 'text', 'java', 'c', 'cpp', 'go', 'ruby', 'php', 'rust', 'kotlin', 'swift',

@@ -1,12 +1,16 @@
-import React, { useEffect, useState, type ChangeEvent } from "react";
+import React, { useEffect } from "react";
 import { FloppyDiskIcon } from "@phosphor-icons/react";
 import { useAuth } from "../../context/AuthContext";
 import updateInstructions from "../../services/supabase/User/updateInstructions";
 import getInstructions from "../../services/supabase/User/getInstructions";
 
 const InstructionsSettingPage: React.FC = () => {
-    const { user, experimental, systemPrompt, personalInfo, tone, allowedCustomInstructions, setAllowedCustomInstructions, setTone, setSystemPrompt, setPersonalInfo, loading } = useAuth()
+    const { 
+        user, theme, tone, allowedCustomInstructions, systemPrompt, personalInfo,
+        setAllowedCustomInstructions, setTone, setSystemPrompt, setPersonalInfo, loading 
+    } = useAuth();
 
+    const isDark = theme === 'dark';
 
     useEffect(() => {
         if (!user) return;
@@ -20,137 +24,131 @@ const InstructionsSettingPage: React.FC = () => {
             }
         }
         fetchInstructions();
-    }, [])
+    }, [user]);
+
     const handleSend = async () => {
-        const json = {
-            allowedCustomInstructions: allowedCustomInstructions,
-            tone: tone,
-            systemPrompt: systemPrompt,
-            personalInfo: personalInfo
-        }
-        console.log("JSON da inviare:", json);
-        await updateInstructions(user!.id, json)
+        const json = { allowedCustomInstructions, tone, systemPrompt, personalInfo };
+        await updateInstructions(user!.id, json);
     }
+
+    const styles = {
+        title: `text-xl font-semibold ${isDark ? "text-white" : "text-neutral-900"}`,
+        label: `text-sm font-medium ${isDark ? "text-neutral-200" : "text-neutral-700"}`,
+        description: `text-xs ${isDark ? "text-neutral-500" : "text-neutral-400"}`,
+        input: `w-full border rounded-lg px-3 py-2 text-sm outline-none transition-all ${
+            isDark 
+                ? "bg-neutral-900 border-neutral-700 text-white focus:ring-neutral-700" 
+                : "bg-white border-neutral-300 text-neutral-900 focus:ring-neutral-200"
+        }`,
+        footer: `p-4 border-t shrink-0 flex justify-end transition-colors ${
+            isDark ? "border-neutral-800" : "border-neutral-200 bg-white"
+        }`,
+        section: `space-y-6 py-4 transition-opacity ${!allowedCustomInstructions ? "opacity-30 pointer-events-none" : ""}`
+    };
+
+    if (loading) return (
+        <div className="flex items-center justify-center h-64">
+            <div className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 ${isDark ? "border-white" : "border-neutral-900"}`}></div>
+        </div>
+    );
+
     return (
-        <>
-            {loading ?
-                <div className="flex items-center justify-center h-64">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-neutral-900"></div>
-                </div>
-                :
-                <div className="flex flex-col h-full relative px-6">
-                    {/* HEADER: Titolo fisso in alto */}
-                    <div className="pt-6 pb-2 shrink-0">
-                        <h2 className="text-xl font-semibold text-neutral-900">
-                            Impostazioni Istruzioni
-                        </h2>
+        /* Il container principale occupa tutta l'altezza disponibile */
+        <div className="flex flex-col h-full overflow-hidden">
+            
+            {/* Header: statico */}
+            <div className="pt-6 pb-2 px-6 shrink-0">
+                <h2 className={styles.title}>Impostazioni Istruzioni</h2>
+            </div>
 
+            {/* Area Contenuto: SCROLLABILE */}
+            <div className="flex-1 overflow-y-auto px-6 custom-scrollbar">
+                
+                {/* Toggle Switch Principal */}
+                <div className={`flex justify-between items-center py-4 border-b ${isDark ? "border-neutral-800" : "border-neutral-200"}`}>
+                    <div>
+                        <label className={styles.label}>Abilita Istruzioni Personalizzate</label>
+                        <p className={styles.description}>L'IA rispetterà le tue istruzioni personalizzate.</p>
                     </div>
-                    <div className="flex justify-between items-center py-2 mt-2 border-b border-neutral-200 pb-4">
-                        <div className="flex gap-3 items-start ">
+                    <ToggleSwitch active={allowedCustomInstructions} isDark={isDark} onClick={() => setAllowedCustomInstructions(!allowedCustomInstructions)} />
+                </div>
 
-                            <label className="text-sm font-medium text-neutral-700 cursor-pointer" onClick={() => setAllowedCustomInstructions(!allowedCustomInstructions)}>
-                                Abilita Istruzioni Personalizzate
-                                <p className="text-xs text-neutral-400 font-normal mt-0.5">L'IA rispetterà le tue istruzioni personalizzate.</p>
-                            </label>
+                <div className={styles.section}>
+                    {/* Tone Selector */}
+                    <div className="flex flex-col gap-2">
+                        <label className={styles.label}>Profilo Comportamentale</label>
+                        <select value={tone} onChange={(e) => setTone(e.target.value)} className={styles.input}>
+                            <option value="default">Professionale (Default)</option>
+                            <option value="student">Studente / Didattico</option>
+                            <option value="direct">Schietto e Conciso</option>
+                            <option value="creative">Creativo</option>
+                        </select>
+                    </div>
+
+                    {/* System Prompt */}
+                    <div className="flex flex-col gap-2">
+                        <label className={styles.label}>Prompt di Sistema</label>
+                        <textarea 
+                            className={`${styles.input} min-h-[120px]`}
+                            placeholder="Esempio: Rispondi sempre citando le fonti..."
+                            value={systemPrompt}
+                            onChange={(e) => setSystemPrompt(e.target.value)}
+                        />
+                    </div>
+
+                    {/* Personal Info */}
+                    <div className="space-y-4 pb-8"> {/* pb-8 per dare respiro prima della fine dello scroll */}
+                        <h3 className={styles.label}>Su di te</h3>
+                        <div className="grid grid-cols-1 gap-4">
+                            <InputGroup isDark={isDark} label="Come ti chiami?" placeholder="Es. Mario Rossi" value={personalInfo.name} onChange={(v:any) => setPersonalInfo({ ...personalInfo, name: v })} />
+                            <InputGroup isDark={isDark} label="Di cosa ti occupi?" placeholder="Es. Sviluppatore React" value={personalInfo.job} onChange={(v:any) => setPersonalInfo({ ...personalInfo, job: v })} />
                         </div>
-                        <ToggleSwitch active={allowedCustomInstructions} onClick={() => setAllowedCustomInstructions(!allowedCustomInstructions)} />
-                    </div>
-                    {/* BODY: Area scrollabile */}
-                    <div className={`flex-1 overflow-y-auto  py-4 space-y-6 ${!allowedCustomInstructions ? "opacity-40 pointer-events-none " : ""}`}>
-
-                        {/* Sezione 1: Tono e Stile */}
-                        <section>
-                            <div className="flex flex-col gap-3">
-                                <label className="text-sm font-medium text-neutral-700">
-                                    Profilo Comportamentale
-                                </label>
-                                <select
-                                    value={tone}
-                                    onChange={(e) => setTone(e.target.value)}
-                                    className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-neutral-200 outline-none transition-all"
-                                >
-                                    <option value="default">Professionale (Default)</option>
-                                    <option value="student">Studente / Didattico</option>
-                                    <option value="direct">Schietto e Conciso</option>
-                                    <option value="creative">Creativo</option>
-                                </select>
-                            </div>
-
-                            <div className="mt-4">
-                                <label className="text-sm font-medium text-neutral-700 mb-2 block">
-                                    Prompt di Sistema
-                                </label>
-                                <textarea
-                                    className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm min-h-[100px] resize-y focus:ring-2 focus:ring-neutral-200 outline-none transition-all"
-                                    placeholder="Esempio: Rispondi sempre citando le fonti..."
-
-                                    onChange={(e) => setSystemPrompt(e.target.value)}
-                                    value={systemPrompt}
-                                />
-                                <p className="text-xs text-neutral-400 mt-1">
-                                    Queste istruzioni verranno aggiunte a ogni conversazione.
-                                </p>
-                            </div>
-                        </section>
-
-                        <hr className="border-neutral-200" />
-
-                        {/* Sezione 2: Informazioni Personali (Memoria) */}
-                        <section className="space-y-4">
-                            <div>
-                                <h3 className="text-base font-medium text-neutral-900">Su di te</h3>
-                                <p className="text-xs text-neutral-500">
-                                    Nessuna di queste informazioni verrà condivisa
-                                </p>
-                            </div>
-
-                            <div className="grid grid-cols-1 gap-4">
-                                <InputGroup label="Come ti chiami?" placeholder="Es. Mario Rossi" value={personalInfo.name} onChange={(e) => setPersonalInfo({ ...personalInfo, name: e.target.value })} />
-                                <InputGroup label="Di cosa ti occupi?" placeholder="Es. Sviluppatore React" value={personalInfo.job} onChange={(e) => setPersonalInfo({ ...personalInfo, job: e.target.value })} />
-                                <InputGroup label="Hobby o interessi?" placeholder="Es. Trekking, Fotografia" value={personalInfo.hobbies} onChange={(e) => setPersonalInfo({ ...personalInfo, hobbies: e.target.value })} />
-                            </div>
-                        </section>
-
-                        {/* Spazio extra per evitare che l'ultimo input sia attaccato al bordo */}
-                        <div className="h-4"></div>
-                    </div>
-
-                    {/* FOOTER: Azioni (Opzionale, ma consigliato per UX) */}
-                    <div className="p-4 border-t border-neutral-200 bg-white shrink-0 flex justify-end">
-                        <button className="flex items-center gap-2 bg-neutral-900 hover:bg-neutral-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm"
-                            onClick={handleSend}>
-                            <FloppyDiskIcon size={18} />
-                            Salva Modifiche
-                        </button>
                     </div>
                 </div>
+            </div>
 
-            }
-        </>
-    )
+            {/* Footer: SEMPRE IN FONDO */}
+            <div className={styles.footer}>
+                <button onClick={handleSend} className={`flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all shadow-sm ${
+                    isDark ? "bg-white text-neutral-900 hover:bg-neutral-200" : "bg-neutral-900 text-white hover:bg-neutral-800"
+                }`}>
+                    <FloppyDiskIcon size={18} />
+                    Salva Modifiche
+                </button>
+            </div>
+        </div>
+    );
 };
-const InputGroup = ({ label, placeholder, value, onChange }: { label: string, placeholder: string, value?: string, onChange?: (e: React.ChangeEvent<HTMLInputElement>) => void }) => (
+
+// --- Helper Components con supporto Dark ---
+
+const InputGroup = ({ label, placeholder, value, onChange, isDark }: any) => (
     <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-neutral-600 uppercase tracking-wide">
+        <label className={`text-xs font-semibold uppercase tracking-wide ${isDark ? "text-neutral-500" : "text-neutral-400"}`}>
             {label}
         </label>
         <input
             type="text"
-            className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-neutral-200 outline-none transition-all placeholder:text-neutral-400"
-            placeholder={placeholder}
             value={value}
-            onChange={onChange}
+            onChange={(e) => onChange(e.target.value)}
+            className={`w-full border rounded-lg px-3 py-2 text-sm outline-none transition-all ${
+                isDark ? "bg-neutral-900 border-neutral-700 text-white" : "bg-white border-neutral-300 text-neutral-900"
+            }`}
+            placeholder={placeholder}
         />
     </div>
 );
-// Helper per lo Switch UI
-const ToggleSwitch = ({ active, onClick }: { active: boolean, onClick: () => void }) => (
+
+const ToggleSwitch = ({ active, onClick, isDark }: { active: boolean, onClick: () => void, isDark: boolean }) => (
     <button
         onClick={onClick}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-neutral-400 focus:ring-offset-2 ${active ? 'bg-neutral-900' : 'bg-neutral-200'}`}
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+            active ? (isDark ? 'bg-white' : 'bg-neutral-900') : (isDark ? 'bg-neutral-700' : 'bg-neutral-200')
+        }`}
     >
-        <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition transition-transform ${active ? 'translate-x-6' : 'translate-x-1'}`} />
+        <span className={`inline-block h-4 w-4 transform rounded-full transition-transform ${
+            active ? 'translate-x-6' : 'translate-x-1'
+        } ${isDark && active ? 'bg-neutral-900' : 'bg-white'}`} />
     </button>
 );
 

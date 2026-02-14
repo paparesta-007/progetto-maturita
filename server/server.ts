@@ -201,6 +201,10 @@ app.post("/api/completion/chat", async function (req: express.Request, res: expr
             model: openrouter(selectedModel),
             messages: messages,
             system: systemPrompt,
+            headers: {
+                "HTTP-Referer": "http:localhost:5173",
+                "X-Title": "NomeTuaApp"
+            }
         });
 
         res.send({ text, usage });
@@ -217,13 +221,18 @@ app.post("/api/gemini/getTitleConversation", async function (req: express.Reques
             model: openrouter("mistralai/mistral-nemo"),
             prompt: `Genera un titolo breve e coinciso (massimo 8 parole) e descrittivo per una conversazione basata su questo messaggio iniziale: "${message}". Il titolo dovrebbe catturare l'essenza del messaggio in modo accattivante e informativo. 
             EVITA ASSOLUTAMENTE USO MARKDOWN, SOLO PLAIN TEXT, e NON includere virgolette o simboli speciali. Il titolo deve essere adatto per essere visualizzato in una lista di conversazioni.`,
+            headers: {
+                "HTTP-Referer": "http:localhost:5173",
+                "X-Title": "NomeTuaApp"
+            }
         });
 
         res.send({ text, usage });
     } catch (error) {
         next(error);
     }
-}); app.post("/api/streamingOutput", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
+}); 
+app.post("/api/streamingOutput", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
     try {
         const { message, history, modelName } = req.body;
         const selectedModel = modelName ? modelName : "gemini-2.5-flash-lite";

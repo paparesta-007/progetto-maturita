@@ -6,7 +6,8 @@ import { useAuth } from "../../context/AuthContext";
 import getModels from "../../services/openRouter/getModels";
 const ModelPopup = React.forwardRef<HTMLDivElement>((_, modalRef) => {
     const { model, setModel } = useChat();
-
+    const { theme } = useAuth();
+    const isDark = theme === 'dark';
     const [filteredModels, setFilteredModels] = useState<any[]>([]);
     const [isSelectPopupOpen, setIsSelectPopupOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
@@ -36,6 +37,7 @@ const ModelPopup = React.forwardRef<HTMLDivElement>((_, modalRef) => {
         fetchModels();
 
     }, []);
+    
     const internalRef = useRef<HTMLDivElement>(null);
     const containerRef = (modalRef as React.MutableRefObject<HTMLDivElement>) || internalRef;
 
@@ -55,7 +57,9 @@ const ModelPopup = React.forwardRef<HTMLDivElement>((_, modalRef) => {
             {/* Selezione Modello Styled */}
             <div className="relative" ref={modalRef}>
                 <div
-                    className="flex items-center hover:bg-neutral-100 p-1.5 gap-1 select-none rounded cursor-pointer"
+                    className={`flex items-center hover:bg-neutral-100 p-1.5 gap-1 select-none rounded cursor-pointer ${
+                        isDark ? "hover:bg-neutral-800" : ""
+                    }`}
                     onClick={() => setIsSelectPopupOpen((prev) => !prev)}
                 >
                     <span className="text-neutral-500 flex items-center">{model ? model.name : "Select a model"}</span>
@@ -76,9 +80,13 @@ const ModelPopup = React.forwardRef<HTMLDivElement>((_, modalRef) => {
                             animate={{ opacity: 1, y: -4, scale: 1 }}
                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
                             transition={{ duration: 0.15, ease: "easeOut" }}
-                            className="absolute bottom-full left-0 mb-2 w-100 h-100 px-2 overflow-auto bg-white border border-neutral-200 shadow-xl rounded-xl z-50"
+                            className={`absolute bottom-full left-0 mb-2 w-100 h-100 px-2 overflow-auto ${
+                                isDark ? "bg-neutral-900 border-neutral-800 shadow-black/40" : "bg-white border border-neutral-200 shadow-xl"
+                            } rounded-xl z-50`}
                         >
-                            <div className="sticky top-0 bg-white border-b border-neutral-200 px-3 py-2">
+                            <div className={`sticky top-0 ${
+                                isDark ? "bg-neutral-900 border-neutral-800" : "bg-white border-b border-neutral-200"
+                            } px-3 py-2`}>
                                 <div className="flex items-center gap-2 text-neutral-400 rounded-lg px-0 py-2">
                                     <label htmlFor="model-search"> <MagnifyingGlassIcon size={18} /></label>
                                     <input
@@ -111,8 +119,9 @@ const ModelPopup = React.forwardRef<HTMLDivElement>((_, modalRef) => {
                                         {Object.entries(groupedModels).map(([providerName, modelsInGroup]) => (
                                             <div key={providerName} className="w-full">
                                                 {/* Header del Provider: occupa tutta la riga */}
-                                                <div className="flex items-center gap-2 mb-3 border-b justify-between border-neutral-100 pb-1">
-
+                                                <div className={`flex items-center gap-2 mb-3 border-b justify-between ${
+                                                    isDark ? "border-neutral-800" : "border-neutral-100"
+                                                } pb-1`}>
                                                     <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
                                                         {providerName}
                                                     </span>
@@ -126,7 +135,9 @@ const ModelPopup = React.forwardRef<HTMLDivElement>((_, modalRef) => {
                                                     {modelsInGroup.map((model, index) => (
                                                         <div
                                                             key={model.model_id || index}
-                                                            className="group px-3 py-2 flex gap-3 rounded-lg border border-transparent hover:border-neutral-200 hover:bg-white hover:shadow-sm cursor-pointer transition-all items-center"
+                                                            className={`group px-3 py-2 flex gap-3 rounded-lg border border-transparent hover:border-neutral-200  hover:shadow-sm cursor-pointer transition-all items-center ${
+                                                                isDark ? "hover:bg-neutral-800" : "hover:bg-white"
+                                                            }`}
                                                             onClick={() => {
                                                                 setModel(model);
                                                                 setIsSelectPopupOpen(false);
@@ -134,7 +145,7 @@ const ModelPopup = React.forwardRef<HTMLDivElement>((_, modalRef) => {
                                                         >
                                                             <div className="flex flex-row justify-between flex-1 overflow-hidden">
 
-                                                                <span className="text-sm font-semibold text-neutral-800 truncate  transition-colors">
+                                                                <span className={`text-sm font-semibold truncate  transition-colors ${isDark ? "text-neutral-200" : "text-neutral-800"}`}>
                                                                     <img
                                                                         src={provider.find(p => p.name === model.provider)?.img ?? "https://images.rawpixel.com/image_png_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDIzLTAxL3JtNjA5LXNvbGlkaWNvbi13LTAwNS1wLnBuZw.png"}
                                                                         className="w-4 h-4 inline mr-1"
@@ -143,7 +154,7 @@ const ModelPopup = React.forwardRef<HTMLDivElement>((_, modalRef) => {
                                                                     {model.name.length > 30 ? model.name.substring(0, 30) + '...' : model.name}
                                                                 </span>
                                                                 <div className="flex items-center gap-2">
-                                                                    <p className="text-[13px] text-neutral-400 font-mono">
+                                                                    <p className={`text-[13px] font-mono ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>
                                                                         {(Number(model.cost_per_input_token) + Number(model.cost_per_output_token)).toFixed(2)}$/1M
                                                                     </p>
 
