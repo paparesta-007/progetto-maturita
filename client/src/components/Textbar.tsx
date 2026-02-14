@@ -29,11 +29,12 @@ const Textbar = () => {
         { name: "Anthropic", img: "https://images.yourstory.com/cs/images/companies/anthropicresearchlogo-1699260041449.jpg?fm=auto&ar=1%3A1&mode=fill&fill=solid&fill-color=fff&format=auto&w=1920&q=75" },
         { name: "Mistral AI", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9tjl3-up4Vemom1ZYPTnWkg5dXOXFtPQDBw&s" },
         { name: "NVIDIA", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQvkRmsL7mAkXKS19fL0lQAMsck4AjD1WZy4Q&s" },
+        { name: "Qwen", img: "https://opencv.org/wp-content/uploads/2025/01/MIhJKlK5yVR3axxgE7_gHL-rsKjliShJKd3asUqg5KDdEsdOGut-9mCW4Ti1x7i2y8zCkxeZHQFR00sQg6BfYA.png" },
     ]
     const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            sendMessage(inputValue, user?.id);
+            sendMessage(inputValue);
             setInputValue("");
         }
     };
@@ -323,7 +324,7 @@ const Textbar = () => {
                         }
                     >
                         <button className="text-sm text-neutral-400 ">
-                            {model.cost_per_input_token + model.cost_per_output_token}$/1M
+                            {(Number(model.cost_per_input_token) + Number(model.cost_per_output_token)).toFixed(2)}$/1M
                         </button>
                     </Tooltip>
                 </div>

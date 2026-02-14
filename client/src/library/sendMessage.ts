@@ -48,23 +48,26 @@ export const sendNormalMessage = async (
         const data = await response.json();
 
         // 5. Aggiornamento UI (Messaggio Bot)
+        const modelLabel = model?.name ?? model?.name_id ?? "Unknown";
+
         setMessageHistory((prev) => [
             ...prev,
-            { role: 'bot', content: data.text, usage: data.usage },
+            { role: 'bot', content: data.text, usage: data.usage, model: modelLabel },
         ]);
 
         // PREPARIAMO L'OGGETTO DA SALVARE (serve in entrambi i casi)
         const messagePayload = {
             sender: message,
             content: data.text,
-            usage: data.usage
+            usage: data.usage,
+            model: model
         };
 
         // 6. Logica di Salvataggio
         if (currentConversationId && userId) {
             // --- CASO A: CONVERSAZIONE ESISTENTE ---
             console.log("Salvataggio su conversazione esistente:", currentConversationId);
-            await createMessage(messagePayload, currentConversationId);
+            await createMessage(messagePayload, currentConversationId, model);
 
         } else if (userId) {
             // --- CASO B: NUOVA CONVERSAZIONE ---
@@ -87,7 +90,7 @@ export const sendNormalMessage = async (
                 const newConvId = newConvData[0].id; 
 
                 // 3. Salva messaggio nella nuova conversazione
-                await createMessage(messagePayload, newConvId);
+                await createMessage(messagePayload, newConvId,model);
 
                 // 4. Aggiorna stato e lista
                 setCurrentConversationId(newConvId);
@@ -114,7 +117,8 @@ export const sendStreamedMessage = async (message: string, setMessageHistory: Re
     const userMsg = { role: 'user' as const, content: message };
 
     // 2. Aggiungi subito un messaggio "bot" vuoto (placeholder) che riempiremo
-    const botMsgPlaceholder = { role: 'bot' as const, content: "" };
+    const modelLabel = model?.name ?? model?.name_id ?? "Unknown";
+    const botMsgPlaceholder = { role: 'bot' as const, content: "", model: modelLabel };
 
     setMessageHistory((prev) => [...prev, userMsg, botMsgPlaceholder]);
 

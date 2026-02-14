@@ -2,10 +2,8 @@
 import React from "react";
 import Tooltip from "./Tooltip";
 import { useEffect } from "react";
-const BotMessage = ({ i, children, usage }: { i: number; children: React.ReactNode; usage?: any }) => {
-    useEffect(() => {
-        console.log(`BotMessage ${i} rendered with usage:`, usage);
-    }, [i, usage]);
+const BotMessage = ({ i, children, usage, model }: { i: number; children: React.ReactNode; usage?: any; model?: any }) => {
+ 
     return (
         <div key={i} className="p-4 flex flex-row gap-3 items-start justify-start my-4">
             <div className="flex-shrink-0">
@@ -26,6 +24,7 @@ const BotMessage = ({ i, children, usage }: { i: number; children: React.ReactNo
                 <div className="text-xs text-neutral-400 mt-1">
                     <Tooltip content={
                         <div className="text-left">
+                        <span className="text-neutral-500 font-normal">Model: {model || "Unknown"}</span>
                         <b className="block text-neutral-900">Tokens used:</b>
                         <span className="text-neutral-500 font-normal">Total: {usage?.totalTokens || 0}</span>
                         <br />

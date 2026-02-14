@@ -167,6 +167,7 @@ app.post("/api/gemini/chat/stream", async function (req: express.Request, res: e
         const { textStream } = streamText({
             model: google(selectedModel as any),
             messages: messages,
+            
         });
 
         for await (const textPart of textStream) {

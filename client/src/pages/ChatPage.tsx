@@ -79,7 +79,7 @@ const ChatContent = () => {
                                 if (msg.role === 'user') {
                                     return <UserMessage key={index} i={index} htmlContent={msg.content}></UserMessage>;
                                 } else {
-                                    return <BotMessage key={index} i={index} usage={msg.usage}><MarkdownRender text={msg.content} /></BotMessage>;
+                                    return <BotMessage key={index} i={index} usage={msg.usage} model={msg.model}><MarkdownRender text={msg.content} /></BotMessage>;
                                 }
                             })}
                             {loading && (
