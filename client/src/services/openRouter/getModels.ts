@@ -1,7 +1,7 @@
 import supabase from "../../library/supabaseclient";
 const getModels = async () => {
     try {
-        const response = await supabase.from("models").select("*");
+        const response = await supabase.from("models").select("*").order("provider", { ascending: true }).order("cost_per_output_token", { ascending: true });
         if (response.error) {
             console.error("Error fetching models:", response.error);
             return []; // Return an empty array on error
