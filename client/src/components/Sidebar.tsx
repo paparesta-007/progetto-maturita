@@ -24,14 +24,15 @@ import { useApp } from "../context/AppContext";
 const Sidebar = () => {
     // Mock user per evitare crash se il context non è pronto
     const { user } = useAuth() || { user: { displayName: "Matteo Rossi", photoURL: null } };
-    const { conversations, setMessageHistory, fetchConversations } = useChat();
+    const { conversations, setMessageHistory, fetchConversations, setCurrentConversationId, setCurrentConversationName,currentConversationName } = useChat();
     const [userDetails, setUserDetails] = useState<{ full_name: string | null, birthday: string | null } | null>(null);
     const [searchFocused, setSearchFocused] = useState(false);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const navigate = useNavigate();
     const [convMenuOpen, setConvMenuOpen] = useState<string | null>(null); // Per tenere traccia di quale menu di conversazione è aperto
     const menuRef = useRef<HTMLDivElement>(null);
-    const {setIsSettingOpen} = useApp();
+    const { setIsSettingOpen } = useApp();
+
     useEffect(() => {
         const fetchUserDetails = async () => {
             const data = await selectUserDetails(user.id);
@@ -41,6 +42,16 @@ const Sidebar = () => {
         fetchUserDetails();
         console.log("Conversazioni nel contesto:", conversations);
     }, [])
+    useEffect(() => {
+        const currentPathId = window.location.pathname.split("/").pop();
+        const activeConv = conversations.find((c: any) => c.id === currentPathId);
+
+        if (activeConv) {
+            setCurrentConversationName(activeConv.title || "Chat senza titolo");
+        } else if (window.location.pathname === "/app/chat/") {
+            setCurrentConversationName(null); // Reset se siamo su Nuova Chat
+        }
+    }, [conversations, window.location.pathname]);
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
@@ -78,6 +89,10 @@ const Sidebar = () => {
             if (!user || !user.id) throw new Error("User ID non disponibile");
             let a = await deleteConversation(user.id, conversationId!);
             fetchConversations();
+            navigate("/app"); // Redirect alla home dopo l'eliminazione
+            setMessageHistory([]); // Resetta la cronologia dei messaggi dopo l'eliminazione
+            setCurrentConversationId(null); // Resetta l'ID della conversazione corrente
+
 
         } catch (error) {
             alert("Errore durante l'eliminazione della conversazione. Riprova.");
@@ -107,6 +122,7 @@ const Sidebar = () => {
                     onClick={() => {
                         setMessageHistory([]); // Resetta la cronologia dei messaggi
                         navigate('/app/chat/'); // Naviga alla pagina di nuova chat
+                        setCurrentConversationId(null); // Resetta l'ID della conversazione corrente
                     }
                     }>
                     <div className="flex items-center gap-2 font-medium"
@@ -159,7 +175,7 @@ const Sidebar = () => {
             </div>
 
             {/* --- History Section (Scrollable) --- */}
-            <div className="flex-1 overflow-y-auto px-3 py-2 scrollbar-thin scrollbar-thumb-neutral-200 scrollbar-track-transparent hover:scrollbar-thumb-neutral-300">
+            <div className="flex-1 overflow-y-auto px-3 scrollbar-thin scrollbar-thumb-neutral-200 scrollbar-track-transparent hover:scrollbar-thumb-neutral-300">
                 <p className="px-2 text-[10px] font-bold text-neutral-400 uppercase tracking-wider mb-3 sticky top-0 bg-neutral-50 z-10 py-1">
                     Cronologia
                 </p>
@@ -185,7 +201,7 @@ const Sidebar = () => {
                                 </button>
 
                                 <AnimatePresence>
-                                    {convMenuOpen === conv.id && ( 
+                                    {convMenuOpen === conv.id && (
                                         <motion.div
                                             initial={{ opacity: 0, scale: 0.95, y: -10 }}
                                             animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -228,7 +244,7 @@ const Sidebar = () => {
                             <div className="bg-white rounded-xl shadow-xl border border-neutral-200 overflow-hidden ring-1 ring-black/5">
                                 <div className="p-1 flex flex-col gap-0.5">
                                     <button className="flex items-center gap-2 w-full px-3 py-2 text-sm text-neutral-700 hover:bg-neutral-100 rounded-lg transition-colors text-left"
-                                    onClick={() => { setIsSettingOpen(true); setIsUserMenuOpen(false); }}>
+                                        onClick={() => { setIsSettingOpen(true); setIsUserMenuOpen(false); }}>
                                         <Settings size={16} className="text-neutral-500" />
                                         <span>Impostazioni</span>
                                     </button>

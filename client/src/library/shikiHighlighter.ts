@@ -1,17 +1,26 @@
-// library/shikiHighlighter.ts
 import { createHighlighter, type Highlighter } from 'shiki';
 
 let highlighterInstance: Highlighter | null = null;
+let highlighterPromise: Promise<Highlighter> | null = null;
 
-// library/shikiHighlighter.ts
-export const getHighlighter = async () => {
+export async function getHighlighter(): Promise<Highlighter> {
     if (highlighterInstance) return highlighterInstance;
 
-    highlighterInstance = await createHighlighter({
-        // Aggiungi qui tutti i temi che vuoi rendere disponibili
-        themes: ['vitesse-dark', 'github-light', 'monokai'], 
-        langs: ['javascript', 'typescript', 'python','tsx', 'jsx', 'python', 'html', 'css', 'json', 'bash', 'java', 'csharp', 'cpp', 'ruby', 'go', 'rust', 'kotlin', 'swift', 'php', 'sql', 'yaml', 'markdown', 'dockerfile', 'powershell', 'graphql', 'lua', 'scala', 'perl', 'haskell', 'elixir', 'clojure', 'fsharp', 'erlang'], // Aggiungi qui tutte le lingue che vuoi supportare
-    });
+    // Evita race condition: se due chiamate arrivano contemporaneamente,
+    // entrambe riceveranno la stessa Promise
+    if (!highlighterPromise) {
+        highlighterPromise = createHighlighter({
+            themes: ['github-light'],
+            langs: [
+                'javascript', 'typescript', 'python', 'bash', 'json',
+                'html', 'css', 'sql', 'text', 'java', 'c', 'cpp', 'go', 'ruby', 'php', 'rust', 'kotlin', 'swift',
+                'markdown', 'yaml', 'dockerfile', 'powershell', 'graphql', 'lua', 'scala', 'perl', 'r', 'objective-c',
+            ]
+        }).then(h => {
+            highlighterInstance = h;
+            return h;
+        });
+    }
 
-    return highlighterInstance;
-};
+    return highlighterPromise;
+}
