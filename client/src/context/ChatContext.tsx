@@ -2,12 +2,12 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import getAllConversation from "../services/supabase/Conversation/getAllConversation";
 import { useAuth } from "./AuthContext";
 import getMessages from "../services/supabase/Conversation/getMessages";
-import { sendNormalMessage,sendStreamedMessage } from "../library/sendMessage";
+import { sendNormalMessage, sendStreamedMessage } from "../library/sendMessage";
 import createMessage from "../services/supabase/Conversation/createMessage";
 import { useNavigate } from "react-router-dom";
 interface ChatContextType {
     sendMessage: (message: string) => void;
-    messageHistory: { role: 'user' | 'bot'; content: string; usage?: any }[];
+    messageHistory: { role: 'user' | 'bot'; content: string; usage?: any, model?: string }[];
     loading: boolean;
     conversations: any[]; // Per tenere traccia delle conversazioni salvate
     loadConversation: (conversationId: string) => Promise<void>;
@@ -30,43 +30,47 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 // 2. Provider
 export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
-    const { user } = useAuth();
+    const { user ,systemPrompt, personalInfo, tone, allowedCustomInstructions} = useAuth();
     // const [inputValue, setInputValue] = useState("");
-    const [messageHistory, setMessageHistory] = useState<{ role: 'user' | 'bot'; content: string; usage?: any }[]>([]); // Per tenere traccia della cronologia dei messaggi
+    const [messageHistory, setMessageHistory] = useState<{ role: 'user' | 'bot'; content: string; usage?: any, model: string }[]>([]); // Per tenere traccia della cronologia dei messaggi
     const [loading, setLoading] = useState(false);
     const [conversations, setConversations] = useState<any[]>([]); // Per tenere traccia delle conversazioni salvate
     const [areConversationsLoaded, setAreConversationsLoaded] = useState(false); // Per sapere quando abbiamo finito di caricare le conversazioni
-    const [model, setModel] = useState<any>({ name: "Gemini 2.5 Flash Lite", provider: "Google",name_id: "google/gemini-2.5-flash-lite", cost_per_input_token: 0.10, cost_per_output_token: 0.40 });
+    const [model, setModel] = useState<any>({ name: "Gemini 2.5 Flash Lite", provider: "Google", name_id: "google/gemini-2.5-flash-lite", cost_per_input_token: 0.10, cost_per_output_token: 0.40 });
     const [isStreamTextEnabled, setIsStreamTextEnabled] = useState(false);
     const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
     const [currentConversationName, setCurrentConversationName] = useState<string | null>(null);
     const navigate = useNavigate();
-   
     const sendMessage = useCallback(async (message: string) => {
         try {
             if (isStreamTextEnabled) {
                 await sendStreamedMessage(message, setMessageHistory, setLoading, model, messageHistory);
-                
             } else {
                 await sendNormalMessage(
-                message,
-                setMessageHistory,
-                setLoading,
-                model,
-                messageHistory,
-                currentConversationId,
-                user?.id, // Assicurati di passare user.id
-                setCurrentConversationId, // <--- NUOVO
-                fetchConversations ,       // <--- NUOVO
-                navigate
-            );
-                
+                    message,
+                    setMessageHistory,
+                    setLoading,
+                    model,
+                    messageHistory,
+                    currentConversationId,
+                    user?.id,
+                    setCurrentConversationId,
+                    fetchConversations,
+                    navigate,
+                    // NUOVO ARGOMENTO: Passiamo i valori dal Context
+                    {
+                        systemPrompt,
+                        personalInfo,
+                        tone,
+                        allowedCustomInstructions
+                    }
+                );
             }
         } catch (error) {
             console.error("Errore durante l'invio del messaggio:", error);
         }
-    }, [isStreamTextEnabled, model, messageHistory, currentConversationId]);
-    
+    }, [isStreamTextEnabled, model, messageHistory, currentConversationId, user, systemPrompt, personalInfo, tone, allowedCustomInstructions]);
+
     const loadConversation = useCallback(async (conversationId: string) => {
         try {
             setLoading(true);
@@ -85,15 +89,16 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
                 if (row.sender) {
                     messages.push({
                         role: 'user' as const,
-                        content: row.sender
+                        content: row.sender,
+                        model: row.model || "" // Provide default model for user messages
                     });
                 }
-
-                // Messaggio bot
                 if (row.content) {
                     messages.push({
                         role: 'bot' as const,
-                        content: row.content
+                        content: row.content,
+                        usage: row.usage, // Assumiamo che usage sia una colonna nella tabella messages
+                        model: row.model // Assumiamo che model sia una colonna nella tabella messages
                     });
                 }
 
@@ -108,24 +113,24 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
             setLoading(false);
         }
     }, []);
-    
+
     const fetchConversations = useCallback(async () => {
-            try {
-                if (!user?.id) return;
-                const data = await getAllConversation(user?.id);
-                if (data) {
-                    setConversations(data);
-                }
-            } catch (error) {
-                console.error("Errore durante il recupero delle conversazioni:", error);
-            } finally {
-                // NUOVO: Segnaliamo che il caricamento è finito (anche se vuoto o errore)
-                setAreConversationsLoaded(true);
+        try {
+            if (!user?.id) return;
+            const data = await getAllConversation(user?.id);
+            if (data) {
+                setConversations(data);
             }
-        }, [user?.id]);
-        
+        } catch (error) {
+            console.error("Errore durante il recupero delle conversazioni:", error);
+        } finally {
+            // NUOVO: Segnaliamo che il caricamento è finito (anche se vuoto o errore)
+            setAreConversationsLoaded(true);
+        }
+    }, [user?.id]);
+
     useEffect(() => {
-        
+
 
         if (user?.id) {
             fetchConversations();
@@ -140,46 +145,46 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         // Se la lista è vuota, controlliamo se è perché non abbiamo ancora caricato
         return conversations.some(conv => conv.id === conversationId);
     }, [conversations]);
-    
-    const contextValue = useMemo(() => ({ 
-        
-        
-        sendMessage, 
-        messageHistory, 
-        loading, 
-        conversations, 
-        loadConversation, 
-        userOwnsConversation, 
-        areConversationsLoaded, 
-        setMessageHistory, 
-        model, 
-        setModel, 
-        isStreamTextEnabled, 
-        setIsStreamTextEnabled, 
+
+    const contextValue = useMemo(() => ({
+
+
+        sendMessage,
+        messageHistory,
+        loading,
+        conversations,
+        loadConversation,
+        userOwnsConversation,
+        areConversationsLoaded,
+        setMessageHistory,
+        model,
+        setModel,
+        isStreamTextEnabled,
+        setIsStreamTextEnabled,
         fetchConversations,
-        currentConversationId, 
+        currentConversationId,
         setCurrentConversationId,
         currentConversationName,
         setCurrentConversationName
 
     }), [
-        
-        
-        sendMessage, 
-        messageHistory, 
-        loading, 
-        conversations, 
-        loadConversation, 
-        userOwnsConversation, 
-        areConversationsLoaded, 
-        model, 
-        isStreamTextEnabled, 
+
+
+        sendMessage,
+        messageHistory,
+        loading,
+        conversations,
+        loadConversation,
+        userOwnsConversation,
+        areConversationsLoaded,
+        model,
+        isStreamTextEnabled,
         fetchConversations,
         currentConversationId,
         currentConversationName,
         setCurrentConversationName
     ]);
-    
+
     return (
         <ChatContext.Provider value={contextValue}>
             {children}

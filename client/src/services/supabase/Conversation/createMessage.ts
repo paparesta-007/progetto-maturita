@@ -1,6 +1,6 @@
 import supabase from "../../../library/supabaseclient";
 
-const createMessage = async (response:any, conversation_id:any) => {
+const createMessage = async (response: any, conversation_id: any, model: any) => {
     let content=response.content;
     let sender=response.sender;
     let usage=response.usage;
@@ -12,6 +12,7 @@ const createMessage = async (response:any, conversation_id:any) => {
             sender: sender,
             content: content,
             usage: usage,
+            model: model.name_id
         });
 
     if (error) {

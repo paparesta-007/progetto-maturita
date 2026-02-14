@@ -167,6 +167,7 @@ app.post("/api/gemini/chat/stream", async function (req: express.Request, res: e
         const { textStream } = streamText({
             model: google(selectedModel as any),
             messages: messages,
+
         });
 
         for await (const textPart of textStream) {
@@ -179,16 +180,19 @@ app.post("/api/gemini/chat/stream", async function (req: express.Request, res: e
     }
 });
 
-app.post("/api/gemini/chat", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
+app.post("/api/completion/chat", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
     try {
-        const { message, history, modelName } = req.body;
+        //const { user, systemPromptUser, personalInfo, tone, allowedCustomInstructions,loading } = useAuth()
 
+        const { message, history, modelName, systemPromptUser, personalInfo, tone, allowedCustomInstructions } = req.body;
+        
         // SUGGERIMENTO PER LA SICUREZZA: Valida l'input ricevuto dal client.
         // Ad esempio, assicurati che 'modelName' sia uno dei modelli che intendi esporre.
 
         const selectedModel = modelName ? modelName : "gemini-2.5-flash-lite";
-      const systemPrompt = getSystemPrompt({ selectedModel }); // Funzione che genera un prompt di sistema dettagliato e specifico per il modello selezionato. Definita in client/src/library/systemPrompt.ts
-const messages = [
+        console.log(systemPromptUser, personalInfo, tone, allowedCustomInstructions);
+        const systemPrompt = getSystemPrompt({ selectedModel, systemPromptUser, personalInfo, tone, allowedCustomInstructions } as any)
+        const messages = [
             ...history,
             { role: 'user', content: message }
         ];
@@ -219,7 +223,7 @@ app.post("/api/gemini/getTitleConversation", async function (req: express.Reques
     } catch (error) {
         next(error);
     }
-});app.post("/api/streamingOutput", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
+}); app.post("/api/streamingOutput", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
     try {
         const { message, history, modelName } = req.body;
         const selectedModel = modelName ? modelName : "gemini-2.5-flash-lite";
@@ -257,7 +261,7 @@ app.post("/api/gemini/getTitleConversation", async function (req: express.Reques
             for await (const textPart of result.textStream) {
                 res.write(textPart);
                 // Aggiungi il ritardo di 5ms (o più se necessario)
-                await delay(11); 
+                await delay(11);
             }
         } catch (streamError) {
             console.error("Errore durante lo streaming:", streamError);
