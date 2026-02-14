@@ -13,8 +13,8 @@ interface FileWithPreview {
 }
 
 const Textbar = () => {
-    const {  sendMessage, model, setModel, isStreamTextEnabled, setIsStreamTextEnabled } = useChat();
-    const {user}=useAuth()
+    const { sendMessage, model, setModel, isStreamTextEnabled, setIsStreamTextEnabled } = useChat();
+    const { user } = useAuth()
     const [files, setFiles] = useState<FileWithPreview[]>([]);
     const [isGroundingActive, setIsGroundingActive] = useState(false);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
@@ -84,6 +84,12 @@ const Textbar = () => {
     const removeFile = (indexToRemove: number) => {
         setFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
     };
+    const groupedModels = filteredModels.reduce((acc: Record<string, any[]>, model) => {
+        const providerName = model.provider || "Unknown";
+        if (!acc[providerName]) acc[providerName] = [];
+        acc[providerName].push(model);
+        return acc;
+    }, {});
     return (
         <div className="w-full max-w-2xl border border-neutral-200 shadow-[0_0_15px_0_rgba(0,0,0,0.15)] rounded-2xl bg-white p-2 flex flex-col gap-2" ref={menuRef}>
 
@@ -142,7 +148,7 @@ const Textbar = () => {
                 <button className="bg-neutral-900 hover:bg-neutral-800 text-white p-2.5 rounded-xl transition-all 
                 active:scale-95 flex items-center justify-center"
                     onClick={() => {
-                        sendMessage(inputValue,user?.id);
+                        sendMessage(inputValue, user?.id);
                         setInputValue("");
                     }}
 
@@ -216,27 +222,62 @@ const Textbar = () => {
                                         </div>
                                     </div>
                                     <div className="p-1 grid
-                                    sm:grid-cols-2 lg:grid-cols-2 grid-cols-1 ">
+                                     ">
 
                                         {models.length === 0 ? (
                                             <div className="px-1 py-2 rounded text-sm text-neutral-500">
                                                 No models available
                                             </div>
                                         ) : (
-                                            filteredModels.map((model, index) => (
-                                                <div key={index} className="px-1 py-2 flex gap-1 rounded hover:bg-neutral-100 cursor-pointer text-neutral-700"
-                                                    onClick={() => {
-                                                        setModel(model);
-                                                        setIsSelectPopupOpen(false);
-                                                    }}
-                                                >
-                                                    <img src={provider.find(p => p.name === model.provider)?.img ?? "https://images.rawpixel.com/image_png_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDIzLTAxL3JtNjA5LXNvbGlkaWNvbi13LTAwNS1wLnBuZw.png"} alt={model.provider} className="w-4 h-4 object-contain" />
-                                                    <div className="flex flex-col items-start gap-0.5">
-                                                        <span className="text-sm">{model.name}</span>
-                                                        <p className="text-xs text-neutral-400">{model.cost_per_input_token + model.cost_per_output_token}$/1M</p>
+                                            /* Contenitore principale: una colonna singola per i provider */
+                                            <div className="flex flex-col gap-6">
+                                                {Object.entries(groupedModels).map(([providerName, modelsInGroup]) => (
+                                                    <div key={providerName} className="w-full">
+                                                        {/* Header del Provider: occupa tutta la riga */}
+                                                        <div className="flex items-center gap-2 mb-3 border-b justify-between border-neutral-100 pb-1">
+                
+                                                            <span className="text-[11px] font-bold uppercase tracking-widest text-neutral-500">
+                                                                {providerName}
+                                                            </span>
+                                                            <span className="text-sm text-neutral-500 font-normal">
+                                                                ({modelsInGroup.length} models)
+                                                            </span>
+                                                        </div>
+
+                                                        {/* Grid dei Modelli: qui decidi quante colonne vuoi (es. 2 o 3) */}
+                                                        <div className="grid grid-cols-1 gap-2">
+                                                            {modelsInGroup.map((model, index) => (
+                                                                <div
+                                                                    key={model.model_id || index}
+                                                                    className="group px-3 py-2 flex gap-3 rounded-lg border border-transparent hover:border-neutral-200 hover:bg-white hover:shadow-sm cursor-pointer transition-all items-center"
+                                                                    onClick={() => {
+                                                                        setModel(model);
+                                                                        setIsSelectPopupOpen(false);
+                                                                    }}
+                                                                >
+                                                                    <div className="flex flex-row justify-between flex-1 overflow-hidden">
+
+                                                                        <span className="text-sm font-semibold text-neutral-800 truncate  transition-colors">
+                                                                            <img
+                                                                                src={provider.find(p => p.name === model.provider)?.img ?? "https://images.rawpixel.com/image_png_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDIzLTAxL3JtNjA5LXNvbGlkaWNvbi13LTAwNS1wLnBuZw.png"}
+                                                                                className="w-4 h-4 inline mr-1"
+                                                                                alt=""
+                                                                            />
+                                                                            {model.name.length > 30 ? model.name.substring(0, 30) + '...' : model.name}
+                                                                        </span>
+                                                                        <div className="flex items-center gap-2">
+                                                                            <p className="text-[13px] text-neutral-400 font-mono">
+                                                                                {(Number(model.cost_per_input_token) + Number(model.cost_per_output_token)).toFixed(2)}$/1M
+                                                                            </p>
+                                                                         
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            ))}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            ))
+                                                ))}
+                                            </div>
                                         )}
                                     </div>
                                 </motion.div>

@@ -21,7 +21,8 @@ interface ChatContextType {
     fetchConversations: () => Promise<void>;
     currentConversationId: string | null;
     setCurrentConversationId: React.Dispatch<React.SetStateAction<string | null>>;
-    
+    currentConversationName: string | null;
+    setCurrentConversationName: React.Dispatch<React.SetStateAction<string | null>>;
 }
 
 // 1. Creazione del Context
@@ -38,6 +39,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const [model, setModel] = useState<any>({ name: "Gemini 2.5 Flash Lite", provider: "Google",name_id: "google/gemini-2.5-flash-lite", cost_per_input_token: 0.10, cost_per_output_token: 0.40 });
     const [isStreamTextEnabled, setIsStreamTextEnabled] = useState(false);
     const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
+    const [currentConversationName, setCurrentConversationName] = useState<string | null>(null);
     const navigate = useNavigate();
    
     const sendMessage = useCallback(async (message: string) => {
@@ -156,7 +158,10 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         setIsStreamTextEnabled, 
         fetchConversations,
         currentConversationId, 
-        setCurrentConversationId 
+        setCurrentConversationId,
+        currentConversationName,
+        setCurrentConversationName
+
     }), [
         
         
@@ -170,7 +175,9 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         model, 
         isStreamTextEnabled, 
         fetchConversations,
-        currentConversationId
+        currentConversationId,
+        currentConversationName,
+        setCurrentConversationName
     ]);
     
     return (

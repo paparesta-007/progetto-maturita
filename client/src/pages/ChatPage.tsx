@@ -10,7 +10,7 @@ import BotLoading from "../components/other/BotLoading";
 import PromptStarter from "../components/PromptStarter";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, useParams } from "react-router-dom";
-import { useEffect, useRef, useState,useCallback } from "react"
+import { useEffect, useRef, useState, useCallback } from "react"
 import { getHighlighter } from "../library/shikiHighlighter";
 
 import katex from "katex";
@@ -29,7 +29,8 @@ const ChatContent = () => {
         loading,
         setMessageHistory,
         areConversationsLoaded,
-        setCurrentConversationId 
+        setCurrentConversationId,
+        currentConversationName
     } = useChat();
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
     const scrollToBottom = () => {
@@ -65,14 +66,14 @@ const ChatContent = () => {
         }
 
     }, [conversationId, areConversationsLoaded, user?.id]); // Aggiunto areConversationsLoaded alle dipendenze
-   
-    return (
-        <div className="flex flex-col h-screen overflow-hidden bg-white">
 
+    return (
+        <div className="flex flex-col h-screen overflow-hidden bg-white relative">
+
+            <h2 className="text-md px-4 pt-4 font-medium text-neutral-700 mb-2">{currentConversationName || "Chat"}</h2>
             {messageHistory.length !== 0 ? (
                 <main className="flex-1 overflow-y-auto p-4 custom-scrollbar relative">
                     <div className="max-w-3xl mx-auto">
-                        <h1 className="text-2xl font-bold mb-4">Chat</h1>
                         <div className="space-y-4">
                             {messageHistory.map((msg, index) => {
                                 if (msg.role === 'user') {
@@ -91,26 +92,26 @@ const ChatContent = () => {
                 </main>) : (
                 <PromptStarter />
             )}
-          
+
             {/* FOOTER / TEXTBAR */}
             <Footer />
         </div>
     );
 };
 const Footer = () => {
-    return(
+    return (
         <footer className="flex-shrink-0 w-full bg-white pt-0 px-4 pb-4">
-                {/* Contenitore centrato con larghezza massima */}
-                <div className="max-w-3xl mx-auto mt-4 flex justify-center">
-                    <div className="w-full flex items-center justify-center"> {/* Forza il componente a usare lo spazio del max-w-3xl */}
-                        <Textbar />
-                    </div>
+            {/* Contenitore centrato con larghezza massima */}
+            <div className="max-w-3xl mx-auto mt-4 flex justify-center">
+                <div className="w-full flex items-center justify-center"> {/* Forza il componente a usare lo spazio del max-w-3xl */}
+                    <Textbar />
                 </div>
+            </div>
 
-                <p className="text-center text-[10px] text-neutral-400 mt-2">
-                    IA can make mistakes. Please verify the information provided.
-                </p>
-            </footer>
+            <p className="text-center text-[10px] text-neutral-400 mt-2">
+                IA can make mistakes. Please verify the information provided.
+            </p>
+        </footer>
     )
 }
 // 2. Il componente principale esportato serve SOLO a fornire il contesto
