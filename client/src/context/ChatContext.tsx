@@ -62,12 +62,12 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
                     setCurrentConversationId,
                     fetchConversations,
                     navigate,
-                    // NUOVO ARGOMENTO: Passiamo i valori dal Context
                     {
                         systemPrompt,
                         personalInfo,
                         tone,
                         allowedCustomInstructions
+                        
                     }
                 );
             }
@@ -75,7 +75,26 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
             console.error("Errore durante l'invio del messaggio:", error);
         }
     }, [isStreamTextEnabled, model, messageHistory, currentConversationId, user, systemPrompt, personalInfo, tone, allowedCustomInstructions]);
-
+    const saveRunMetrics = useCallback(async (metrics: { latencyMs: number, throughput: number, model: string }) => {
+        try {
+            console.log("📝 [TODO] Salvataggio metriche su Supabase:", metrics);
+            
+            /* ESEMPIO IMPLEMENTAZIONE FUTURA:
+            const { error } = await supabase
+                .from('performance_logs')
+                .insert({
+                    user_id: user.id,
+                    model: metrics.model,
+                    latency_ms: metrics.latencyMs,
+                    throughput: metrics.throughput,
+                    created_at: new Date().toISOString()
+                });
+            */
+            
+        } catch (error) {
+            console.error("Errore salvataggio metriche:", error);
+        }
+    }, [user?.id]);
     const loadConversation = useCallback(async (conversationId: string) => {
         try {
             setLoading(true);
@@ -104,6 +123,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
                         content: row.content,
                         usage: row.usage, // Assumiamo che usage sia una colonna nella tabella messages
                         model: row.model // Assumiamo che model sia una colonna nella tabella messages
+                        
                     });
                 }
 

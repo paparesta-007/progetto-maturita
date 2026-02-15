@@ -219,14 +219,14 @@ const Sidebar = () => {
                     ))}
                 </div>
             </div>
-
+            <p className={`px-4 text-[10px] font-bold uppercase tracking-wider mb-3  z-10 py-1`}>
+                Cronologia
+            </p>
             {/* HISTORY */}
             <div className={style.scrollbar}>
-                <p className={`px-2 text-[10px] font-bold uppercase tracking-wider mb-3 sticky top-0 z-10 py-1`}>
-                    Cronologia
-                </p>
+
                 <div className="flex flex-col gap-4">
-                    <ul className="flex flex-col gap-1 relative"  ref={convMenuRef} >
+                    <ul className="flex flex-col gap-1 relative" ref={convMenuRef} >
                         {conversations.map((conv: any) => (
                             <div key={conv.id} className={`relative group flex items-center rounded-md transition-colors ${style.itemHover}`}>
                                 <NavLink
@@ -255,7 +255,7 @@ const Sidebar = () => {
                                             animate={{ opacity: 1, scale: 1, y: 0 }}
                                             exit={{ opacity: 0, scale: 0.95, y: -10 }}
                                             transition={{ duration: 0.15 }}
-                                           
+
                                             className={`absolute right-0 top-full mt-1 w-44 rounded-lg shadow-xl z-[100] p-1.5 border ${style.popoverBg}`}
                                         >
                                             <button className={style.popoverItem}>
@@ -323,7 +323,7 @@ const Sidebar = () => {
                                         </div>
                                     </button>
 
-                                     <button
+                                    <button
                                         className={`${style.popoverItem} justify-between`}
                                         onClick={() => { setIsSettingOpen(true); setIsUserMenuOpen(false); }}
                                     >

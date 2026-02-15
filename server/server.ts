@@ -179,23 +179,21 @@ app.post("/api/gemini/chat/stream", async function (req: express.Request, res: e
         next(error);
     }
 });
-
 app.post("/api/completion/chat", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
     try {
-        //const { user, systemPromptUser, personalInfo, tone, allowedCustomInstructions,loading } = useAuth()
-
         const { message, history, modelName, systemPromptUser, personalInfo, tone, allowedCustomInstructions } = req.body;
-        
-        // SUGGERIMENTO PER LA SICUREZZA: Valida l'input ricevuto dal client.
-        // Ad esempio, assicurati che 'modelName' sia uno dei modelli che intendi esporre.
 
-        const selectedModel = modelName ? modelName : "gemini-2.5-flash-lite";
-        console.log(systemPromptUser, personalInfo, tone, allowedCustomInstructions);
-        const systemPrompt = getSystemPrompt({ selectedModel, systemPromptUser, personalInfo, tone, allowedCustomInstructions } as any)
+        // Assicurati di usare un ID modello valido per OpenRouter
+        const selectedModel = modelName ? modelName : "google/gemini-2.0-flash-001";
+
+        const systemPrompt = getSystemPrompt({ selectedModel, systemPromptUser, personalInfo, tone, allowedCustomInstructions } as any);
         const messages = [
             ...history,
             { role: 'user', content: message }
         ];
+
+        // 1. START Timer 
+        const startTime = Date.now();
 
         const { text, usage } = await generateText({
             model: openrouter(selectedModel),
@@ -207,7 +205,30 @@ app.post("/api/completion/chat", async function (req: express.Request, res: expr
             }
         });
 
-        res.send({ text, usage });
+        // 2. STOP Timer
+        const endTime = Date.now();
+
+        // 3. Calcoli Metriche
+        const latencyMs = endTime - startTime; // Tempo totale in millisecondi (Latenza)
+        const latencySec = latencyMs / 1000;   // Tempo totale in secondi per il calcolo del throughput
+
+        // Calcolo Throughput: (Token Generati / Tempo Totale in secondi)
+        // Controllo latencySec > 0 per evitare divisioni per zero in casi limite (es. risposte istantanee in mock)
+        const throughput = latencySec > 0
+            ? (usage.outputTokens / latencySec)
+            : 0;
+        console.log("******TEST COMPLETATO: METRICHE******");
+        console.log("Usage:", usage);
+        console.log(`Latenza: ${latencyMs} ms, Throughput: ${throughput.toFixed(2)} t/s`);
+        res.send({
+            text,
+            usage,
+            metrics: {
+                latencyMs: Math.round(latencyMs),             // Es: 1250 ms
+                throughput: parseFloat(throughput.toFixed(2)) // Es: 54.30 t/s
+            }
+        });
+
     } catch (error) {
         next(error);
     }
@@ -231,7 +252,7 @@ app.post("/api/gemini/getTitleConversation", async function (req: express.Reques
     } catch (error) {
         next(error);
     }
-}); 
+});
 app.post("/api/streamingOutput", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
     try {
         const { message, history, modelName } = req.body;
