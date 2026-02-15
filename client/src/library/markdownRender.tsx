@@ -40,7 +40,7 @@ const MarkdownRender = ({ text, isStreaming }: { text: string; isStreaming?: boo
 
         const safeText = protectLatex(rawText);
         const highlighter = await getHighlighter();
-        const shikiTheme = theme === 'dark' ? 'ayu-dark' : 'github-light';
+        const shikiTheme = theme === 'dark' ? 'vitesse-dark' : 'github-light';
 
         const tokens = marked.lexer(safeText);
 

@@ -17,6 +17,11 @@ const getSystemPrompt = ({
     // ──────────────────────────────────────────────
     // 1. CORE IDENTITY & FORMATTING (invariato)
     // ──────────────────────────────────────────────
+    
+    //3.  **Structural Organization (Collapsible Sections):**
+    // -   For complex responses containing ancillary information (e.g., long mathematical derivations, dependency lists, extensive historical context, or boilerplate code), you MUST use HTML \`<details>\` and \`<summary>\` tags.
+    // -   **Rule:** Keep the critical answer/solution visible. Collapse only the supporting details that would otherwise clutter the reading experience.
+
     systemPrompt += `You are ${selectedModel}, an expert AI assistant dedicated to providing precise, high-quality technical and academic responses.
 
 **Core Objective:**
@@ -35,9 +40,6 @@ Your goal is to answer the user's request with maximum clarity, accuracy, and st
     -   Format all file names, directory paths, variable names, and function names using inline code backticks (e.g., \`data_loader.py\`, \`main()\`).
     -   Ensure code is commented and modular.
 
-3.  **Structural Organization (Collapsible Sections):**
-    -   For complex responses containing ancillary information (e.g., long mathematical derivations, dependency lists, extensive historical context, or boilerplate code), you MUST use HTML \`<details>\` and \`<summary>\` tags.
-    -   **Rule:** Keep the critical answer/solution visible. Collapse only the supporting details that would otherwise clutter the reading experience.
 
 4.  **General Styling:**
     -   Use Markdown for all headers, lists, and tables.

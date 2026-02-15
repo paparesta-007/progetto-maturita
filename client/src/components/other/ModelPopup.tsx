@@ -81,19 +81,19 @@ const ModelPopup = React.forwardRef<HTMLDivElement>((_, modalRef) => {
                             exit={{ opacity: 0, y: 10, scale: 0.95 }}
                             transition={{ duration: 0.15, ease: "easeOut" }}
                             className={`absolute bottom-full left-0 mb-2 w-100 h-100 px-2 overflow-auto ${
-                                isDark ? "bg-neutral-900 border-neutral-800 shadow-black/40" : "bg-white border border-neutral-200 shadow-xl"
+                                isDark ? "bg-neutral-900 border-neutral-800 shadow-md" : "bg-white border border-neutral-200 shadow-xl"
                             } rounded-xl z-50`}
                         >
                             <div className={`sticky top-0 ${
                                 isDark ? "bg-neutral-900 border-neutral-800" : "bg-white border-b border-neutral-200"
                             } px-3 py-2`}>
-                                <div className="flex items-center gap-2 text-neutral-400 rounded-lg px-0 py-2">
+                                <div className="flex items-center gap-2 text-neutral-400 rounded-md px-0 py-2">
                                     <label htmlFor="model-search"> <MagnifyingGlassIcon size={18} /></label>
                                     <input
                                         type="text"
                                         id="model-search"
                                         placeholder="Search models..."
-                                        className="flex-1 bg-transparent text-neutral-900 focus:outline-none placeholder-neutral-400 text-sm"
+                                        className="flex-1 bg-transparent text-neutral-400 focus:outline-none placeholder-neutral-400 text-sm"
                                         onChange={(e) => {
                                             const query = e.target.value.toLowerCase();
                                             setFilteredModels(models.filter(model =>
@@ -135,8 +135,8 @@ const ModelPopup = React.forwardRef<HTMLDivElement>((_, modalRef) => {
                                                     {modelsInGroup.map((model, index) => (
                                                         <div
                                                             key={model.model_id || index}
-                                                            className={`group px-3 py-2 flex gap-3 rounded-lg border border-transparent hover:border-neutral-200  hover:shadow-sm cursor-pointer transition-all items-center ${
-                                                                isDark ? "hover:bg-neutral-800" : "hover:bg-white"
+                                                            className={`group px-3 py-2 flex gap-3 rounded-md border border-transparent   hover:shadow-sm cursor-pointer transition-all items-center ${
+                                                                isDark ? "hover:bg-neutral-800 hover:border-neutral-700" : "hover:bg-white hover:border-neutral-200"
                                                             }`}
                                                             onClick={() => {
                                                                 setModel(model);

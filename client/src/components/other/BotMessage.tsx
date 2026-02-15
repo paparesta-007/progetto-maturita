@@ -1,6 +1,7 @@
 import React from "react";
 import Tooltip from "./Tooltip";
-import { useAuth } from "../../context/AuthContext"; // Assicurati che il percorso sia corretto
+import { useAuth } from "../../context/AuthContext";
+import { SpeakerHighIcon,CopyIcon } from "@phosphor-icons/react";
 
 const BotMessage = ({ i, children, usage, model }: { i: number; children: React.ReactNode; usage?: any; model?: any }) => {
     const { theme } = useAuth();
@@ -16,12 +17,17 @@ const BotMessage = ({ i, children, usage, model }: { i: number; children: React.
         messageBubble: `shadow-sm rounded-lg p-4 flex-1 renderChat transition-all duration-300 ${
             isDark 
                 ? "text-neutral-200" //text-neutral-200 bg-neutral-900 border border-neutral-800 
-                : "text-[#404040] bg-[#fafafa] border border-transparent"
+                : "text-[#404040] bg-[#fafafa] "
         }`,
-        tokensLabel: `text-xs mt-1 transition-colors ${
-            isDark ? "text-neutral-500 hover:text-neutral-400" : "text-neutral-400 hover:text-neutral-600"
+        footerLabel: `text-xs mt-1 transition-colors flex items-center gap-0 ${
+            isDark ? "text-neutral-500 " : "text-neutral-400"
         }`,
-        tooltipContent: `text-left ${isDark ? "text-neutral-300" : "text-neutral-700"}`
+        tooltipContent: `text-left ${isDark ? "text-neutral-300 hover:text-neutral-400" : "text-neutral-700  hover:text-neutral-600"}`,
+        btn: `p-1 rounded transition-colors ${
+            isDark 
+                ? "text-neutral-500 hover:bg-neutral-800 hover:text-neutral-300" 
+                : "text-neutral-400 hover:bg-neutral-100 hover:text-neutral-700"
+        }`
     };
 
     return (
@@ -40,7 +46,9 @@ const BotMessage = ({ i, children, usage, model }: { i: number; children: React.
                 </div>
 
                 {/* Info sui Token / Modello */}
-                <div className={styles.tokensLabel}>
+                <div className={styles.footerLabel}>
+                    <button className={styles.btn}><CopyIcon className="cursor-pointer" size={18} /></button>
+                    <button className={styles.btn}><SpeakerHighIcon size={18} /></button>
                     <Tooltip content={
                         <div className={styles.tooltipContent}>
                             <span className={`${isDark ? "text-neutral-400" : "text-neutral-500"} font-normal`}>

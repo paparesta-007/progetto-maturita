@@ -202,7 +202,7 @@ app.post("/api/completion/chat", async function (req: express.Request, res: expr
             messages: messages,
             system: systemPrompt,
             headers: {
-                "HTTP-Referer": "http:localhost:5173",
+                "HTTP-Referer": "localhost:3000/completion",
                 "X-Title": "NomeTuaApp"
             }
         });
@@ -222,7 +222,7 @@ app.post("/api/gemini/getTitleConversation", async function (req: express.Reques
             prompt: `Genera un titolo breve e coinciso (massimo 8 parole) e descrittivo per una conversazione basata su questo messaggio iniziale: "${message}". Il titolo dovrebbe catturare l'essenza del messaggio in modo accattivante e informativo. 
             EVITA ASSOLUTAMENTE USO MARKDOWN, SOLO PLAIN TEXT, e NON includere virgolette o simboli speciali. Il titolo deve essere adatto per essere visualizzato in una lista di conversazioni.`,
             headers: {
-                "HTTP-Referer": "http:localhost:5173",
+                "HTTP-Referer": "localhost:3000/getTitleConversation",
                 "X-Title": "NomeTuaApp"
             }
         });
@@ -254,7 +254,7 @@ app.post("/api/streamingOutput", async function (req: express.Request, res: expr
                 console.log("Generazione LLM completata. Usage:", usage);
             },
             headers: {
-                "HTTP-Referer": "http:localhost:3000",
+                "HTTP-Referer": "localhost:3000/streamingOutput",
                 "X-Title": "NomeTuaApp"
             }
         });

@@ -1,13 +1,13 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
-import { 
-  ChartPolarIcon, 
-  FadersHorizontalIcon, 
-  ListIcon, 
-  CreditCardIcon, 
-  UserCircleIcon, 
-  XIcon 
+import {
+  ChartPolarIcon,
+  FadersHorizontalIcon,
+  ListIcon,
+  CreditCardIcon,
+  UserCircleIcon,
+  XIcon
 } from "@phosphor-icons/react";
 import { ChatProvider } from "../context/ChatContext";
 import { useApp } from "../context/AppContext";
@@ -20,24 +20,22 @@ import BillingSettingPage from "../pages/SettingPages/BilingSettingPage";
 const AppLayout = () => {
   const [isMinimized, setIsMinimized] = useState(false);
   const { isSettingOpen, setIsSettingOpen, setSettingPage, settingPage } = useApp();
-  const { theme } = useAuth(); // Estrai il tema globale
+  const { theme, setTheme } = useAuth(); // Estrai il tema globale
 
   const isDark = theme === 'dark';
 
   // --- Palette dinamica ---
   const style = {
     layoutContainer: `flex h-screen w-full relative transition-colors duration-300 ${isDark ? "bg-neutral-950 text-white" : "bg-white text-neutral-900"}`,
-    modalOverlay: "fixed inset-0 bg-black/60 backdrop-blur-[2px] z-40",
-    modalContent: `fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 rounded-xl shadow-2xl w-[95vw] max-w-[680px] h-[85vh] max-h-[540px] flex flex-col md:flex-row overflow-hidden border transition-colors duration-300 ${
-      isDark ? "bg-neutral-900 border-neutral-800" : "bg-white border-neutral-200"
-    }`,
-    modalSidebar: `flex md:flex-col gap-1 md:w-[200px] md:min-w-[200px] border-b md:border-b-0 md:border-r p-3 overflow-x-auto md:overflow-visible transition-colors ${
-      isDark ? "bg-neutral-900/50 border-neutral-800" : "bg-neutral-50 border-neutral-200"
-    }`,
+    modalOverlay: "fixed inset-0 bg-black/60  z-40",
+    modalContent: `fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 rounded-xl shadow-2xl w-[95vw] max-w-[680px] h-[85vh] max-h-[540px] flex flex-col md:flex-row overflow-hidden border transition-colors duration-300 ${isDark ? "bg-neutral-900 border-neutral-800" : "bg-white border-neutral-200"
+      }`,
+    modalSidebar: `flex md:flex-col gap-1 md:w-[200px] md:min-w-[200px] border-b md:border-b-0 md:border-r p-3 overflow-x-auto md:overflow-visible transition-colors ${isDark ? "bg-neutral-900/50 border-neutral-800" : "bg-neutral-50 border-neutral-200"
+      }`,
     navButton: (active: boolean) => `
       flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg transition-all text-sm
-      ${active 
-        ? (isDark ? "bg-neutral-800 text-white shadow-sm" : "bg-neutral-200/80 text-neutral-900 shadow-sm") 
+      ${active
+        ? (isDark ? "bg-neutral-800 text-white shadow-sm" : "bg-neutral-200/80 text-neutral-900 shadow-sm")
         : (isDark ? "text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200" : "text-neutral-500 hover:bg-neutral-200/60 hover:text-neutral-900")
       }
     `,
@@ -50,7 +48,18 @@ const AppLayout = () => {
     { label: "Istruzioni", Icon: ChartPolarIcon, id: "istruzioni" },
     { label: "Fatturazione", Icon: CreditCardIcon, id: "fatturazione" },
   ];
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      // Ctrl+Shift+L → event.code === 'KeyL'
+      if (event.ctrlKey && event.shiftKey && event.code === 'KeyL') {
+        event.preventDefault(); // blocca eventuali default del browser
+        setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
+      }
+    };
 
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [setTheme]);
   return (
     <ChatProvider>
       <div className={style.layoutContainer}>
@@ -112,7 +121,7 @@ const AppLayout = () => {
                   </div>
 
                   <hr className={style.divider} />
-                  
+
                   <button className={style.navButton(false)}>
                     <UserCircleIcon size={18} weight="regular" />
                     Account

@@ -10,9 +10,9 @@ export async function getHighlighter(): Promise<Highlighter> {
     // entrambe riceveranno la stessa Promise
     if (!highlighterPromise) {
         highlighterPromise = createHighlighter({
-            themes: ['github-light', 'ayu-dark'], // Assicurati di avere questi temi disponibili
+            themes: ['github-light', 'vitesse-dark'], // Assicurati di avere questi temi disponibili
             langs: [
-                'javascript', 'typescript', 'python', 'bash', 'json',
+                'javascript', 'typescript', 'python', 'bash', 'json', 'csharp', 'ruby', 'php', 'rust', 'kotlin', 'swift',
                 'html', 'css', 'sql', 'text', 'java', 'c', 'cpp', 'go', 'ruby', 'php', 'rust', 'kotlin', 'swift',
                 'markdown', 'yaml', 'dockerfile', 'powershell', 'graphql', 'lua', 'scala', 'perl', 'r', 'objective-c',
             ]

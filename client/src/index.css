@@ -137,12 +137,13 @@
 
 .renderChat summary {
     padding: 8px;
-    border: 1px solid lightgray;
+    border: 1px solid var(--code-border);
     margin: 5px 0;
     border-radius: 8px;
     cursor: pointer;
     font-weight: 500;
     color: var(--color-primary);
+    background-color: var(--code-bg);
 }
 
 pre {
@@ -161,7 +162,7 @@ p > pre {
 }
 
 /* Stile per il codice inline (es. `const a = 1`) */
-li > code,
+li > code, td > code, th > code,
 p > code {
     color: var(--code-text);       /* Usa variabile rossa */
     background-color: var(--code-bg); /* Usa variabile sfondo */

@@ -102,6 +102,7 @@ const InstructionsSettingPage: React.FC = () => {
                         <div className="grid grid-cols-1 gap-4">
                             <InputGroup isDark={isDark} label="Come ti chiami?" placeholder="Es. Mario Rossi" value={personalInfo.name} onChange={(v:any) => setPersonalInfo({ ...personalInfo, name: v })} />
                             <InputGroup isDark={isDark} label="Di cosa ti occupi?" placeholder="Es. Sviluppatore React" value={personalInfo.job} onChange={(v:any) => setPersonalInfo({ ...personalInfo, job: v })} />
+                            <InputGroup isDark={isDark} label="Quali sono i tuoi interessi?" placeholder="Es. Tecnologia, Sport, Musica" value={personalInfo.hobbies} onChange={(v:any) => setPersonalInfo({ ...personalInfo, hobbies: v })} />
                         </div>
                     </div>
                 </div>
