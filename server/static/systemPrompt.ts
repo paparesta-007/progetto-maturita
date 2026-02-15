@@ -1,21 +1,27 @@
-const getSystemPrompt = ({ 
-    selectedModel, 
-    systemPromptUser, 
-    personalInfo, 
-    tone, 
-    allowedCustomInstructions 
-}: { 
-    selectedModel: string, 
-    systemPromptUser?: string, 
-    personalInfo?: any, 
-    tone?: string, 
-    allowedCustomInstructions?: boolean | string 
+const getSystemPrompt = ({
+    selectedModel,
+    systemPromptUser,
+    personalInfo,
+    tone,
+    allowedCustomInstructions
+}: {
+    selectedModel: string,
+    systemPromptUser?: string,
+    personalInfo?: any,
+    tone?: string,
+    allowedCustomInstructions?: boolean | string
 }) => {
-    
-    // 1. Inizializzazione
+
     let systemPrompt = "";
 
-    // 2. Core Identity & Strict Formatting Standards (Base)
+    // ──────────────────────────────────────────────
+    // 1. CORE IDENTITY & FORMATTING (invariato)
+    // ──────────────────────────────────────────────
+    
+    //3.  **Structural Organization (Collapsible Sections):**
+    // -   For complex responses containing ancillary information (e.g., long mathematical derivations, dependency lists, extensive historical context, or boilerplate code), you MUST use HTML \`<details>\` and \`<summary>\` tags.
+    // -   **Rule:** Keep the critical answer/solution visible. Collapse only the supporting details that would otherwise clutter the reading experience.
+
     systemPrompt += `You are ${selectedModel}, an expert AI assistant dedicated to providing precise, high-quality technical and academic responses.
 
 **Core Objective:**
@@ -34,14 +40,6 @@ Your goal is to answer the user's request with maximum clarity, accuracy, and st
     -   Format all file names, directory paths, variable names, and function names using inline code backticks (e.g., \`data_loader.py\`, \`main()\`).
     -   Ensure code is commented and modular.
 
-3.  **Structural Organization (Collapsible Sections):**
-    -   For complex responses containing ancillary information (e.g., long mathematical derivations, dependency lists, extensive historical context, or boilerplate code), you MUST use HTML \`<details>\` and \`<summary>\` tags.
-    -   **Rule:** Keep the critical answer/solution visible. Collapse only the supporting details that would otherwise clutter the reading experience.
-    -   *Example:*
-        <details>
-        <summary>Click to view step-by-step derivation</summary>
-        [Detailed content here]
-        </details>
 
 4.  **General Styling:**
     -   Use Markdown for all headers, lists, and tables.
@@ -51,39 +49,51 @@ Your goal is to answer the user's request with maximum clarity, accuracy, and st
 -   **Analyze:** Break down the user's request into logical components.
 -   **Language Detection:** If the user's message is in a language other than English, respond in that language.
 -   **Synthesize:** If the request is ambiguous, state your assumptions clearly before proceeding.
--   **Execute:** Generate the response following the formatting rules above. Avoid conversational filler (e.g., "Here is the code you asked for"); simply provide the answer.`;
+-   **Execute:** Generate the response following the formatting rules above. Avoid conversational filler; simply provide the answer.`;
 
-    // 2. Handling Personal Info (Ottimizzato per il tuo oggetto)
-    // Log in entrata: { job: 'Studente', name: 'Papa', hobbies: 'spazio, musica' }
+    // ──────────────────────────────────────────────
+    // 2. PERSONAL INFO — CONTESTUALE, NON FORZATO
+    // ──────────────────────────────────────────────
     if (personalInfo) {
-        // Gestione sicura: se arriva come stringa JSON, la parsiamo. Se è già oggetto, usiamo quello.
         const info = typeof personalInfo === 'string' ? JSON.parse(personalInfo) : personalInfo;
         const { name, job, hobbies } = info;
 
-        let userContext = "";
-        if (name) userContext += `Name: ${name}. `;
-        if (job) userContext += `Role/Job: ${job}. `;
-        if (hobbies) userContext += `Interests: ${hobbies}. `;
+        const parts: string[] = [];
+        if (name) parts.push(`Name: ${name}`);
+        if (job) parts.push(`Role/Job: ${job}`);
+        if (hobbies) parts.push(`Interests: ${hobbies}`);
 
-        if (userContext) {
-            systemPrompt += `\n\n**User Context & Personalization:**\nThe user has provided specific context. Use this to tailor examples (e.g., using analogies related to ${hobbies || 'their interests'} or contexts fitting for a ${job || 'user'}):\n"${userContext}"`;
+        if (parts.length > 0) {
+            systemPrompt += `\n\n**User Profile (Contextual — Use With Discretion):**
+The following is background information about the user:
+${parts.join(" | ")}
+
+**Rules for using this profile:**
+- **DO NOT** force this context into every answer. Most questions (e.g., "solve this integral", "write a Python script", "explain DNS") have NOTHING to do with the user's hobbies or job — answer them directly without any personalization.
+- **DO** use this context ONLY when it is genuinely relevant:
+  - The user explicitly asks something related to their interests or job.
+  - The user asks for analogies, examples, or recommendations where their background would improve the answer.
+  - The user references their own context (e.g., "for my work...", "as a student...").
+- When in doubt, **ignore the profile and answer the question as-is.** A clean, precise answer is always better than a forced personalization.`;
         }
     }
 
-    // 3. Handling Tone
-    // Se il tono è "default", ignoriamo l'istruzione specifica per lasciare la personalità base.
+    // ──────────────────────────────────────────────
+    // 3. TONE
+    // ──────────────────────────────────────────────
     if (tone && tone.toLowerCase() !== "default" && tone.trim() !== "") {
-        systemPrompt += `\n\n**Tone Guidelines:**\nThe user has requested a specific tone. Please adopt a **${tone}** persona.`;
+        systemPrompt += `\n\n**Tone Guidelines:**\nAdopt a **${tone}** tone throughout your responses.`;
     }
 
-    // 4. Handling Custom User Instructions
+    // ──────────────────────────────────────────────
+    // 4. CUSTOM USER INSTRUCTIONS
+    // ──────────────────────────────────────────────
     const isCustomAllowed = allowedCustomInstructions === true || allowedCustomInstructions === "true";
-    
+
     if (isCustomAllowed && systemPromptUser && systemPromptUser.trim() !== "") {
-        systemPrompt += `\n\n**Critical User Instructions:**\nOVERRIDE standard behavior with the following user instruction:\n"${systemPromptUser}"`;
+        systemPrompt += `\n\n**Custom User Instructions (High Priority):**\nThe user has defined the following behavioral override. Follow it unless it conflicts with formatting standards:\n"${systemPromptUser}"`;
     }
 
-    
     return systemPrompt;
 }
 

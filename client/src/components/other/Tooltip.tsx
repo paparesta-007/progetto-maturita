@@ -1,15 +1,16 @@
 import React, { useState } from "react";
+
 const Tooltip = ({
-    content,
-    position = 'top',
-    children,
-    background = 'light'
+  content,
+  position = 'top',
+  children,
+  background = 'light'
 }: React.PropsWithChildren<{
-    content: React.ReactNode;
-    position?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
-    background?: 'dark' | 'light';
+  content: React.ReactNode;
+  position?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
+  background?: 'dark' | 'light';
 }>) => {
-const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
 
   // Configurazione posizioni e animazioni
   const positionConfig = {
@@ -52,7 +53,7 @@ const [isVisible, setIsVisible] = useState(false);
   };
 
   const currentPos = positionConfig[position] || positionConfig.top;
-  const isLight = background === 'light';
+  const isForcedDark = background === 'dark';
 
   return (
     <div 
@@ -67,24 +68,34 @@ const [isVisible, setIsVisible] = useState(false);
       <div
         className={`
           absolute z-50 px-3 py-2
-          text-xs font-medium
-          ${isLight ? 'bg-white text-neutral-800 border border-neutral-200' : 'bg-neutral-700 text-white'}
-          rounded-lg shadow-xl
+          text-xs font-medium rounded-lg shadow-xl
           pointer-events-none min-w-max
           transition-all duration-300 ease-out transform
           ${currentPos.classes}
           ${currentPos.animation}
+          
+          /* Logica Colori: Default Light, supporta classe .dark o prop background="dark" */
+          ${isForcedDark 
+            ? 'bg-neutral-800 text-white border border-neutral-700' 
+            : 'bg-white text-neutral-800 border border-neutral-200 dark:bg-neutral-800 dark:text-neutral-100 dark:border-neutral-700'
+          }
         `}
       >
         <div className="leading-relaxed">
           {content}
         </div>
 
-        {/* Freccia migliorata */}
+        {/* Freccia */}
         {!position.includes('-') && (
           <div className={`
             absolute w-2.5 h-2.5 transform rotate-45
-            ${isLight ? `bg-white border-neutral-200 ${currentPos.arrow}` : `bg-neutral-700 ${currentPos.arrow.split(' ').slice(0,3).join(' ')}`}
+            ${currentPos.arrow}
+            
+            /* Logica Colori Freccia */
+            ${isForcedDark 
+              ? 'bg-neutral-800 border-neutral-700' 
+              : 'bg-white border-neutral-200 dark:bg-neutral-800 dark:border-neutral-700'
+            }
           `} />
         )}
       </div>

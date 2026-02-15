@@ -1,93 +1,105 @@
-import React, { useState, type ChangeEvent } from "react";
+import React from "react";
 import { FloppyDiskIcon } from "@phosphor-icons/react";
+import { useAuth } from "../../context/AuthContext";
 
 const BillingSettingPage: React.FC = () => {
-    const [tone, setTone] = useState("default");
+    // Recuperiamo il tema dal context
+    const { theme } = useAuth();
+    const isDark = theme === 'dark';
+
+    // Stili dinamici basati sul tema
+    const styles = {
+        container: `flex flex-col h-full relative ${isDark ? "" : "bg-white"}`,
+        headerText: `text-md font-medium ${isDark ? "text-white" : "text-neutral-900"}`,
+        label: `text-sm font-medium ${isDark ? "text-neutral-200" : "text-neutral-700"}`,
+        subLabel: `text-xs font-normal ${isDark ? "text-neutral-500" : "text-neutral-400"}`,
+        divider: `border-t ${isDark ? "border-neutral-800" : "border-neutral-200"} my-4`,
+        buttonSecondary: `flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
+            isDark 
+                ? "text-neutral-300 border-neutral-700 hover:bg-neutral-800" 
+                : "text-neutral-600 border-neutral-300 hover:bg-neutral-100"
+        }`,
+        footer: `p-4 border-t shrink-0 flex justify-end transition-colors ${
+            isDark ? "border-neutral-800 " : "border-neutral-200 bg-white"
+        }`,
+        saveButton: `flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all shadow-sm ${
+            isDark ? "bg-white text-neutral-900 hover:bg-neutral-200" : "bg-neutral-900 text-white hover:bg-neutral-800"
+        }`
+    };
+
     return (
-        <div className="flex flex-col h-full relative">
+        <div className={styles.container}>
 
             {/* BODY: Area scrollabile */}
             <div className="flex-1 overflow-y-auto px-6 py-12 space-y-6">
 
-                {/* Sezione 1: Tono e Stile */}
+                {/* Sezione 1: Piano */}
                 <section className="space-y-4">
-                    <div className="flex flex-row justify-between gap-3">
-                        <label className="text-sm font-medium text-neutral-700">
-                            Plan
-                            <p className="text-xs text-neutral-400 font-normal">Pro plan</p>
+                    <div className="flex flex-row justify-between items-center gap-3">
+                        <label className={styles.label}>
+                            Piano Attuale
+                            <p className={styles.subLabel}>Pro plan</p>
                         </label>
-                        <button className="flex items-center gap-2  text-neutral-600 border border-neutral-300 px-4 py-1.5 rounded-lg
-                             text-sm font-medium hover:bg-neutral-100 cursor-pointer transition-colors">
-                            Change Plan
+                        <button className={styles.buttonSecondary}>
+                            Cambia Piano
                         </button>
                     </div>
-
-
                 </section>
 
-                
-
                 <section className="space-y-4">
-                    <h2 className="text-md font-medium text-neutral-900 ">Dati di Fatturazione</h2>
-                    <hr className="border-neutral-200 my-4" />
-                    <div className="flex flex-row justify-between gap-3">
-                        <label className="text-sm font-medium text-neutral-700">
+                    <h2 className={styles.headerText}>Dati di Fatturazione</h2>
+                    <hr className={styles.divider} />
+                    
+                    {/* Metodo di Pagamento */}
+                    <div className="flex flex-row justify-between items-center gap-3">
+                        <label className={styles.label}>
                             Metodo di Pagamento
-                            <p className="text-xs text-neutral-400 font-normal">Credit Card</p>
+                            <p className={styles.subLabel}>•••• •••• •••• 4242 (Visa)</p>
                         </label>
-                        <button className="flex items-center gap-2  text-neutral-600 border border-neutral-300 px-4 py-1.5 rounded-lg
-                             text-sm font-medium hover:bg-neutral-100 cursor-pointer transition-colors">
+                        <button className={styles.buttonSecondary}>
                             Modifica Metodo
                         </button>
                     </div>
-                    <hr className="border-neutral-200 my-4" />
-                    <div className="flex flex-row justify-between gap-3">
-                        <label className="text-sm font- text-neutral-900">
+
+                    <hr className={styles.divider} />
+
+                    {/* Email di Fatturazione */}
+                    <div className="flex flex-row justify-between items-center gap-3">
+                        <label className={styles.label}>
                             Email di Fatturazione
-                            <p className="text-xs text-neutral-400 font-normal">example@example.com</p>
+                            <p className={styles.subLabel}>mario.rossi@example.com</p>
                         </label>
-                        <button className="flex items-center gap-2  text-neutral-600 border border-neutral-300 px-4 py-1.5 rounded-lg
-                             text-sm font-medium hover:bg-neutral-100 cursor-pointer transition-colors">
+                        <button className={styles.buttonSecondary}>
                             Modifica Email
                         </button>
                     </div>
-                    <hr className="border-neutral-200 my-4" />
-                    <div className="flex flex-row justify-between gap-3">
-                        <label className="text-sm font-medium text-neutral-700">
-                            Metodo di Pagamento
-                            <p className="text-xs text-neutral-400 font-normal">Credit Card</p>
+
+                    <hr className={styles.divider} />
+
+                    {/* Cronologia Fatture */}
+                    <div className="flex flex-row justify-between items-center gap-3">
+                        <label className={styles.label}>
+                            Ultime Fatture
+                            <p className={styles.subLabel}>Gennaio 2024, Febbraio 2024</p>
                         </label>
-                        <button className="flex items-center gap-2  text-neutral-600 border border-neutral-300 px-4 py-1.5 rounded-lg
-                             text-sm font-medium hover:bg-neutral-100 cursor-pointer transition-colors">
-                            Edit Method
+                        <button className={styles.buttonSecondary}>
+                            Vedi Tutto
                         </button>
                     </div>
                 </section>
 
-                {/* Spazio extra per evitare che l'ultimo input sia attaccato al bordo */}
                 <div className="h-4"></div>
             </div>
 
-            {/* FOOTER: Azioni (Opzionale, ma consigliato per UX) */}
-            <div className="p-4 border-t border-neutral-200 bg-white shrink-0 flex justify-end">
-                <button className="flex items-center gap-2 bg-neutral-900 hover:bg-neutral-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-sm">
+            {/* FOOTER */}
+            <div className={styles.footer}>
+                <button className={styles.saveButton}>
                     <FloppyDiskIcon size={18} />
                     Salva Modifiche
                 </button>
             </div>
         </div>
-    )
+    );
 };
-const InputGroup = ({ label, placeholder }: { label: string, placeholder: string }) => (
-    <div className="flex flex-col gap-1.5">
-        <label className="text-xs font-medium text-neutral-600 uppercase tracking-wide">
-            {label}
-        </label>
-        <input
-            type="text"
-            className="w-full border border-neutral-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-neutral-200 outline-none transition-all placeholder:text-neutral-400"
-            placeholder={placeholder}
-        />
-    </div>
-);
+
 export default BillingSettingPage;
