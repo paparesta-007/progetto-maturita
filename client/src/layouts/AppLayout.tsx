@@ -9,7 +9,7 @@ import {
   UserCircleIcon,
   XIcon
 } from "@phosphor-icons/react";
-import { ChatProvider } from "../context/ChatContext";
+import { ChatProvider, useChat } from "../context/ChatContext";
 import { useApp } from "../context/AppContext";
 import { useAuth } from "../context/AuthContext"; // Importa per il tema
 import { AnimatePresence, motion } from "framer-motion";
@@ -21,7 +21,6 @@ const AppLayout = () => {
   const [isMinimized, setIsMinimized] = useState(false);
   const { isSettingOpen, setIsSettingOpen, setSettingPage, settingPage } = useApp();
   const { theme, setTheme } = useAuth(); // Estrai il tema globale
-
   const isDark = theme === 'dark';
 
   // --- Palette dinamica ---
@@ -60,6 +59,8 @@ const AppLayout = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [setTheme]);
+
+
   return (
     <ChatProvider>
       <div className={style.layoutContainer}>

@@ -7,10 +7,10 @@ import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
 import ChatPage from './pages/ChatPage';
 import CompleteProfile from './pages/CompleteProfilePage';
+import DocumentPage from './layouts/DocumentLayout';
+import DocumentLayout from './layouts/DocumentLayout';
 
-// Placeholder
-const Documents = () => <div><h1>Documenti</h1></div>;
-const Chat = () => <div><h1>Chat</h1></div>;
+
 const Calendar = () => <div><h1>Calendar</h1></div>;
 
 function App() {
@@ -31,7 +31,7 @@ function App() {
             <Route path='/app' element={<AppLayout />}>
               <Route index element={<Navigate to="/app/chat" replace />} />
               <Route path='chat/:conversationId' element={<ChatPage />} />
-              <Route path='documents' element={<Documents />} />
+              <Route path='documents' element={<DocumentLayout />} />
               <Route path='chat' element={<ChatPage />} />
               <Route path='calendar' element={<Calendar />} />
             </Route>

@@ -22,7 +22,10 @@ const ChatContent = () => {
         loading,
         areConversationsLoaded,
         setCurrentConversationId,
-        currentConversationName
+        currentConversationName,
+        setCurrentConversationName,
+        setMessageHistory,
+
     } = useChat();
 
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -59,7 +62,23 @@ const ChatContent = () => {
             navigate('/app');
         }
     }, [conversationId, areConversationsLoaded, user?.id]);
-
+      useEffect(() => {
+        const handleKeyDown = (event: KeyboardEvent) => {
+          // Ctrl+Shift+L → event.code === 'KeyL'
+          if (event.ctrlKey && event.key=='i') {
+            console.log("Nuova chat shortcut triggered");
+            event.preventDefault(); // blocca eventuali default del browser
+            navigate('/app/chat');
+            setMessageHistory([]);
+            setCurrentConversationId(null);
+            setCurrentConversationName(null);
+            
+          }
+        };
+    
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+      }, [navigate, setMessageHistory, setCurrentConversationId]);
     return (
         <div className={styles.wrapper}>
             {/* Header dinamico */}

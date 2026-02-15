@@ -54,7 +54,6 @@ export const sendNormalMessage = async (
             tone,
             allowedCustomInstructions
         })
-        console.log("Custom Instruction inviato al backend:", customInstruction);
         const response = await fetch("http://localhost:3000/api/completion/chat", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -66,7 +65,9 @@ export const sendNormalMessage = async (
         // 4. Ricezione Dati
         const data = await response.json();
 
-        // 5. Aggiornamento UI (Messaggio Bot)
+        const metrics= data.metrics || { latencyMs: 0, throughput: 0 }; 
+        console.log("salva metriche:", metrics);
+
         const modelLabel = model?.name ?? model?.name_id ?? "Unknown";
 
         setMessageHistory((prev) => [
