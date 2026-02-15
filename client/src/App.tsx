@@ -10,7 +10,7 @@ import CompleteProfile from './pages/CompleteProfilePage';
 
 // Placeholder
 const Documents = () => <div><h1>Documenti</h1></div>;
-const Chat = () => <div><h1>Chat</h1></div>;
+
 const Calendar = () => <div><h1>Calendar</h1></div>;
 
 function App() {

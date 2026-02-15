@@ -30,6 +30,8 @@ const Sidebar = () => {
     const navigate = useNavigate();
     const [convMenuOpen, setConvMenuOpen] = useState<string | null>(null);
     const menuRef = useRef<HTMLDivElement>(null);
+    const convMenuRef = useRef<HTMLUListElement>(null);
+
     const { setIsSettingOpen } = useApp();
 
     // --- 1. SINGLE SOURCE OF TRUTH FOR THEME ---
@@ -45,7 +47,7 @@ const Sidebar = () => {
         itemHover: isDark ? "hover:bg-neutral-900 hover:text-white" : "hover:bg-neutral-200/50 hover:text-neutral-900",
         itemActive: isDark ? "bg-neutral-800 text-white font-medium" : "bg-neutral-200/50 text-neutral-900 font-medium",
         newChatBtn: `w-full group relative flex items-center justify-between px-4 py-2.5 rounded-lg border transition-all duration-200 hover:shadow-sm ${isDark ? "bg-neutral-900 border-neutral-800 text-white hover:border-neutral-700" : "bg-white border-neutral-200 text-neutral-900 hover:border-neutral-300"}`,
-        shortcutBadge: `text-[10px] px-1.5 py-0.5 rounded border transition-colors ${isDark ? "bg-neutral-800 border-neutral-700 text-neutral-400" : "bg-neutral-200/50 border-neutral-200 text-neutral-700"}`,
+        shortcutBadge: `text-[13px] px-1 py-0 rounded border transition-colors ${isDark ? "bg-neutral-800 border-neutral-700 text-neutral-400" : "bg-neutral-200/50 border-neutral-200 text-neutral-700"}`,
         popoverBg: isDark ? "bg-neutral-900 border-neutral-800 ring-white/5" : "bg-white border-neutral-200 ring-black/5",
         popoverItem: `flex items-center  gap-2 w-full px-3 py-2 w-full text-sm rounded-lg transition-colors text-left ${isDark ? "text-neutral-200 hover:bg-neutral-800" : "text-neutral-700 hover:bg-neutral-100"}`,
         divider: `h-px my-0.5 mx-2 ${isDark ? "text-neutral-700/50" : "text-neutral-200"}`,
@@ -118,6 +120,15 @@ const Sidebar = () => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, [isUserMenuOpen]);
 
+    // --- Click Outside (Conversation Menu) ---
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (convMenuRef.current && !convMenuRef.current.contains(event.target as Node)) setConvMenuOpen(null);
+        };
+        if (convMenuOpen) document.addEventListener("mousedown", handleClickOutside);
+        return () => document.removeEventListener("mousedown", handleClickOutside);
+    }, [convMenuOpen]);
+
     // --- Helpers ---
     const menuItems = [
         { path: "/app/chat", label: "Chatbot AI", icon: <MessageSquare size={18} /> },
@@ -172,7 +183,7 @@ const Sidebar = () => {
                         <Plus size={16} className={style.textPrimary} />
                         <span>Nuova Chat</span>
                     </div>
-                    <span className={style.shortcutBadge}>⌘K</span>
+                    <span className={style.shortcutBadge}>⌘ + i</span>
                 </button>
             </div>
 
@@ -215,7 +226,7 @@ const Sidebar = () => {
                     Cronologia
                 </p>
                 <div className="flex flex-col gap-4">
-                    <ul className="flex flex-col gap-1 relative">
+                    <ul className="flex flex-col gap-1 relative"  ref={convMenuRef} >
                         {conversations.map((conv: any) => (
                             <div key={conv.id} className={`relative group flex items-center rounded-md transition-colors ${style.itemHover}`}>
                                 <NavLink
@@ -243,6 +254,8 @@ const Sidebar = () => {
                                             initial={{ opacity: 0, scale: 0.95, y: -10 }}
                                             animate={{ opacity: 1, scale: 1, y: 0 }}
                                             exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                            transition={{ duration: 0.15 }}
+                                           
                                             className={`absolute right-0 top-full mt-1 w-44 rounded-lg shadow-xl z-[100] p-1.5 border ${style.popoverBg}`}
                                         >
                                             <button className={style.popoverItem}>

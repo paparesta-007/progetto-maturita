@@ -72,12 +72,15 @@ const Textbar = () => {
         setFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
     };
     const handleInput = (e: React.FormEvent<HTMLTextAreaElement>) => {
+        
         const el = e.currentTarget;
 
         const lineHeight = parseFloat(getComputedStyle(el).lineHeight);
         const maxLines = 10;
         const maxHeight = lineHeight * maxLines;
 
+        setInputValue(e.currentTarget.value);
+        if (!e.currentTarget.value.trim()) return;
         el.style.height = "auto";
         el.style.height = Math.min(el.scrollHeight, maxHeight) + "px";
     };

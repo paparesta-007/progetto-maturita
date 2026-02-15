@@ -14,13 +14,18 @@ interface ChatContextType {
     userOwnsConversation: (conversationId: string) => boolean;
     areConversationsLoaded: boolean; // Per sapere quando abbiamo finito di caricare le conversazioni
     setMessageHistory: React.Dispatch<React.SetStateAction<any[]>>; // Per aggiornare la lista delle 
+    
     model: any;
     setModel: React.Dispatch<React.SetStateAction<any>>;
+
     isStreamTextEnabled: boolean;
     setIsStreamTextEnabled: React.Dispatch<React.SetStateAction<boolean>>;
+
     fetchConversations: () => Promise<void>;
+
     currentConversationId: string | null;
     setCurrentConversationId: React.Dispatch<React.SetStateAction<string | null>>;
+    
     currentConversationName: string | null;
     setCurrentConversationName: React.Dispatch<React.SetStateAction<string | null>>;
 }
