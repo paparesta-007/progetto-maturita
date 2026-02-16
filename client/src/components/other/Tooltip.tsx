@@ -67,7 +67,7 @@ const Tooltip = ({
       
       <div
         className={`
-          absolute z-50 px-3 py-2
+          absolute z-999 px-3 py-2
           text-xs font-medium rounded-lg shadow-xl
           pointer-events-none min-w-max
           transition-all duration-300 ease-out transform
