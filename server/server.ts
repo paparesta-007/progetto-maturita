@@ -18,9 +18,15 @@ import { z } from 'zod';
 import path from "path";
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 
-// B) configurazione server
-// SUGGERIMENTO: Rendi la porta configurabile tramite variabili d'ambiente per una maggiore flessibilità.
-// const port: number = parseInt(process.env.PORT || "3000", 10);
+import multer from 'multer';
+
+import { createClient } from "@supabase/supabase-js";
+import { embedMany } from "ai";
+import { createOpenAI } from "@ai-sdk/openai";
+import { ur } from "zod/v4/locales";
+
+const upload = multer({ storage: multer.memoryStorage() });
+import { PDFParse } from "pdf-parse";
 const port: number = 3000;
 let paginaErr: string = "";
 const app: express.Express = express();
@@ -36,20 +42,24 @@ const envPath = path.resolve(__dirname, ".env");
 dotenv.config({ path: envPath });
 
 console.log("Percorso cercato per .env:", envPath);
-console.log("Controllo API Key:", process.env.GOOGLE_GENERATIVE_AI_API_KEY ? "Presente" : "Mancante");
 
 // Update dotenv configuration to load .env.local if it exists
 dotenv.config({ path: path.resolve(__dirname, ".env.local") });
 const openrouter = createOpenRouter({
     apiKey: process.env.VITE_OPENROUTER_API_KEY,
 });
-// C) creazione server e lettura file sincrona
-// SUGGERIMENTO: È meglio leggere i file necessari all'avvio in modo sincrono
-// per evitare race condition in cui il server potrebbe rispondere a una richiesta
-// prima che il file sia stato completamente letto.
+
+const openrouterEmbeddings = createOpenAI({
+    apiKey: process.env.VITE_OPENROUTER_API_KEY, // La tua chiave OpenRouter
+    baseURL: "https://openrouter.ai/api/v1",
+});
+const supabaseUrl = process.env.SUPABASE_URL!;
+const supabaseKey = process.env.SUPABASE_SERVICE_KEY!;
+const supabase = createClient(supabaseUrl, supabaseKey);
+
 try {
     const errorPagePath = path.join(__dirname, 'static', 'error.html');
-    paginaErr = fs.readFileSync(errorPagePath, 'utf-8'); // o il tuo metodo di lettura
+    paginaErr = fs.readFileSync(errorPagePath, 'utf-8'); // o il tuo metodo di letturaf
 } catch (err) {
     paginaErr = "<h1>Risorsa non trovata</h1>";
     console.error("Impossibile leggere la pagina di errore:", err);
@@ -214,7 +224,7 @@ app.post("/api/completion/chat", async function (req: express.Request, res: expr
 
         // Calcolo Throughput: (Token Generati / Tempo Totale in secondi)
         // Controllo latencySec > 0 per evitare divisioni per zero in casi limite (es. risposte istantanee in mock)
-        const throughput = latencySec > 0
+        const throughput = latencySec > 0 && usage.outputTokens
             ? (usage.outputTokens / latencySec)
             : 0;
         console.log("******TEST COMPLETATO: METRICHE******");
@@ -310,6 +320,226 @@ app.post("/api/streamingOutput", async function (req: express.Request, res: expr
     }
 });
 
+// ✅ VERSIONE MIGLIORATA: Parser intelligente con overlapping preservato
+function splitTextIntoChunks(
+    text: string,
+    chunkSize: number = 1000,
+    overlap: number = 200,
+    options: {
+        respectSentences?: boolean;  // Rispetta i confini delle frasi
+        respectParagraphs?: boolean; // Preferisce i limiti dei paragrafi
+        minChunkSize?: number;       // Grandezza minima del chunk
+    } = {}
+): Array<{ content: string; metadata: { startChar: number; endChar: number; order: number } }> {
+
+    const {
+        respectSentences = true,
+        respectParagraphs = true,
+        minChunkSize = 100
+    } = options;
+
+    // Pulisci il testo mantenendo la struttura
+    let cleanedText = text
+        .replace(/\r\n/g, '\n')      // Normalizza line endings
+        .replace(/\n{3,}/g, '\n\n'); // Riduci spazi verticali eccessivi
+
+    const chunks: Array<{ content: string; metadata: any }> = [];
+    let currentPosition = 0;
+    let chunkOrder = 0;
+
+    while (currentPosition < cleanedText.length) {
+        let endPosition = Math.min(currentPosition + chunkSize, cleanedText.length);
+
+        // 1️⃣ Se non siamo alla fine, evita di spezzare le parole
+        if (endPosition < cleanedText.length && cleanedText[endPosition] !== ' ' && cleanedText[endPosition] !== '\n') {
+            // Torna indietro fino allo spazio più vicino
+            const lastSpace = cleanedText.lastIndexOf(' ', endPosition);
+            const lastNewline = cleanedText.lastIndexOf('\n', endPosition);
+            const breakPoint = Math.max(lastSpace, lastNewline);
+
+            if (breakPoint > currentPosition) {
+                endPosition = breakPoint;
+            }
+        }
+
+        // 2️⃣ Se respectSentences è attivo, tenta di spezzare dopo un punto
+        if (respectSentences && endPosition < cleanedText.length) {
+            const nextSentenceEnd = cleanedText.indexOf('.', endPosition);
+            const nextParagraph = cleanedText.indexOf('\n\n', endPosition);
+
+            // Se il prossimo punto è vicino (entro 10% del chunkSize), usa quello
+            if (nextSentenceEnd !== -1 && nextSentenceEnd - endPosition < chunkSize * 0.1) {
+                endPosition = nextSentenceEnd + 1;
+            }
+            // Altrimenti se c'è un paragrafo, preferisci quello
+            else if (respectParagraphs && nextParagraph !== -1 && nextParagraph - endPosition < chunkSize * 0.15) {
+                endPosition = nextParagraph;
+            }
+        }
+
+        // 3️⃣ Estrai il chunk
+        let chunk = cleanedText.substring(currentPosition, endPosition).trim();
+
+        // 4️⃣ Salta chunk troppo piccoli (a meno che non sia l'ultimo)
+        if (chunk.length < minChunkSize && currentPosition + chunkSize < cleanedText.length) {
+            currentPosition = endPosition;
+            continue;
+        }
+
+        if (chunk.length > 0) {
+            chunks.push({
+                content: chunk,
+                metadata: {
+                    startChar: currentPosition,
+                    endChar: endPosition,
+                    order: chunkOrder++,
+                    length: chunk.length
+                }
+            });
+        }
+
+        // 5️⃣ Calcola il prossimo punto di partenza CON overlapping intelligente
+        // L'overlapping si basa sulla posizione precedente, non sulla nuova
+        const stepSize = Math.max(chunkSize - overlap, minChunkSize);
+        currentPosition += stepSize;
+
+        // Evita che i chunk si sovrappongano eccessivamente
+        if (currentPosition < endPosition - overlap) {
+            currentPosition = endPosition - overlap;
+        }
+    }
+
+    return chunks;
+}
+
+// ✅ HELPER FUNCTION: Validazione dei chunk
+function validateChunks(chunks: Array<any>): { isValid: boolean; gaps: number[]; overlaps: number[] } {
+    const gaps: number[] = [];
+    const overlaps: number[] = [];
+
+    for (let i = 0; i < chunks.length - 1; i++) {
+        const currentEnd = chunks[i].metadata.endChar;
+        const nextStart = chunks[i + 1].metadata.startChar;
+
+        if (nextStart > currentEnd) {
+            gaps.push(nextStart - currentEnd); // Testo mancante tra i chunk
+        } else if (nextStart < currentEnd) {
+            overlaps.push(currentEnd - nextStart); // Overlapping tra i chunk
+        }
+    }
+
+    return {
+        isValid: gaps.length === 0,
+        gaps,
+        overlaps
+    };
+}
+// ROUTE: Ingestione Documenti (PDF -> Vector DB)
+app.post("/api/documents/ingest", upload.single("file"), async (req: express.Request, res: express.Response) => {
+    // NOTA: Ho rimosso 'next' per gestire la risposta direttamente qui ed evitare timeout
+    try {
+        console.log("📂 [1/6] Ricevuta richiesta ingestione...");
+
+        // 1. Validazione Input
+        if (!req.file) throw new Error("Nessun file caricato");
+
+        const { user_id, category, title } = req.body;
+        if (!user_id) throw new Error("User ID mancante");
+
+        console.log(`👤 [2/6] Utente: ${user_id}, File: ${req.file.originalname}`);
+        let text = "";
+        let parser = null;
+        try {
+            const dataBuffer = req.file.buffer;
+
+            // 1. Istanzia la classe passando il buffer nella proprietà 'data'
+            parser = new PDFParse({ data: dataBuffer });
+
+            // 2. Estrai il testo
+            const result = await parser.getText();
+            text = result.text;
+
+        } catch (pdfError: any) {
+            console.error("❌ Errore durante il parsing del PDF:", pdfError);
+            throw new Error("Il file PDF è corrotto o illegibile.");
+        } finally {
+            if (parser) {
+                await parser.destroy();
+            }
+        }
+
+        console.log(`📄 [3/6] Testo estratto: ${text.length} caratteri`);
+
+        // 3. Chunking
+        const chunks = splitTextIntoChunks(text, 1000, 200, {
+            respectSentences: true,
+            respectParagraphs: true,
+            minChunkSize: 100
+        });
+        const validation = validateChunks(chunks);
+        if (!validation.isValid) {
+            console.warn("⚠️  Detected gaps in chunks:", validation.gaps);
+        }
+
+        console.log(`🧩 [4/6] Generati ${chunks.length} chunks con validazione: ${validation.isValid ? '✅' : '❌'}`);
+        if (chunks.length === 0) throw new Error("Nessun testo estraibile dal PDF");
+
+        // 4. Generazione Embeddings
+        console.log("🤖 [5/6] Richiesta embedding a OpenRouter...");
+
+        // Verifica preventiva del modello
+        const modelId = "openai/text-embedding-3-small"; // ID completo per OpenRouter
+
+        const { embeddings } = await embedMany({
+            model: openrouterEmbeddings.embedding(modelId),
+            values: chunks.map(chunk => chunk.content),
+        });
+
+        console.log(`✨ [5/6] Ricevuti ${embeddings.length} vettori da OpenRouter`);
+        const docId = crypto.randomUUID();
+        // 5. Preparazione dati per Supabase
+        const documentsToInsert = chunks.map((chunkData) => ({
+            user_id: user_id,
+            content: chunkData.content,
+            embedding: embeddings[chunkData.metadata.order],
+            metadata: {
+                ...chunkData.metadata,
+                source: req.file?.originalname,
+                title: title,
+                category: category,
+                document_id: docId
+            }
+        }));
+
+        // 6. Salvataggio su Supabase
+        const { error } = await supabase
+            .from('documents')
+            .insert(documentsToInsert);
+
+        if (error) {
+            console.error("❌ Errore Supabase:", JSON.stringify(error, null, 2));
+            throw new Error(`Errore DB: ${error.message}`);
+        }
+
+        console.log("✅ [6/6] Salvataggio completato con successo!");
+
+        // Risposta finale
+        res.status(200).json({
+            success: true,
+            message: `Processati ${chunks.length} frammenti`,
+            filename: req.file.originalname
+        });
+
+    } catch (error: any) {
+        console.error("❌ ERRORE CRITICO NELLA ROTTA INGEST:", error);
+
+        // Rispondiamo esplicitamente con JSON per evitare "Unexpected end of JSON input" nel frontend
+        res.status(500).json({
+            success: false,
+            error: error.message || "Errore sconosciuto durante l'ingestione"
+        });
+    }
+});
 // F) Gestione rotta di default (404)
 app.use("/", function (req: express.Request, res: express.Response) {
     res.status(404);
