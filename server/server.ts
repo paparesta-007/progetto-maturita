@@ -545,9 +545,9 @@ app.post("/api/documents/ingest", upload.single("file"), async (req: express.Req
     }
 });
 
-app.get("/api/chat/ask-pdf", async (req: express.Request, res: express.Response) => {
+app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response) => {
     try {
-        const question = req.query.question as string;
+        const {question} = req.body;
         
         console.log("🔍 Domanda ricevuta:", question);
 
@@ -577,7 +577,6 @@ app.get("/api/chat/ask-pdf", async (req: express.Request, res: express.Response)
 
         console.log(`📚 Trovati ${chunks.length} chunk rilevanti.`);
 
-        // 3. Costruisci il contesto per l'LLM
         const contextText = chunks
             .map((chunk: any) => `--- FONTE: ${chunk.metadata.source} ---\n${chunk.content}`)
             .join("\n\n");
@@ -591,7 +590,7 @@ app.get("/api/chat/ask-pdf", async (req: express.Request, res: express.Response)
         `;
 
         // 4. Genera la risposta con Gemini
-        const { text } = await generateText({
+        const { text, usage } = await generateText({
             model: openrouter("nvidia/nemotron-3-nano-30b-a3b:free"), // O il modello che preferisci
             system: systemPrompt,
             prompt: question,
