@@ -16,6 +16,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import GeneralSettingPage from "../pages/SettingPages/GeneralSettingPage";
 import InstructionsSettingPage from "../pages/SettingPages/InstructionsSettingPage";
 import BillingSettingPage from "../pages/SettingPages/BilingSettingPage";
+import { DocumentProvider } from "../context/DocumentContext";
 
 const AppLayout = () => {
   const [isMinimized, setIsMinimized] = useState(false);
@@ -63,93 +64,96 @@ const AppLayout = () => {
 
   return (
     <ChatProvider>
-      <div className={style.layoutContainer}>
-        {/* Toggle per Sidebar minimizzata */}
-        {isMinimized && (
-          <button
-            className={`fixed top-4 left-4 z-50 p-2 rounded-lg transition-colors ${isDark ? "bg-neutral-900 text-white hover:bg-neutral-800" : "bg-white text-neutral-900 hover:bg-neutral-100 shadow-md"}`}
-            onClick={() => setIsMinimized(false)}
-          >
-            <ListIcon size={24} />
-          </button>
-        )}
-
-        {!isMinimized && <Sidebar />}
-
-        <main className="flex-1 overflow-auto relative">
-          <Outlet />
-        </main>
-
-        {/* MODALE IMPOSTAZIONI */}
-        <AnimatePresence>
-          {isSettingOpen && (
-            <>
-              {/* Overlay */}
-              <motion.div
-                className={style.modalOverlay}
-                onClick={() => setIsSettingOpen(false)}
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-              />
-
-              {/* Popup Animato */}
-              <motion.div
-                role="dialog"
-                aria-modal="true"
-                className={style.modalContent}
-                initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-              >
-                {/* Menu laterale del modale */}
-                <div className={style.modalSidebar}>
-                  <div className="flex md:flex-col gap-1 flex-1">
-                    <p className={`hidden md:block px-3 text-[10px] font-bold uppercase tracking-wider mb-2 ${isDark ? "text-neutral-500" : "text-neutral-400"}`}>
-                      Impostazioni
-                    </p>
-                    {menuItems.map(({ label, Icon, id }) => (
-                      <button
-                        key={id}
-                        onClick={() => setSettingPage(id)}
-                        className={style.navButton(settingPage === id)}
-                      >
-                        <Icon size={18} weight={settingPage === id ? "fill" : "regular"} />
-                        {label}
-                      </button>
-                    ))}
-                  </div>
-
-                  <hr className={style.divider} />
-
-                  <button className={style.navButton(false)}>
-                    <UserCircleIcon size={18} weight="regular" />
-                    Account
-                  </button>
-                </div>
-
-                {/* Contenuto dinamico delle pagine di impostazione */}
-                <div className="flex flex-col flex-1 relative overflow-y-auto">
-                  <div className="p-3 md:p-4 h-full">
-                    {settingPage === "generale" && <GeneralSettingPage />}
-                    {settingPage === "istruzioni" && <InstructionsSettingPage />}
-                    {settingPage === "fatturazione" && <BillingSettingPage />}
-                  </div>
-
-                  {/* Tasto Chiudi */}
-                  <button
-                    className={style.closeBtn}
-                    onClick={() => setIsSettingOpen(false)}
-                  >
-                    <XIcon size={22} weight="bold" />
-                  </button>
-                </div>
-              </motion.div>
-            </>
+      <DocumentProvider>
+        <div className={style.layoutContainer}>
+          {/* Toggle per Sidebar minimizzata */}
+          {isMinimized && (
+            <button
+              className={`fixed top-4 left-4 z-50 p-2 rounded-lg transition-colors ${isDark ? "bg-neutral-900 text-white hover:bg-neutral-800" : "bg-white text-neutral-900 hover:bg-neutral-100 shadow-md"}`}
+              onClick={() => setIsMinimized(false)}
+            >
+              <ListIcon size={24} />
+            </button>
           )}
-        </AnimatePresence>
-      </div>
+
+          {!isMinimized && <Sidebar />}
+
+          <main className="flex-1 overflow-auto relative">
+            <Outlet />
+          </main>
+
+          {/* MODALE IMPOSTAZIONI */}
+          <AnimatePresence>
+            {isSettingOpen && (
+              <>
+                {/* Overlay */}
+                <motion.div
+                  className={style.modalOverlay}
+                  onClick={() => setIsSettingOpen(false)}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                />
+
+                {/* Popup Animato */}
+                <motion.div
+                  role="dialog"
+                  aria-modal="true"
+                  className={style.modalContent}
+                  initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                  transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                >
+                  {/* Menu laterale del modale */}
+                  <div className={style.modalSidebar}>
+                    <div className="flex md:flex-col gap-1 flex-1">
+                      <p className={`hidden md:block px-3 text-[10px] font-bold uppercase tracking-wider mb-2 ${isDark ? "text-neutral-500" : "text-neutral-400"}`}>
+                        Impostazioni
+                      </p>
+                      {menuItems.map(({ label, Icon, id }) => (
+                        <button
+                          key={id}
+                          onClick={() => setSettingPage(id)}
+                          className={style.navButton(settingPage === id)}
+                        >
+                          <Icon size={18} weight={settingPage === id ? "fill" : "regular"} />
+                          {label}
+                        </button>
+                      ))}
+                    </div>
+
+                    <hr className={style.divider} />
+
+                    <button className={style.navButton(false)}>
+                      <UserCircleIcon size={18} weight="regular" />
+                      Account
+                    </button>
+                  </div>
+
+                  {/* Contenuto dinamico delle pagine di impostazione */}
+                  <div className="flex flex-col flex-1 relative overflow-y-auto">
+                    <div className="p-3 md:p-4 h-full">
+                      {settingPage === "generale" && <GeneralSettingPage />}
+                      {settingPage === "istruzioni" && <InstructionsSettingPage />}
+                      {settingPage === "fatturazione" && <BillingSettingPage />}
+                    </div>
+
+                    {/* Tasto Chiudi */}
+                    <button
+                      className={style.closeBtn}
+                      onClick={() => setIsSettingOpen(false)}
+                    >
+                      <XIcon size={22} weight="bold" />
+                    </button>
+                  </div>
+                </motion.div>
+              </>
+            )}
+          </AnimatePresence>
+        </div>
+      </DocumentProvider>
+
     </ChatProvider>
   );
 };

@@ -32,6 +32,7 @@ function App() {
               <Route index element={<Navigate to="/app/chat" replace />} />
               <Route path='chat/:conversationId' element={<ChatPage />} />
               <Route path='documents' element={<DocumentLayout />} />
+              <Route path='documents/:documentId' element={<DocumentPage />} />
               <Route path='chat' element={<ChatPage />} />
               <Route path='calendar' element={<Calendar />} />
             </Route>

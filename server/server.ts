@@ -510,6 +510,7 @@ app.post("/api/documents/ingest", upload.single("file"), async (req: express.Req
                 category: category,
                 document_id: docId
             },
+            document_id: docId,
             created_at: date
         }));
 

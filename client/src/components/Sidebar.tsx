@@ -23,6 +23,7 @@ import deleteConversation from "../services/supabase/Conversation/deleteConversa
 import { useApp } from "../context/AppContext";
 import getAllDocuments from "../services/supabase/documents/getAllDocuments";
 import getDocumentsMetadata from "../services/supabase/documents/getAllDocuments";
+import { useDocument } from "../context/DocumentContext";
 
 const Sidebar = () => {
     // --- Context & State ---
@@ -30,9 +31,9 @@ const Sidebar = () => {
     const { conversations, setMessageHistory, fetchConversations, setCurrentConversationId, setCurrentConversationName } = useChat();
     const [userDetails, setUserDetails] = useState<{ full_name: string | null, birthday: string | null, avatar_url?: string } | null>(null);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-    
-    // --- NUOVO STATO PER DOCUMENTI ---
-    const [documents, setDocuments] = useState<any[]>([]); // Sostituisci any con la tua interfaccia Documento
+  
+    // --- NUOVO STATO PER DOCUMENTI     ---
+    const { documentList, fetchUserDocuments } = useDocument();
 
     const navigate = useNavigate();
     const location = useLocation(); // Hook per sapere dove siamo
@@ -88,25 +89,23 @@ const Sidebar = () => {
     }, [theme]);
 
     // --- Fetch Dati Utente ---
-    useEffect(() => {
+   useEffect(() => {
         const fetchUserDetails = async () => {
             if (user?.id) {
                 const data = await selectUserDetails(user.id);
                 setUserDetails(data);
             }
         };
-        const fetchDocuments = async () => {
-            if (user?.id) {
-                // Sostituisci con la tua funzione reale per ottenere i documenti
-                const data = await getDocumentsMetadata (user.id);
-                setDocuments(data || []);
-                console.log("Documenti caricati:", data);
-            }
-        }
-        fetchUserDetails();
-        fetchDocuments();
 
-    }, [user]);
+        // Chiamata centralizzata
+        if (user?.id) {
+            fetchUserDetails();
+            // Chiama la funzione del context. 
+            // Grazie al controllo interno, se i dati ci sono già, non farà la chiamata di rete.
+            fetchUserDocuments(user.id); 
+        }
+
+    }, [user, fetchUserDocuments]);
 
 
     // --- Gestione Path ---
@@ -240,11 +239,12 @@ const Sidebar = () => {
                         {/* --- BLOCCO RENDERING CONDIZIONALE --- */}
                         {isDocumentsPage ? (
                             // --- VISTA DOCUMENTI ---
-                            documents.length > 0 ? (
-                                documents.map((doc) => (
+                            documentList.length > 0 ? (
+                                documentList.map((doc) => (
                                     <div key={doc.id} className={`relative group flex items-center rounded-md transition-colors ${style.itemHover}`}>
                                         <NavLink
-                                            to={`/app/documents/${doc.id}`}
+                                            to={`/app/documents/${doc.document_id}`}
+                                            
                                             className={({ isActive }) => `flex-1 flex items-center px-3 py-2 rounded-md text-sm truncate transition-colors ${isActive ? (isDark ? "bg-neutral-800 text-white font-medium" : "bg-neutral-200/50 text-neutral-900 font-medium") : (style.textSecondary)}`}
                                         >
                                             <File size={16} className="mr-2 opacity-70"/>
