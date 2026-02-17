@@ -3,20 +3,30 @@
 
 /* 1. Definisci i colori di default (LIGHT MODE) */
 :root {
-  --code-bg: #ffffff;           /* Sfondo bianco */
-  --code-text: #dc2626;         /* Testo rosso scuro */
-  --code-border: #d1d5db;       /* Bordo grigio chiaro */
-  --pre-bg: #f3f4f6;            /* Sfondo blocchi codice */
+    --code-bg: #ffffff;
+    /* Sfondo bianco */
+    --code-text: #dc2626;
+    /* Testo rosso scuro */
+    --code-border: #d1d5db;
+    /* Bordo grigio chiaro */
+    --pre-bg: #f3f4f6;
+    /* Sfondo blocchi codice */
 }
 
 /* 2. Sovrascrivi i colori quando c'è la classe .dark (DARK MODE) */
 /* Questo selettore si attiva quando <html> ha class="dark" o data-theme="dark" */
-.dark, [data-theme="dark"] {
-  --code-bg: #171717;           /* Sfondo scuro (neutral-900) */
-  --code-text: #f87171;         /* Testo rosso chiaro (più leggibile su scuro) */
-  --code-border: #404040;       /* Bordo grigio scuro */
-  --pre-bg: #0a0a0a;            /* Sfondo blocchi codice scuro */
+.dark,
+[data-theme="dark"] {
+    --code-bg: #171717;
+    /* Sfondo scuro (neutral-900) */
+    --code-text: #f87171;
+    /* Testo rosso chiaro (più leggibile su scuro) */
+    --code-border: #404040;
+    /* Bordo grigio scuro */
+    --pre-bg: #0a0a0a;
+    /* Sfondo blocchi codice scuro */
 }
+
 .f-poppins {
     font-family: 'Poppins', sans-serif;
 }
@@ -90,7 +100,7 @@
 }
 
 .renderChat th {
-    background-color:var(--code-bg);
+    background-color: var(--code-bg);
     padding: 10px 12px;
     border: 1px solid var(--code-border);
     text-align: left;
@@ -151,22 +161,32 @@ pre {
     width: 700px !important;
     max-width: 100%;
 }
+
 /* Stile per i blocchi di codice (Code Blocks) */
-li > pre,
-p > pre {
-    background-color: var(--pre-bg); /* Usa variabile */
-    border: 1px solid var(--code-border); /* Usa variabile */
+li>pre,
+p>pre {
+    background-color: var(--pre-bg);
+    /* Usa variabile */
+    border: 1px solid var(--code-border);
+    /* Usa variabile */
     border-radius: 5px;
-    padding: 8px; /* Aumentato leggermente per leggibilità */
-    overflow-x: auto; /* Importante per scrollare codice lungo */
+    padding: 8px;
+    /* Aumentato leggermente per leggibilità */
+    overflow-x: auto;
+    /* Importante per scrollare codice lungo */
 }
 
 /* Stile per il codice inline (es. `const a = 1`) */
-li > code, td > code, th > code,
-p > code {
-    color: var(--code-text);       /* Usa variabile rossa */
-    background-color: var(--code-bg); /* Usa variabile sfondo */
-    border: 1px solid var(--code-border); /* Usa variabile bordo */
+li>code,
+td>code,
+th>code,
+p>code {
+    color: var(--code-text);
+    /* Usa variabile rossa */
+    background-color: var(--code-bg);
+    /* Usa variabile sfondo */
+    border: 1px solid var(--code-border);
+    /* Usa variabile bordo */
     border-radius: 5px;
     padding: 2px 5px;
     font-family: monospace;
@@ -196,4 +216,25 @@ p > code {
 * {
     scrollbar-color: var(--code-border) var(--code-bg);
     scrollbar-width: thin;
+}
+
+.loader {
+    width: 24px;
+    height: 24px;
+    border: 3px solid #131313;
+    border-bottom-color: transparent;
+    border-radius: 50%;
+    display: inline-block;
+    box-sizing: border-box;
+    animation: rotation 1s linear infinite;
+}
+
+@keyframes rotation {
+    0% {
+        transform: rotate(0deg);
+    }
+
+    100% {
+        transform: rotate(360deg);
+    }
 }

@@ -1,17 +1,18 @@
 import React, { useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 
 const Tooltip = ({
   content,
   position = 'top',
   children,
-  background = 'light'
 }: React.PropsWithChildren<{
   content: React.ReactNode;
   position?: 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
-  background?: 'dark' | 'light';
+ 
 }>) => {
   const [isVisible, setIsVisible] = useState(false);
-
+  const {theme}=useAuth();
+  const background = theme === 'dark' ? 'dark' : 'light';
   // Configurazione posizioni e animazioni
   const positionConfig = {
     top: {

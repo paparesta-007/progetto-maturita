@@ -23,6 +23,7 @@ const DocumentWizard = () => {
     // --- Context & State ---
     const { currentStep, setCurrentStep } = useDocument();
     const { user, theme } = useAuth();
+    const [loading, setLoading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     // Local state
@@ -114,7 +115,42 @@ const DocumentWizard = () => {
         // Basic validation
         if (currentStep === 1 && !formData.title) return; // Add better validation UX in real app
         if (currentStep < 3) setCurrentStep((currentStep + 1) as DocumentStep);
+
+        if (currentStep === 3) {
+            handleSubmit()
+        }
     };
+
+    const handleSubmit = async() => {
+        
+        setLoading(true);
+        if(!formData.file ) {
+            console.error("No file to submit");
+            setLoading(false);
+            return;
+        }
+        const formDataToSubmit = new FormData();
+        formDataToSubmit.append("file", formData.file as Blob);
+        formDataToSubmit.append("title", formData.title);
+        formDataToSubmit.append("category", formData.category);
+        formDataToSubmit.append('user_id', user?.id || "");
+
+        //Optional fields
+        formDataToSubmit.append("embeddingModel", formData.embeddingModel);
+        formDataToSubmit.append("description", formData.description);
+
+        const response=await fetch("http://localhost:3000/api/documents/ingest",{
+            method: "POST",
+            body: formDataToSubmit
+        })
+        const data = await response.json();
+        if(data.success){
+            console.log("Document ingested successfully:", data.message);
+        } else {
+            console.error("Error ingesting document:", data.error);
+        }
+        setLoading(false);
+    }
 
     const handleBack = () => {
         if (currentStep > 1) setCurrentStep((currentStep - 1) as DocumentStep);
@@ -299,10 +335,11 @@ const DocumentWizard = () => {
                                             onChange={handleInputChange}
                                             className={`${style.input} pl-10 appearance-none`}
                                         >
-                                            <option value="google/gemini-embedding-001">Google: Gemini Embedding 001 - $0.15/M input tokens</option>
-                                            <option value="openai/text-embedding-3-large">OpenAI: Text Embedding 3 Large - $0.13/M input tokens</option>
-                                            <option value="mistralai/mistral-embed-2312">Mistral: Mistral Embed 2312 - $0.10/M input tokens</option>
-                                            <option value="qwen/qwen3-embedding-8b">Qwen: Qwen3 Embedding 8B - $0.01/M input tokens</option>
+                                            <option value="openai/text-embedding-3-small">OpenAI: Text Embedding 3 Small - $0.02/M input tokens</option>
+                                            <option value="google/gemini-embedding-001" disabled>Google: Gemini Embedding 001 - $0.15/M input tokens</option>
+                                            <option value="openai/text-embedding-3-large" disabled>OpenAI: Text Embedding 3 Large - $0.13/M input tokens</option>
+                                            <option value="mistralai/mistral-embed-2312" disabled>Mistral: Mistral Embed 2312 - $0.10/M input tokens</option>
+                                            <option value="qwen/qwen3-embedding-8b" disabled>Qwen: Qwen3 Embedding 8B - $0.01/M input tokens</option>
                                         </select>
                                         <Cpu size={18} className={`absolute left-3 top-1/2 -translate-y-1/2 ${style.textSecondary}`} />
                                     </div>
@@ -413,8 +450,11 @@ const DocumentWizard = () => {
                     >
                         {currentStep === 3 ? (
                             <>
-                                <Sparkles size={16} />
-                                Create Document
+                                {!loading &&<Sparkles size={16} />}
+                                {loading && <span className="loader">
+                                
+                                </span>}
+                                <span>Create</span>
                             </>
                         ) : (
                             <>

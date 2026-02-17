@@ -2,6 +2,7 @@ import { Paperclip, PaperPlaneTilt, XIcon, GlobeIcon, StopIcon } from "@phosphor
 import React, { useState, useEffect, useRef } from "react";
 import Tooltip from "./other/Tooltip";
 import { useChat } from "../context/ChatContext";
+import { useDocument } from "../context/DocumentContext"; // Importa il DocumentContext
 import { useAuth } from "../context/AuthContext";
 import ModelPopup from "./other/ModelPopup";
 import { AnimatePresence, motion } from "framer-motion";
@@ -13,10 +14,31 @@ interface FileWithPreview {
 }
 
 const Textbar = () => {
-    const { sendMessage, model, isStreamTextEnabled, setIsStreamTextEnabled, loading } = useChat();
+    const path = window.location.pathname;
     const { theme } = useAuth();
     const isDark = theme === 'dark';
 
+    // --- 1. RILEVAMENTO DEL PERCORSO ---
+    // Controlla se siamo nella chat (adatta la stringa '/app/chat' al tuo routing esatto)
+    const isChatPage = path.includes('/app/chat');
+
+    // --- 2. RECUPERO DEI CONTESTI ---
+    const chatCtx = useChat();
+    const docCtx = useDocument();
+
+    // --- 3. LOGICA DI SWITCHING ---
+    // Se siamo in ChatPage usa chatCtx, altrimenti docCtx
+    const sendMessage = isChatPage ? chatCtx.sendMessage : docCtx.sendMessage;
+    const loading = isChatPage ? chatCtx.loading : docCtx.loading;
+    const model = isChatPage ? chatCtx.model : docCtx.model;
+    
+    // Stream: Se il DocumentContext non ha lo stream, usiamo quello della chat o disabilitiamo
+    // Assumiamo che solo la chat abbia lo stream abilitabile per ora
+    const isStreamTextEnabled = isChatPage ? chatCtx.isStreamTextEnabled : false; 
+    const setIsStreamTextEnabled = isChatPage ? chatCtx.setIsStreamTextEnabled : () => {};
+
+
+    // --- STATI LOCALI ---
     const [files, setFiles] = useState<FileWithPreview[]>([]);
     const [isGroundingActive, setIsGroundingActive] = useState(false);
     const [inputValue, setInputValue] = useState("");
@@ -48,6 +70,7 @@ const Textbar = () => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             if (inputValue.trim()) {
+                // Chiama la funzione corretta in base al contesto
                 sendMessage(inputValue);
                 resetTextarea();
             }
@@ -124,7 +147,7 @@ const Textbar = () => {
                 <textarea
                     ref={textareaRef}
                     rows={1}
-                    placeholder="Ask me anything..."
+                    placeholder={isChatPage ? "Chat with AI..." : "Ask your document..."} // Placeholder dinamico
                     onChange={(e) => setInputValue(e.target.value)}
                     onInput={handleInput}
                     value={inputValue}
@@ -150,35 +173,41 @@ const Textbar = () => {
 
                     <ModelPopup />
 
-                    <button
-                        className={`transition-all relative flex items-center gap-0 px-2 py-1 rounded-full ${isGroundingActive ? 'bg-blue-500/10 text-blue-500' : styles.iconBtn
-                            }`}
-                        onClick={() => setIsGroundingActive(!isGroundingActive)}
-                    >
-                        <GlobeIcon size={22} weight={isGroundingActive ? "fill" : "regular"} />
-                        <AnimatePresence>
-                            {isGroundingActive && (
-                                <motion.span
-                                    initial={{ width: 0, opacity: 0 }} animate={{ width: 'auto', opacity: 1 }} exit={{ width: 0, opacity: 0 }}
-                                    className="ml-1 text-xs font-bold overflow-hidden whitespace-nowrap"
-                                >
-                                    Web
-                                </motion.span>
-                            )}
-                        </AnimatePresence>
-                    </button>
+                    {/* Mostra Web Grounding solo se siamo nella Chat (opzionale, rimuovi il controllo se lo vuoi anche nei doc) */}
+                    {isChatPage && (
+                        <button
+                            className={`transition-all relative flex items-center gap-0 px-2 py-1 rounded-full ${isGroundingActive ? 'bg-blue-500/10 text-blue-500' : styles.iconBtn
+                                }`}
+                            onClick={() => setIsGroundingActive(!isGroundingActive)}
+                        >
+                            <GlobeIcon size={22} weight={isGroundingActive ? "fill" : "regular"} />
+                            <AnimatePresence>
+                                {isGroundingActive && (
+                                    <motion.span
+                                        initial={{ width: 0, opacity: 0 }} animate={{ width: 'auto', opacity: 1 }} exit={{ width: 0, opacity: 0 }}
+                                        className="ml-1 text-xs font-bold overflow-hidden whitespace-nowrap"
+                                    >
+                                        Web
+                                    </motion.span>
+                                )}
+                            </AnimatePresence>
+                        </button>
+                    )}
                 </div>
 
                 <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2 cursor-pointer group">
-                        <input
-                            type="checkbox" id="stream-toggle" className="cursor-pointer accent-neutral-800"
-                            checked={isStreamTextEnabled} onChange={(e) => setIsStreamTextEnabled(e.target.checked)}
-                        />
-                        <label htmlFor="stream-toggle" className="text-xs font-medium text-neutral-400 group-hover:text-neutral-600 dark:group-hover:text-neutral-300 cursor-pointer select-none">
-                            Stream
-                        </label>
-                    </div>
+                    {/* Stream Toggle: Mostrato solo se siamo in Chat Page */}
+                    {isChatPage && (
+                        <div className="flex items-center gap-2 cursor-pointer group">
+                            <input
+                                type="checkbox" id="stream-toggle" className="cursor-pointer accent-neutral-800"
+                                checked={isStreamTextEnabled} onChange={(e) => setIsStreamTextEnabled(e.target.checked)}
+                            />
+                            <label htmlFor="stream-toggle" className="text-xs font-medium text-neutral-400 group-hover:text-neutral-600 dark:group-hover:text-neutral-300 cursor-pointer select-none">
+                                Stream
+                            </label>
+                        </div>
+                    )}
 
                     <Tooltip
                         background={isDark ? "dark" : "light"}
@@ -187,14 +216,14 @@ const Textbar = () => {
                             <div className="text-left">
                                 <b className={isDark ? "text-white" : "text-neutral-900"}>Model Pricing</b>
                                 <div className="text-[11px] text-neutral-500 mt-1">
-                                    In: {model.cost_per_input_token}$ / 1M<br />
-                                    Out: {model.cost_per_output_token}$ / 1M
+                                    In: {model?.cost_per_input_token}$ / 1M<br />
+                                    Out: {model?.cost_per_output_token}$ / 1M
                                 </div>
                             </div>
                         }
                     >
                         <span className="text-[10px] font-mono text-neutral-500">
-                            {(Number(model.cost_per_input_token) + Number(model.cost_per_output_token)).toFixed(2)}$/1M
+                            {(Number(model?.cost_per_input_token || 0) + Number(model?.cost_per_output_token || 0)).toFixed(2)}$/1M
                         </span>
                     </Tooltip>
                 </div>

@@ -19,6 +19,7 @@ const ModelPopup = React.forwardRef<HTMLDivElement>((_, modalRef) => {
         { name: "Mistral AI", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcR9tjl3-up4Vemom1ZYPTnWkg5dXOXFtPQDBw&s" },
         { name: "NVIDIA", img: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQvkRmsL7mAkXKS19fL0lQAMsck4AjD1WZy4Q&s" },
         { name: "Qwen", img: "https://opencv.org/wp-content/uploads/2025/01/MIhJKlK5yVR3axxgE7_gHL-rsKjliShJKd3asUqg5KDdEsdOGut-9mCW4Ti1x7i2y8zCkxeZHQFR00sQg6BfYA.png" },
+        {name: "Free Models", img: "https://t3.ftcdn.net/jpg/05/83/74/28/360_F_583742888_L0dIi5d23qJ2rteSlXMeMDGNsnLxbkjB.jpg"}
     ]
     const groupedModels = filteredModels.reduce((acc: Record<string, any[]>, model) => {
         const providerName = model.provider || "Unknown";
