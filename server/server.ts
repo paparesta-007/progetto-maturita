@@ -10,7 +10,7 @@ import fs from "fs";
 import express from "express";
 import cors from "cors";
 
-import { generateText, streamText } from 'ai';
+import { embed, generateText, streamText } from 'ai';
 import { google } from '@ai-sdk/google';
 import { generateObject } from 'ai';
 import getSystemPrompt from "./static/systemPrompt.js"; // Funzione per generare un prompt di sistema dettagliato e specifico per il modello selezionato. Definita in client/src/library/systemPrompt.ts
@@ -476,6 +476,7 @@ app.post("/api/documents/ingest", upload.single("file"), async (req: express.Req
             respectParagraphs: true,
             minChunkSize: 100
         });
+        const date = new Date().toISOString();
         const validation = validateChunks(chunks);
         if (!validation.isValid) {
             console.warn("⚠️  Detected gaps in chunks:", validation.gaps);
@@ -508,7 +509,8 @@ app.post("/api/documents/ingest", upload.single("file"), async (req: express.Req
                 title: title,
                 category: category,
                 document_id: docId
-            }
+            },
+            created_at: date
         }));
 
         // 6. Salvataggio su Supabase
@@ -527,7 +529,8 @@ app.post("/api/documents/ingest", upload.single("file"), async (req: express.Req
         res.status(200).json({
             success: true,
             message: `Processati ${chunks.length} frammenti`,
-            filename: req.file.originalname
+            filename: req.file.originalname,
+            documentId: docId
         });
 
     } catch (error: any) {
@@ -540,6 +543,72 @@ app.post("/api/documents/ingest", upload.single("file"), async (req: express.Req
         });
     }
 });
+
+app.get("/api/chat/ask-pdf", async (req: express.Request, res: express.Response) => {
+    try {
+        const question = req.query.question as string;
+        
+        console.log("🔍 Domanda ricevuta:", question);
+
+        // 1. Genera l'embedding della domanda 
+        // (DEVE ESSERE LO STESSO MODELLO USATO PER L'INGESTIONE!)
+        const { embedding } = await embed({
+            model: openrouterEmbeddings.embedding("openai/text-embedding-3-small"),
+            value: question,
+        });
+
+        // 2. Chiama la funzione RPC su Supabase per cercare i chunk simili
+        const { data: chunks, error } = await supabase
+            .rpc('match_documents', {
+                query_embedding: embedding,
+                match_threshold: 0.5, // Soglia di similarità (0.0 - 1.0)
+                match_count: 5        // Prendi i 5 pezzi più rilevanti
+            });
+
+        if (error) {
+            console.error("Errore ricerca Supabase:", error);
+            throw new Error("Errore durante la ricerca nel DB");
+        }
+
+        if (!chunks || chunks.length === 0) {
+            return res.json({ answer: "Mi dispiace, non ho trovato informazioni pertinenti nei documenti caricati." });
+        }
+
+        console.log(`📚 Trovati ${chunks.length} chunk rilevanti.`);
+
+        // 3. Costruisci il contesto per l'LLM
+        const contextText = chunks
+            .map((chunk: any) => `--- FONTE: ${chunk.metadata.source} ---\n${chunk.content}`)
+            .join("\n\n");
+
+        const systemPrompt = `
+        Sei un assistente intelligente che risponde alle domande basandosi SOLO sul contesto fornito qui sotto.
+        Se la risposta non è nel contesto, dì chiaramente che non lo sai. Non inventare nulla.
+        
+        CONTESTO:
+        ${contextText}
+        `;
+
+        // 4. Genera la risposta con Gemini
+        const { text } = await generateText({
+            model: openrouter("nvidia/nemotron-3-nano-30b-a3b:free"), // O il modello che preferisci
+            system: systemPrompt,
+            prompt: question,
+        });
+
+        // Rispondi al client
+        res.json({ 
+            answer: text, 
+            sources: chunks.map((c: any) => c.metadata.source) // Opzionale: mostra le fonti usate
+        });
+
+    } catch (error: any) {
+        console.error("Errore /ask-pdf:", error);
+        res.status(500).json({ error: error.message });
+    }
+});
+
+
 // F) Gestione rotta di default (404)
 app.use("/", function (req: express.Request, res: express.Response) {
     res.status(404);
