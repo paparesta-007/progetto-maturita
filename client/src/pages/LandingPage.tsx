@@ -140,7 +140,7 @@ const Navbar = () => {
 
 const Hero = () => {
     return (
-        <section className="relative pt-32 pb-24 md:pt-48 md:pb-36 overflow-hidden bg-grid">
+        <section className="relative pt-32 pb-24 md:pt-48 md:pb-36 overflow-hidden bg-grid ">
             <div className="max-w-6xl mx-auto px-6 relative z-10 grid lg:grid-cols-2 gap-16 items-center">
                 <FadeIn className="text-center lg:text-left">
                     <div className="inline-flex items-center gap-2 px-3 py-1 bg-neutral-100 border border-neutral-200 rounded-full text-neutral-600 text-xs font-semibold mb-8 uppercase tracking-wider">
@@ -172,7 +172,7 @@ const Hero = () => {
                             <Check size={14} /> Free Forever Plan
                         </div>
                         <div className="flex items-center gap-2">
-                            <Check size={14} /> No training on your data
+                            <Check size={14} /> No training on your data*
                         </div>
                     </div>
                 </FadeIn>
@@ -556,7 +556,7 @@ const Pricing = () => {
                         <p className="text-neutral-500 text-sm mb-8">Perfetto per organizzare la routine personale.</p>
                         <Button variant="secondary" className="w-full mb-8">Crea Account</Button>
                         <ul className="space-y-4 text-sm text-neutral-600 flex-1">
-                            <li className="flex gap-2"><Check size={16} /> Assistente Chat Base</li>
+                            <li className="flex gap-2"><Check size={16} /> Accesso limitato a diversi modelli</li>
                             <li className="flex gap-2"><Check size={16} /> 5 Upload Documenti/giorno</li>
                             <li className="flex gap-2"><Check size={16} /> Integrazione Calendario (Read-only)</li>
                             <li className="flex gap-2 text-neutral-400"><Minus size={16} /> No Email Assistant</li>
@@ -567,21 +567,21 @@ const Pricing = () => {
                     <div className="p-8 border-2 border-neutral-900 rounded-lg relative bg-neutral-50 flex flex-col shadow-lg">
                         <div className="absolute top-0 right-0 left-0 bg-neutral-900 text-white text-[10px] font-bold text-center py-1 rounded-t-sm uppercase tracking-widest">Consigliato</div>
                         <div className="text-sm font-semibold text-neutral-900 mb-2 mt-4">Pro</div>
-                        <div className="text-4xl font-bold text-neutral-900 mb-6">€20<span className="text-sm font-normal text-neutral-500">/mo</span></div>
+                        <div className="text-2xl font-bold text-neutral-900 mb-6">Pay as you go<span className="text-sm font-normal text-neutral-500"></span></div>
                         <p className="text-neutral-500 text-sm mb-8">Per freelance e professionisti.</p>
                         <Button variant="primary" className="w-full mb-8">Attiva Pro</Button>
                         <ul className="space-y-4 text-sm text-neutral-900 font-medium flex-1">
-                            <li className="flex gap-2"><Check size={16} /> Modelli Avanzati (GPT-4o)</li>
+                            <li className="flex gap-2"><Check size={16} /> Modelli Avanzati (Gemini 3.1 Pro)</li>
                             <li className="flex gap-2"><Check size={16} /> Upload Illimitati</li>
                             <li className="flex gap-2"><Check size={16} /> Smart Agenda & Email Pilot</li>
-                            <li className="flex gap-2"><Check size={16} /> Knowledge Base Personale</li>
+                            <li className="flex gap-2"><Check size={16} /> Aumento capacità di elaborazione</li>
                         </ul>
                     </div>
 
                     {/* Team */}
                     <div className="p-8 border border-neutral-200 rounded-lg hover:border-neutral-400 transition-colors flex flex-col">
                         <div className="text-sm font-semibold text-neutral-900 mb-2">Team</div>
-                        <div className="text-4xl font-bold text-neutral-900 mb-6">€49<span className="text-sm font-normal text-neutral-500">/user</span></div>
+                        <div className="text-2xl font-bold text-neutral-900 mb-6">Coming Soon<span className="text-sm font-normal text-neutral-500"></span></div>
                         <p className="text-neutral-500 text-sm mb-8">Per collaborare sui progetti.</p>
                         <Button variant="secondary" className="w-full mb-8">Contatta Sales</Button>
                         <ul className="space-y-4 text-sm text-neutral-600 flex-1">
