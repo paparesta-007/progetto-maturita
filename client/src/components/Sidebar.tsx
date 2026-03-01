@@ -31,7 +31,7 @@ const Sidebar = () => {
     const { conversations, setMessageHistory, fetchConversations, setCurrentConversationId, setCurrentConversationName } = useChat();
     const [userDetails, setUserDetails] = useState<{ full_name: string | null, birthday: string | null, avatar_url?: string } | null>(null);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
-  
+
     // --- NUOVO STATO PER DOCUMENTI     ---
     const { documentList, fetchUserDocuments } = useDocument();
 
@@ -40,7 +40,7 @@ const Sidebar = () => {
     const [convMenuOpen, setConvMenuOpen] = useState<string | null>(null);
     const menuRef = useRef<HTMLDivElement>(null);
     const convMenuRef = useRef<HTMLUListElement>(null);
-
+    const [docMenuOpen, setDocMenuOpen] = useState<string | null>(null);
     const { setIsSettingOpen } = useApp();
 
     // --- LOGICA DI NAVIGAZIONE ---
@@ -89,7 +89,7 @@ const Sidebar = () => {
     }, [theme]);
 
     // --- Fetch Dati Utente ---
-   useEffect(() => {
+    useEffect(() => {
         const fetchUserDetails = async () => {
             if (user?.id) {
                 const data = await selectUserDetails(user.id);
@@ -102,7 +102,7 @@ const Sidebar = () => {
             fetchUserDetails();
             // Chiama la funzione del context. 
             // Grazie al controllo interno, se i dati ci sono già, non farà la chiamata di rete.
-            fetchUserDocuments(user.id); 
+            fetchUserDocuments(user.id);
         }
 
     }, [user, fetchUserDocuments]);
@@ -117,14 +117,18 @@ const Sidebar = () => {
     }, [conversations, location.pathname]);
 
     // --- Click Outside ---
+    // --- Click Outside ---
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(event.target as Node)) setIsUserMenuOpen(false);
-            if (convMenuRef.current && !convMenuRef.current.contains(event.target as Node)) setConvMenuOpen(null);
+            if (convMenuRef.current && !convMenuRef.current.contains(event.target as Node)) {
+                setConvMenuOpen(null);
+                setDocMenuOpen(null); // <-- AGGIUNTO QUI
+            }
         };
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [isUserMenuOpen, convMenuOpen]);
+    }, [isUserMenuOpen, convMenuOpen, docMenuOpen]); // <-- AGGIUNTO ALLE DIPENDENZE
 
     const menuItems = [
         { path: "/app/chat", label: "Chatbot AI", icon: <MessageSquare size={18} /> },
@@ -204,28 +208,29 @@ const Sidebar = () => {
                                 // Forziamo active anche se siamo in sottopagine
                                 const active = isActive || location.pathname.startsWith(item.path);
                                 return (
-                                <>
-                                    {active && (
-                                        <motion.div
-                                            layoutId="activeNav"
-                                            className={`absolute inset-0 rounded-md ${isDark ? "bg-neutral-800" : "bg-neutral-200/50"}`}
-                                            initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                        />
-                                    )}
-                                    <span className="relative z-10 flex items-center gap-3">
-                                        {React.cloneElement(item.icon as React.ReactElement, {
-                                            size: 18,
-                                            className: active ? style.iconActive : style.iconBase
-                                        })}
-                                        {item.label}
-                                    </span>
-                                </>
-                            )}}
+                                    <>
+                                        {active && (
+                                            <motion.div
+                                                layoutId="activeNav"
+                                                className={`absolute inset-0 rounded-md ${isDark ? "bg-neutral-800" : "bg-neutral-200/50"}`}
+                                                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                                            />
+                                        )}
+                                        <span className="relative z-10 flex items-center gap-3">
+                                            {React.cloneElement(item.icon as React.ReactElement, {
+                                                size: 18,
+                                                className: active ? style.iconActive : style.iconBase
+                                            })}
+                                            {item.label}
+                                        </span>
+                                    </>
+                                )
+                            }}
                         </NavLink>
                     ))}
                 </div>
             </div>
-            
+
             {/* INTESTAZIONE SEZIONE DINAMICA */}
             <p className={`px-4 text-[10px] font-bold uppercase tracking-wider mb-3 z-10 py-1 flex justify-between items-center ${style.textSecondary}`}>
                 {isDocumentsPage ? "I tuoi documenti" : "Cronologia"}
@@ -235,24 +240,65 @@ const Sidebar = () => {
             <div className={style.scrollbar}>
                 <div className="flex flex-col gap-4">
                     <ul className="flex flex-col gap-1 relative" ref={convMenuRef} >
-                        
+
                         {/* --- BLOCCO RENDERING CONDIZIONALE --- */}
                         {isDocumentsPage ? (
                             // --- VISTA DOCUMENTI ---
                             documentList.length > 0 ? (
                                 documentList.map((doc) => (
-                                    <div key={doc.id} className={`relative group flex items-center rounded-md transition-colors ${style.itemHover}`}>
+                                    <div key={doc.document_id} className={`relative group flex items-center rounded-md transition-colors ${style.itemHover}`}>
                                         <NavLink
                                             to={`/app/documents/${doc.document_id}`}
-                                            
                                             className={({ isActive }) => `flex-1 flex items-center px-3 py-2 rounded-md text-sm truncate transition-colors ${isActive ? (isDark ? "bg-neutral-800 text-white font-medium" : "bg-neutral-200/50 text-neutral-900 font-medium") : (style.textSecondary)}`}
                                         >
-                                            <File size={16} className="mr-2 opacity-70"/>
-                                            <span className="truncate">{doc.title}</span>
+                                            <File size={16} className="mr-2 opacity-70" />
+                                            <span className="truncate pr-8">{doc.title}</span>
                                         </NavLink>
-                                        {/* Aggiungi qui eventuale menu contestuale per i documenti */}
+
+                                        {/* Pulsante 3 punti Documenti */}
+                                        <button
+                                            // Sostituito doc.id con doc.document_id
+                                            className={`absolute right-2 p-1 cursor-pointer rounded-md transition-all ${docMenuOpen === doc.document_id ? "opacity-100" : "opacity-0 group-hover:opacity-100"} ${style.textSecondary} hover:${style.textPrimary}`}
+                                            onClick={(e) => {
+                                                e.preventDefault();
+                                                e.stopPropagation();
+                                                // Sostituito doc.id con doc.document_id
+                                                setDocMenuOpen(docMenuOpen === doc.document_id ? null : doc.document_id);
+                                            }}
+                                        >
+                                            <DotsThreeIcon size={20} weight="bold" />
+                                        </button>
+
+                                        {/* Dropdown Menu Documenti */}
+                                        <AnimatePresence>
+                                            {/* Sostituito doc.id con doc.document_id */}
+                                            {docMenuOpen === doc.document_id && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                                    transition={{ duration: 0.15 }}
+                                                    className={`absolute right-0 top-full mt-1 w-44 rounded-lg shadow-xl z-[100] p-1.5 border ${style.popoverBg}`}
+                                                >
+                                                    <button className={style.popoverItem} onClick={() => console.log("Condividi:", doc.document_id)}>
+                                                        <ShareNetworkIcon size={14} /> Condividi
+                                                    </button>
+                                                    <button className={style.popoverItem} onClick={() => console.log("Rinomina:", doc.document_id)}>
+                                                        <PencilLineIcon size={14} /> Rinomina
+                                                    </button>
+                                                    <hr className={style.divider} />
+                                                    <button
+                                                        className={`flex items-center gap-2 w-full px-3 py-2 text-sm rounded-lg transition-colors text-left ${isDark ? "text-red-400 hover:bg-red-900/20" : "text-red-600 hover:bg-red-50"}`}
+                                                        onClick={() => console.log("Elimina:", doc.document_id)}
+                                                    >
+                                                        <TrashIcon size={14} /> Elimina
+                                                    </button>
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
                                     </div>
                                 ))
+                      
                             ) : (
                                 <p className="text-xs px-3 py-2 opacity-50">Nessun documento</p>
                             )
@@ -263,7 +309,7 @@ const Sidebar = () => {
                                     <NavLink
                                         to={`/app/chat/${conv.id}`}
                                         className={({ isActive }) => `flex-1 flex items-center px-3 py-2 rounded-md text-sm truncate transition-colors ${isActive ? (isDark ? "bg-neutral-800 text-white font-medium" : "bg-neutral-200/50 text-neutral-900 font-medium") : (style.textSecondary)}`}
-                                    >   <ClockCounterClockwiseIcon size={16} className="mr-2 opacity-70"/>
+                                    >   <ClockCounterClockwiseIcon size={16} className="mr-2 opacity-70" />
                                         <span className="truncate pr-8">{conv.title || "Chat senza titolo"}</span>
                                     </NavLink>
 
@@ -308,7 +354,7 @@ const Sidebar = () => {
             {/* FOOTER (Invariato) */}
             <div className={style.footer}>
                 {/* ... resto del codice del footer invariato ... */}
-                 <AnimatePresence>
+                <AnimatePresence>
                     {isUserMenuOpen && (
                         <motion.div
                             ref={menuRef}
@@ -316,7 +362,7 @@ const Sidebar = () => {
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             className="absolute bottom-full left-0 w-[calc(100%-16px)] mx-2 mb-2 z-50 origin-bottom"
                         >
-                           <div className={`rounded-xl shadow-xl border overflow-hidden ring-1 ${style.popoverBg}`}>
+                            <div className={`rounded-xl shadow-xl border overflow-hidden ring-1 ${style.popoverBg}`}>
                                 <div className="p-1 flex flex-col gap-0.5 w-full">
                                     <button
                                         className={`${style.popoverItem} justify-between`}
@@ -326,12 +372,12 @@ const Sidebar = () => {
                                             <Settings size={16} className={style.textSecondary} />
                                             <span>Impostazioni</span>
                                         </div>
-                                         <kbd className={`text-[12px] flex px-1 py-0.5 rounded border items-center gap-1 ${isDark ? "bg-neutral-800 border-neutral-700 text-neutral-400" : "bg-neutral-200/50 border-neutral-200 text-neutral-700"}`}>
+                                        <kbd className={`text-[12px] flex px-1 py-0.5 rounded border items-center gap-1 ${isDark ? "bg-neutral-800 border-neutral-700 text-neutral-400" : "bg-neutral-200/50 border-neutral-200 text-neutral-700"}`}>
                                             <CommandIcon size={14} /> + I
                                         </kbd>
                                     </button>
-                                    
-                                     {/* TEMA TOGGLE */}
+
+                                    {/* TEMA TOGGLE */}
                                     <button onClick={(e) => { e.stopPropagation(); setTheme(isDark ? "light" : "dark"); }}
                                         className={`${style.popoverItem} justify-between`}>
                                         <div className="flex items-center gap-2 w-full">
@@ -351,7 +397,7 @@ const Sidebar = () => {
                                         </button>
                                     </div>
                                 </div>
-                           </div>
+                            </div>
                         </motion.div>
                     )}
                 </AnimatePresence>

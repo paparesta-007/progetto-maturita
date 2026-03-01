@@ -238,3 +238,8 @@ p>code {
         transform: rotate(360deg);
     }
 }
+
+.bg-grid {
+    background-image: radial-gradient(circle at 1px 1px,lightgray 1px, transparent 1px);
+    background-size: 40px 40px;
+}

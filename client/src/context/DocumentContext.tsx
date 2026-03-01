@@ -1,6 +1,7 @@
 import { createContext, useContext, useMemo, useState, useCallback } from "react";
 // Assicurati che il percorso di importazione sia corretto in base alla tua struttura cartelle
-import getDocumentsMetadata from "../services/supabase/documents/getAllDocuments"; 
+import getDocumentsMetadata from "../services/supabase/documents/getAllDocuments";
+import { sendEmbeddingMessage } from "../library/sendEmbeddingMessage";
 
 export type DocumentStep = 1 | 2 | 3;
 
@@ -17,7 +18,7 @@ export interface DocumentContextType {
     setIsWizardFinished: (finished: boolean) => void;
     isWizardFinished: boolean;
     documentText: string;
-    
+
     // Gestione Documenti
     currentDocument: any;
     setCurrentDocument: (document: any) => void;
@@ -59,21 +60,21 @@ export const DocumentProvider = ({ children }: { children: React.ReactNode }) =>
     // --- Stati esistenti ---
     const [currentStep, setCurrentStep] = useState<DocumentStep>(1);
     const stepContent = stepContentMap[currentStep];
-    
+
     const [currentDocument, setCurrentDocument] = useState<any>(null);
-    const [documentList, setDocumentList] = useState<any[]>([]); 
+    const [documentList, setDocumentList] = useState<any[]>([]);
     const [isWizardFinished, setIsWizardFinished] = useState(false);
 
     // --- NUOVI STATI (Chat & Model) ---
     const [messageHistory, setMessageHistory] = useState<{ role: 'user' | 'bot'; content: string; usage?: any, model?: string }[]>([]);
     const [loading, setLoading] = useState(false);
     // Valore di default del modello (puoi personalizzarlo come nel ChatContext)
-    const [model, setModel] = useState<any>({ 
-        name: "Gemini 2.5 Flash Lite", 
-        provider: "Google", 
-        name_id: "google/gemini-2.5-flash-lite", 
-        cost_per_input_token: 0.10, 
-        cost_per_output_token: 0.40 
+    const [model, setModel] = useState<any>({
+        name: "Gemini 2.5 Flash Lite",
+        provider: "Google",
+        name_id: "google/gemini-2.5-flash-lite",
+        cost_per_input_token: 0.10,
+        cost_per_output_token: 0.40
     });
 
     const documentText = useMemo(() => {
@@ -102,11 +103,14 @@ export const DocumentProvider = ({ children }: { children: React.ReactNode }) =>
 
     // --- NUOVA FUNZIONE SENDMESSAGE (Placeholder) ---
     const sendMessage = useCallback(async (message: string) => {
-        console.log("sendMessage chiamato nel DocumentContext con:", message);
-        // Qui implementerai la logica per chattare con il documento (es. RAG)
-        // Per ora è vuota come richiesto.
-    }, []);
-
+        // Chiamiamo la versione "volatile" che non salva su DB
+        await sendEmbeddingMessage(
+            message,
+            setMessageHistory,
+            setLoading,
+            model
+        );
+    }, [model]);
     const value: DocumentContextType = {
         currentStep,
         setCurrentStep,
@@ -119,7 +123,7 @@ export const DocumentProvider = ({ children }: { children: React.ReactNode }) =>
         documentList,
         setDocumentList,
         fetchUserDocuments,
-        
+
         // --- Export Nuove Proprietà ---
         sendMessage,
         messageHistory,
