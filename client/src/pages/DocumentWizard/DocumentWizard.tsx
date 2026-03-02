@@ -18,14 +18,15 @@ import {
 } from "@phosphor-icons/react";
 import { Sparkles } from "lucide-react";
 import Tooltip from "../../components/other/Tooltip";
+import { useNavigate } from "react-router-dom";
 
 const DocumentWizard = () => {
     // --- Context & State ---
-    const { currentStep, setCurrentStep } = useDocument();
+    const { currentStep, setCurrentStep,fetchUserDocuments } = useDocument();
     const { user, theme } = useAuth();
     const [loading, setLoading] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
-
+    const navigate = useNavigate();
     // Local state
     const [formData, setFormData] = useState({
         title: "",
@@ -150,6 +151,8 @@ const DocumentWizard = () => {
             console.error("Error ingesting document:", data.error);
         }
         setLoading(false);
+        fetchUserDocuments(user?.id || "", true); 
+        navigate("/app/documents"+"/"+data.documentId);
     }
 
     const handleBack = () => {

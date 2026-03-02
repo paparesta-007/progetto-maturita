@@ -108,7 +108,7 @@ export const DocumentProvider = ({ children }: { children: React.ReactNode }) =>
             message,
             setMessageHistory,
             setLoading,
-            model
+            model.name_id
         );
     }, [model]);
     const value: DocumentContextType = {

@@ -24,6 +24,7 @@ import { useApp } from "../context/AppContext";
 import getAllDocuments from "../services/supabase/documents/getAllDocuments";
 import getDocumentsMetadata from "../services/supabase/documents/getAllDocuments";
 import { useDocument } from "../context/DocumentContext";
+import deleteCurrentDocument from "../services/supabase/documents/deleteCurrentDocument";
 
 const Sidebar = () => {
     // --- Context & State ---
@@ -33,7 +34,7 @@ const Sidebar = () => {
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
     // --- NUOVO STATO PER DOCUMENTI     ---
-    const { documentList, fetchUserDocuments } = useDocument();
+    const { documentList, fetchUserDocuments, setDocumentList } = useDocument();
 
     const navigate = useNavigate();
     const location = useLocation(); // Hook per sapere dove siamo
@@ -157,7 +158,30 @@ const Sidebar = () => {
             setCurrentConversationName(null);
         } catch (error) { alert("Errore eliminazione"); }
     }
+    async function handleDeleteDocument(documentId: string) {
+        try {
+            if (!user?.id) throw new Error("User ID mancante");
 
+            // 1. Elimina dal backend (Database)
+            await deleteCurrentDocument(user.id, documentId);
+
+            // 2. AGGIORNAMENTO UI: Rimuovi il documento dalla lista locale immediatamente
+            // Questo è più veloce che rifare la fetch e risolve il problema del caching
+            setDocumentList((prevList) => prevList.filter((doc) => doc.document_id !== documentId));
+
+            // 3. Chiudi il menu a tendina
+            setDocMenuOpen(null);
+
+            // 4. Se l'utente sta visualizzando proprio quel documento, riportalo alla lista
+            if (location.pathname.includes(documentId)) {
+                navigate("/app/documents");
+            }
+
+        } catch (error) {
+            console.error("Errore eliminazione:", error);
+            alert("Impossibile eliminare il documento");
+        }
+    }
     // --- RENDER ---
     return (
         <nav className={style.sidebar}>
@@ -289,7 +313,9 @@ const Sidebar = () => {
                                                     <hr className={style.divider} />
                                                     <button
                                                         className={`flex items-center gap-2 w-full px-3 py-2 text-sm rounded-lg transition-colors text-left ${isDark ? "text-red-400 hover:bg-red-900/20" : "text-red-600 hover:bg-red-50"}`}
-                                                        onClick={() => console.log("Elimina:", doc.document_id)}
+                                                        onClick={() => {
+                                                            handleDeleteDocument(doc.document_id)
+                                                        }}
                                                     >
                                                         <TrashIcon size={14} /> Elimina
                                                     </button>
@@ -298,7 +324,7 @@ const Sidebar = () => {
                                         </AnimatePresence>
                                     </div>
                                 ))
-                      
+
                             ) : (
                                 <p className="text-xs px-3 py-2 opacity-50">Nessun documento</p>
                             )
