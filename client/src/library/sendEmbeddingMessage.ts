@@ -20,7 +20,8 @@ export const sendEmbeddingMessage = async (
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
-                question: message 
+                question: message,
+                model: model?.name || "google/gemini-2.5-flash-lite" 
             }),
         });
 
