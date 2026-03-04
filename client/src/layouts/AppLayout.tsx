@@ -17,6 +17,7 @@ import GeneralSettingPage from "../pages/SettingPages/GeneralSettingPage";
 import InstructionsSettingPage from "../pages/SettingPages/InstructionsSettingPage";
 import BillingSettingPage from "../pages/SettingPages/BilingSettingPage";
 import { DocumentProvider } from "../context/DocumentContext";
+import AccountPage from "../pages/SettingPages/AccountPage";
 
 const AppLayout = () => {
   const [isMinimized, setIsMinimized] = useState(false);
@@ -48,6 +49,7 @@ const AppLayout = () => {
     { label: "Istruzioni", Icon: ChartPolarIcon, id: "istruzioni" },
     { label: "Fatturazione", Icon: CreditCardIcon, id: "fatturazione" },
   ];
+  const accountItem = { label: "Account", Icon: UserCircleIcon, id: "account" };
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       // Ctrl+Shift+L → event.code === 'KeyL'
@@ -125,9 +127,12 @@ const AppLayout = () => {
 
                     <hr className={style.divider} />
 
-                    <button className={style.navButton(false)}>
-                      <UserCircleIcon size={18} weight="regular" />
-                      Account
+                    <button
+                      onClick={() => setSettingPage(accountItem.id)}
+                      className={style.navButton(settingPage === accountItem.id)}
+                    >
+                      <accountItem.Icon size={18} weight={settingPage === accountItem.id ? "fill" : "regular"} />
+                      {accountItem.label}
                     </button>
                   </div>
 
@@ -137,6 +142,7 @@ const AppLayout = () => {
                       {settingPage === "generale" && <GeneralSettingPage />}
                       {settingPage === "istruzioni" && <InstructionsSettingPage />}
                       {settingPage === "fatturazione" && <BillingSettingPage />}
+                      {settingPage === "account" && <AccountPage/>}
                     </div>
 
                     {/* Tasto Chiudi */}

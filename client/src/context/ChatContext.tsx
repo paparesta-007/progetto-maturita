@@ -49,7 +49,13 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const sendMessage = useCallback(async (message: string) => {
         try {
             if (isStreamTextEnabled) {
-                await sendStreamedMessage(message, setMessageHistory, setLoading, model, messageHistory);
+                await sendStreamedMessage(message, setMessageHistory, setLoading, model, messageHistory,{
+                        systemPrompt,
+                        personalInfo,
+                        tone,
+                        allowedCustomInstructions
+                        
+                    });
             } else {
                 await sendNormalMessage(
                     message,

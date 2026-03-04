@@ -245,7 +245,7 @@ app.post("/api/completion/chat", async function (req: express.Request, res: expr
 });
 app.post("/api/gemini/getTitleConversation", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
     try {
-        const { message } = req.body;// Funzione che genera un prompt di sistema dettagliato e specifico per il modello selezionato. Definita in client/src/library/systemPrompt.ts
+        const { message, systemPromptUser } = req.body;// Funzione che genera un prompt di sistema dettagliato e specifico per il modello selezionato. Definita in client/src/library/systemPrompt.ts
 
 
         const { text, usage } = await generateText({
@@ -255,7 +255,7 @@ app.post("/api/gemini/getTitleConversation", async function (req: express.Reques
             headers: {
                 "HTTP-Referer": "localhost:3000/getTitleConversation",
                 "X-Title": "NomeTuaApp"
-            }
+            },
         });
 
         res.send({ text, usage });
@@ -265,13 +265,21 @@ app.post("/api/gemini/getTitleConversation", async function (req: express.Reques
 });
 app.post("/api/streamingOutput", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
     try {
-        const { message, history, modelName } = req.body;
-        const selectedModel = modelName ? modelName : "gemini-2.5-flash-lite";
+        const { message, history, modelName, systemPromptUser, personalInfo, tone, allowedCustomInstructions } = req.body;
+        const selectedModel = modelName ? modelName : "google/gemini-2.0-flash-001";
 
         // Funzione per il delay
         const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+        console.log("Custom User Instruction:", systemPromptUser);
+        
+        const systemPrompt = getSystemPrompt({ 
+            selectedModel, 
+            systemPromptUser, 
+            personalInfo, 
+            tone, 
+            allowedCustomInstructions 
+        } as any);
 
-        const systemPrompt = getSystemPrompt({ selectedModel });
         const messages = [
             ...history,
             { role: 'user', content: message }
