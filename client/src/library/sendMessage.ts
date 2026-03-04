@@ -21,7 +21,6 @@ export const sendNormalMessage = async (
     userId: string | undefined,
     setCurrentConversationId: React.Dispatch<React.SetStateAction<string | null>>,
     fetchConversations: () => Promise<void>,
-    navigate: NavigateFunction,
     // AGGIUNGIAMO I DATI CHE PRIMA CERCAVI DI PRENDERE CON USEAUTH
     options: ChatOptions
 ) => {
@@ -125,34 +124,42 @@ export const sendNormalMessage = async (
 };
 
 
-export const sendStreamedMessage = async (message: string, setMessageHistory: React.Dispatch<React.SetStateAction<any[]>>, setLoading: React.Dispatch<React.SetStateAction<boolean>>, model: any, messageHistory: any[]) => {
+export const sendStreamedMessage = async (
+    message: string, 
+    setMessageHistory: React.Dispatch<React.SetStateAction<any[]>>, 
+    setLoading: React.Dispatch<React.SetStateAction<boolean>>, 
+    model: any, 
+    messageHistory: any[],
+    options: ChatOptions // <--- Parametro aggiunto
+) => {
     if (!message.trim()) return;
 
-    // 1. Aggiungi subito il messaggio dell'utente
-    const userMsg = { role: 'user' as const, content: message };
+    // 1. Estrazione opzioni dai parametri
+    const { systemPrompt, personalInfo, tone, allowedCustomInstructions } = options;
 
-    // 2. Aggiungi subito un messaggio "bot" vuoto (placeholder) che riempiremo
+    // 2. Aggiornamento UI Immediato
+    const userMsg = { role: 'user' as const, content: message };
     const modelLabel = model?.name ?? model?.name_id ?? "Unknown";
     const botMsgPlaceholder = { role: 'bot' as const, content: "", model: modelLabel };
 
     setMessageHistory((prev) => [...prev, userMsg, botMsgPlaceholder]);
-
     setLoading(true);
 
     try {
-        // Prepara la storia per il backend (escludendo il messaggio corrente e il placeholder)
+        // 3. Preparazione History
         const historyForBackend = messageHistory.map(msg => ({
             role: msg.role === 'bot' ? 'assistant' : 'user',
             content: msg.content
         }));
 
-        // Controllo costi (come nel tuo codice originale)
+        // Controllo costi
         if (model.cost_per_input_token + model.cost_per_output_token > 2) {
             alert("Costo troppo alto...");
             setLoading(false);
             return;
         }
 
+        // 4. Chiamata API con System Prompt e altre opzioni
         const response = await fetch("http://localhost:3000/api/streamingOutput", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -160,12 +167,17 @@ export const sendStreamedMessage = async (message: string, setMessageHistory: Re
                 message,
                 history: historyForBackend,
                 modelName: model.name_id,
+                // --- NUOVI CAMPI AGGIUNTI ---
+                systemPromptUser: systemPrompt,
+                personalInfo,
+                tone,
+                allowedCustomInstructions
             }),
         });
 
         if (!response.ok || !response.body) throw new Error(response.statusText);
 
-        // 3. Inizia a leggere lo stream
+        // 5. Gestione Stream
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let done = false;
@@ -179,11 +191,10 @@ export const sendStreamedMessage = async (message: string, setMessageHistory: Re
                 const chunkValue = decoder.decode(value, { stream: true });
                 accumulatedText += chunkValue;
 
-                // 4. Aggiorna l'ultimo messaggio (quello del bot) con il testo accumulato
+                // 6. Aggiornamento progressivo del messaggio bot
                 setMessageHistory((prev) => {
                     const newHistory = [...prev];
                     const lastMsgIndex = newHistory.length - 1;
-                    // Assicuriamoci di modificare solo l'ultimo messaggio se è del bot
                     if (newHistory[lastMsgIndex].role === 'bot') {
                         newHistory[lastMsgIndex] = {
                             ...newHistory[lastMsgIndex],
@@ -197,7 +208,6 @@ export const sendStreamedMessage = async (message: string, setMessageHistory: Re
 
     } catch (error) {
         console.error("Errore durante lo streaming:", error);
-        // Opzionale: gestire l'errore nell'ultimo messaggio
     } finally {
         setLoading(false);
     }
