@@ -210,7 +210,6 @@ export const sendCanvasMessage = async (
     setLoading(true);
 
     try {
-        // Mock delay
         await new Promise((resolve) => setTimeout(resolve, 1500));
 
         const modelLabel = model?.name ?? model?.name_id ?? "Unknown";

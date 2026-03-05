@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from "react";
-import { NavLink, useNavigate, useLocation } from "react-router-dom"; // Aggiunto useLocation
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import { AnimatePresence, motion } from "framer-motion";
 import {
@@ -13,7 +13,12 @@ import {
     User,
     Sun,
     Moon,
-    File // Icona generica file
+    File,
+    Sparkles,
+    ChevronUp,
+    Crown,
+    Search,
+    Keyboard
 } from 'lucide-react';
 import { ArrowFatUpIcon, ClockCounterClockwiseIcon, CommandIcon, DotsThreeIcon, PencilLineIcon, ShareNetworkIcon, SidebarSimpleIcon, TrashIcon } from "@phosphor-icons/react";
 import supabase from "../library/supabaseclient";
@@ -26,6 +31,81 @@ import getDocumentsMetadata from "../services/supabase/documents/getAllDocuments
 import { useDocument } from "../context/DocumentContext";
 import deleteCurrentDocument from "../services/supabase/documents/deleteCurrentDocument";
 
+/* ─── Premium Sidebar Styles ─── */
+const SidebarStyles = () => (
+    <style>{`
+        @keyframes gradient-shift {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+        @keyframes pulse-soft {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+        @keyframes shimmer-badge {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+
+        .sidebar-premium {
+            position: relative;
+        }
+        .sidebar-premium::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 1px;
+            height: 100%;
+            background: linear-gradient(
+                to bottom,
+                transparent 0%,
+                var(--border-color) 15%,
+                var(--border-color) 85%,
+                transparent 100%
+            );
+        }
+
+        .premium-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .premium-scrollbar::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        .premium-scrollbar::-webkit-scrollbar-thumb {
+            background: var(--scrollbar-color);
+            border-radius: 999px;
+        }
+        .premium-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: var(--scrollbar-hover-color);
+        }
+
+        .nav-item-glow::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: 10px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            background: var(--glow-color);
+            filter: blur(8px);
+            z-index: -1;
+        }
+        .nav-item-glow:hover::before {
+            opacity: 0.5;
+        }
+
+        .plan-badge {
+            background: linear-gradient(90deg, #a855f7, #6366f1, #a855f7);
+            background-size: 200% auto;
+            animation: shimmer-badge 3s linear infinite;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+    `}</style>
+);
+
 const Sidebar = () => {
     // --- Context & State ---
     const { user, theme, setTheme } = useAuth() || { user: { displayName: "Matteo Rossi", photoURL: null } };
@@ -33,44 +113,77 @@ const Sidebar = () => {
     const [userDetails, setUserDetails] = useState<{ full_name: string | null, birthday: string | null, avatar_url?: string } | null>(null);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
-    // --- NUOVO STATO PER DOCUMENTI     ---
     const { documentList, fetchUserDocuments, setDocumentList } = useDocument();
 
     const navigate = useNavigate();
-    const location = useLocation(); // Hook per sapere dove siamo
+    const location = useLocation();
     const [convMenuOpen, setConvMenuOpen] = useState<string | null>(null);
     const menuRef = useRef<HTMLDivElement>(null);
     const convMenuRef = useRef<HTMLUListElement>(null);
     const [docMenuOpen, setDocMenuOpen] = useState<string | null>(null);
     const { setIsSettingOpen } = useApp();
 
-    // --- LOGICA DI NAVIGAZIONE ---
-    // Controlliamo se siamo nella sezione documenti
     const isDocumentsPage = location.pathname.includes('/app/documents');
-
-    // --- 1. SINGLE SOURCE OF TRUTH FOR THEME ---
     const isDark = theme === 'dark';
 
-    // Definiamo la palette
+    // ─── Premium Style System ───
     const style = {
-        sidebar: `w-[280px] h-screen flex flex-col font-sans text-sm transition-colors duration-300 border-r ${isDark ? "bg-neutral-950 border-neutral-800" : "bg-neutral-50 border-neutral-200"}`,
-        textPrimary: isDark ? "text-white" : "text-neutral-900",
-        textSecondary: isDark ? "text-neutral-400" : "text-neutral-500",
-        iconBase: isDark ? "text-neutral-400 group-hover:text-white" : "text-neutral-400 group-hover:text-neutral-600",
+        sidebar: `sidebar-premium w-[280px] h-screen flex flex-col font-sans text-sm transition-all duration-500 relative ${isDark ? "bg-[#0a0a0a]" : "bg-[#fafafa]"}`,
+
+        textPrimary: isDark ? "text-neutral-100" : "text-neutral-900",
+        textSecondary: isDark ? "text-neutral-500" : "text-neutral-400",
+        textMuted: isDark ? "text-neutral-600" : "text-neutral-300",
+
+        iconBase: isDark ? "text-neutral-500 group-hover:text-neutral-300" : "text-neutral-400 group-hover:text-neutral-700",
         iconActive: isDark ? "text-white" : "text-neutral-900",
-        itemHover: isDark ? "hover:bg-neutral-900 hover:text-white" : "hover:bg-neutral-200/50 hover:text-neutral-900",
-        itemActive: isDark ? "bg-neutral-800 text-white font-medium" : "bg-neutral-200/50 text-neutral-900 font-medium",
-        newChatBtn: `w-full group relative flex items-center justify-between px-4 py-2.5 rounded-lg border transition-all duration-200 hover:shadow-sm ${isDark ? "bg-neutral-900 border-neutral-800 text-white hover:border-neutral-700" : "bg-white border-neutral-200 text-neutral-900 hover:border-neutral-300"}`,
-        shortcutBadge: `text-[13px] px-1 py-0 rounded border transition-colors ${isDark ? "bg-neutral-800 border-neutral-700 text-neutral-400" : "bg-neutral-200/50 border-neutral-200 text-neutral-700"}`,
-        popoverBg: isDark ? "bg-neutral-900 border-neutral-800 ring-white/5" : "bg-white border-neutral-200 ring-black/5",
-        popoverItem: `flex items-center  gap-2 w-full px-3 py-2 w-full text-sm rounded-lg transition-colors text-left ${isDark ? "text-neutral-200 hover:bg-neutral-800" : "text-neutral-700 hover:bg-neutral-100"}`,
-        divider: `h-px my-0.5 mx-2 ${isDark ? "text-neutral-700/50" : "text-neutral-200"}`,
-        scrollbar: `flex-1 overflow-y-auto px-3 scrollbar-thin scrollbar-track-transparent ${isDark ? "scrollbar-thumb-neutral-800 hover:scrollbar-thumb-neutral-700" : "scrollbar-thumb-neutral-200 hover:scrollbar-thumb-neutral-300"}`,
-        footer: `p-2 relative border-t ${isDark ? "border-neutral-800 " : "border-neutral-200 "}`,
-        userBtn: `w-full flex items-center justify-between p-2 select-none rounded-lg transition-all duration-200 group text-left ${isUserMenuOpen ? (isDark ? "bg-neutral-900 shadow-sm ring-1 ring-neutral-800" : "bg-white shadow-sm ring-1 ring-neutral-200") : (isDark ? "hover:bg-neutral-900" : "hover:bg-neutral-200/50")}`
+
+        itemHover: isDark ? "hover:bg-white/[0.04]" : "hover:bg-black/[0.03]",
+        itemActive: isDark ? "bg-white/[0.06] text-white font-medium" : "bg-black/[0.04] text-neutral-900 font-medium",
+
+        newChatBtn: `w-full group relative flex items-center justify-between px-4 py-2.5 rounded-xl transition-all duration-300 ${isDark
+            ? "bg-white/[0.04] hover:bg-white/[0.07] text-white border border-white/[0.06] hover:border-white/[0.1]"
+            : "bg-white hover:bg-white text-neutral-900 border border-neutral-200/80 hover:border-neutral-300 hover:shadow-sm"
+            }`,
+
+        shortcutBadge: `text-[11px] px-1.5 py-0.5 rounded-md font-mono transition-colors ${isDark
+            ? "bg-white/[0.06] text-neutral-500 border border-white/[0.04]"
+            : "bg-neutral-100 text-neutral-400 border border-neutral-200/60"
+            }`,
+
+        popoverBg: isDark
+            ? "bg-[#141414] border-white/[0.08] shadow-2xl shadow-black/40"
+            : "bg-white border-neutral-200/80 shadow-xl shadow-black/[0.08]",
+
+        popoverItem: `flex items-center gap-2.5 w-full px-3 py-2 text-[13px] rounded-lg transition-all duration-200 text-left ${isDark
+            ? "text-neutral-300 hover:bg-white/[0.06] hover:text-white"
+            : "text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"
+            }`,
+
+        divider: `h-px my-1 ${isDark ? "bg-white/[0.06]" : "bg-neutral-100"}`,
+
+        scrollbar: `flex-1 overflow-y-auto px-3 premium-scrollbar`,
+
+        footer: `p-2 relative ${isDark ? "" : ""}`,
+
+        userBtn: `w-full flex items-center justify-between p-2.5 select-none rounded-xl transition-all duration-300 group text-left ${isUserMenuOpen
+            ? (isDark ? "bg-white/[0.06] ring-1 ring-white/[0.08]" : "bg-white ring-1 ring-neutral-200/80 shadow-sm")
+            : (isDark ? "hover:bg-white/[0.04]" : "hover:bg-black/[0.03]")
+            }`,
+
+        sectionLabel: `px-4 text-[10px] font-bold uppercase tracking-[0.15em] mb-2 flex justify-between items-center ${isDark ? "text-neutral-600" : "text-neutral-300"}`,
+
+        contextDot: `absolute right-2 p-1 cursor-pointer rounded-lg transition-all duration-200`,
     };
 
-    // --- LOGICA PERSISTENZA LOCALSTORAGE ---
+    // CSS Variables for dynamic theming
+    const cssVars = {
+        '--border-color': isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)',
+        '--scrollbar-color': isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)',
+        '--scrollbar-hover-color': isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.15)',
+        '--glow-color': isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+    } as React.CSSProperties;
+
+    // --- Effects ---
     useEffect(() => {
         const storedTheme = localStorage.getItem("theme");
         if (storedTheme && storedTheme !== theme) setTheme(storedTheme);
@@ -89,7 +202,6 @@ const Sidebar = () => {
         }
     }, [theme]);
 
-    // --- Fetch Dati Utente ---
     useEffect(() => {
         const fetchUserDetails = async () => {
             if (user?.id) {
@@ -97,19 +209,12 @@ const Sidebar = () => {
                 setUserDetails(data);
             }
         };
-
-        // Chiamata centralizzata
         if (user?.id) {
             fetchUserDetails();
-            // Chiama la funzione del context. 
-            // Grazie al controllo interno, se i dati ci sono già, non farà la chiamata di rete.
             fetchUserDocuments(user.id);
         }
-
     }, [user, fetchUserDocuments]);
 
-
-    // --- Gestione Path ---
     useEffect(() => {
         const currentPathId = location.pathname.split("/").pop();
         const activeConv = conversations.find((c: any) => c.id === currentPathId);
@@ -117,26 +222,25 @@ const Sidebar = () => {
         else if (location.pathname === "/app/chat/") setCurrentConversationName(null);
     }, [conversations, location.pathname]);
 
-    // --- Click Outside ---
-    // --- Click Outside ---
     useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (menuRef.current && !menuRef.current.contains(event.target as Node)) setIsUserMenuOpen(false);
             if (convMenuRef.current && !convMenuRef.current.contains(event.target as Node)) {
                 setConvMenuOpen(null);
-                setDocMenuOpen(null); // <-- AGGIUNTO QUI
+                setDocMenuOpen(null);
             }
         };
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, [isUserMenuOpen, convMenuOpen, docMenuOpen]); // <-- AGGIUNTO ALLE DIPENDENZE
+    }, [isUserMenuOpen, convMenuOpen, docMenuOpen]);
 
     const menuItems = [
-        { path: "/app/chat", label: "Chatbot AI", icon: <MessageSquare size={18} /> },
-        { path: "/app/documents", label: "Knowledge Base", icon: <FileText size={18} /> },
-        { path: "/app/calendar", label: "Agenda", icon: <Calendar size={18} /> },
+        { path: "/app/chat", label: "Chatbot AI", icon: <MessageSquare size={17} /> },
+        { path: "/app/documents", label: "Knowledge Base", icon: <FileText size={17} /> },
+        { path: "/app/calendar", label: "Agenda", icon: <Calendar size={17} /> },
     ];
 
+    // --- Handlers ---
     const handleLogOut = async (conversationId: string | null) => {
         try {
             await supabase.auth.signOut();
@@ -144,10 +248,9 @@ const Sidebar = () => {
             fetchConversations();
             navigate("/login");
         } catch (error) { alert("Errore logout"); }
-    }
+    };
 
     async function handleDeleteConversation(conversationId: string | null): Promise<void> {
-        // Logica esistente...
         try {
             if (!user?.id) throw new Error("User ID mancante");
             await deleteConversation(user.id, conversationId!);
@@ -158,288 +261,411 @@ const Sidebar = () => {
             setCurrentConversationName(null);
         } catch (error) { alert("Errore eliminazione"); }
     }
+
     async function handleDeleteDocument(documentId: string) {
         try {
             if (!user?.id) throw new Error("User ID mancante");
-
-            // 1. Elimina dal backend (Database)
             await deleteCurrentDocument(user.id, documentId);
-
-            // 2. AGGIORNAMENTO UI: Rimuovi il documento dalla lista locale immediatamente
-            // Questo è più veloce che rifare la fetch e risolve il problema del caching
             setDocumentList((prevList) => prevList.filter((doc) => doc.document_id !== documentId));
-
-            // 3. Chiudi il menu a tendina
             setDocMenuOpen(null);
-
-            // 4. Se l'utente sta visualizzando proprio quel documento, riportalo alla lista
             if (location.pathname.includes(documentId)) {
                 navigate("/app/documents");
             }
-
         } catch (error) {
             console.error("Errore eliminazione:", error);
             alert("Impossibile eliminare il documento");
         }
     }
+
+    // --- Premium Context Menu Component ---
+    const ContextMenu = ({
+        isOpen,
+        onShare,
+        onRename,
+        onDelete,
+    }: {
+        isOpen: boolean;
+        onShare: () => void;
+        onRename: () => void;
+        onDelete: () => void;
+    }) => (
+        <AnimatePresence>
+            {isOpen && (
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.92, y: -4 }}
+                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                    exit={{ opacity: 0, scale: 0.92, y: -4 }}
+                    transition={{ duration: 0.15, ease: [0.22, 1, 0.36, 1] }}
+                    className={`absolute right-0 top-full mt-1.5 w-48 rounded-xl z-[100] p-1.5 border backdrop-blur-xl ${style.popoverBg}`}
+                >
+                    <button className={style.popoverItem} onClick={onShare}>
+                        <ShareNetworkIcon size={15} className="opacity-60" /> Condividi
+                    </button>
+                    <button className={style.popoverItem} onClick={onRename}>
+                        <PencilLineIcon size={15} className="opacity-60" /> Rinomina
+                    </button>
+                    <div className={style.divider} />
+                    <button
+                        className={`flex items-center gap-2.5 w-full px-3 py-2 text-[13px] rounded-lg transition-all duration-200 text-left ${isDark ? "text-red-400 hover:bg-red-500/10" : "text-red-500 hover:bg-red-50"}`}
+                        onClick={onDelete}
+                    >
+                        <TrashIcon size={15} /> Elimina
+                    </button>
+                </motion.div>
+            )}
+        </AnimatePresence>
+    );
+
     // --- RENDER ---
     return (
-        <nav className={style.sidebar}>
+        <>
+            <SidebarStyles />
+            <nav className={style.sidebar} style={cssVars}>
 
-            {/* HEADER */}
-            <div className="p-3 pb-2">
-                <div className="flex items-center justify-between gap-2 mb-6">
-                    <div className={`w-8 h-8 rounded-md flex items-center justify-center cursor-pointer ${isDark ? "bg-white text-neutral-900" : "bg-neutral-900 text-white"}`}
-                        onClick={() => navigate("/")}>
-                        <BrainCircuit size={16} />
-                    </div>
-                    <div className={`w-6 h-6 rounded-md flex items-center justify-center ${style.textSecondary}`}>
-                        <SidebarSimpleIcon size={24} />
-                    </div>
-                </div>
-
-                {/* BOTTONE DINAMICO: Se documenti = Carica File, Se Chat = Nuova Chat */}
-                <button className={style.newChatBtn}
-                    onClick={() => {
-                        if (isDocumentsPage) {
-                            // Logica per caricare file o creare nuova nota
-                            console.log("Apri modal upload");
-                        } else {
-                            setMessageHistory([]);
-                            navigate('/app/chat/');
-                            setCurrentConversationId(null);
-                        }
-                    }}>
-                    <div className="flex items-center gap-2 font-medium">
-                        <Plus size={16} className={style.textPrimary} />
-                        <span>{isDocumentsPage ? "Carica File" : "Nuova Chat"}</span>
-                    </div>
-                    {!isDocumentsPage && <span className={style.shortcutBadge}>⌘ + i</span>}
-                </button>
-            </div>
-
-            {/* NAVIGATION */}
-            <div className="px-2 py-4">
-                <p className={`px-3 text-[10px] font-bold uppercase tracking-wider mb-2 ${style.textSecondary}`}>Workspace</p>
-                <div className="flex flex-col gap-0.5">
-                    {menuItems.map((item) => (
-                        <NavLink
-                            key={item.path}
-                            to={item.path}
-                            className={({ isActive }) => `relative flex items-center gap-3 px-3 py-2 rounded-md transition-all duration-200 group ${isActive || location.pathname.startsWith(item.path) ? style.textPrimary + " font-medium" : style.textSecondary + " hover:" + style.textPrimary}`}
+                {/* ─── HEADER ─── */}
+                <div className="p-3 pb-0">
+                    <div className="flex items-center justify-between gap-2 mb-5">
+                        {/* Logo */}
+                        <div
+                            className={`w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 ${isDark
+                                ? "bg-white text-neutral-900 shadow-sm shadow-white/10"
+                                : "bg-neutral-900 text-white shadow-md shadow-neutral-900/20"
+                                }`}
+                            onClick={() => navigate("/")}
                         >
-                            {({ isActive }) => {
-                                // Forziamo active anche se siamo in sottopagine
-                                const active = isActive || location.pathname.startsWith(item.path);
-                                return (
-                                    <>
-                                        {active && (
-                                            <motion.div
-                                                layoutId="activeNav"
-                                                className={`absolute inset-0 rounded-md ${isDark ? "bg-neutral-800" : "bg-neutral-200/50"}`}
-                                                initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                                            />
-                                        )}
-                                        <span className="relative z-10 flex items-center gap-3">
-                                            {React.cloneElement(item.icon as React.ReactElement, {
-                                                size: 18,
-                                                className: active ? style.iconActive : style.iconBase
-                                            })}
-                                            {item.label}
-                                        </span>
-                                    </>
-                                )
-                            }}
-                        </NavLink>
-                    ))}
+                            <BrainCircuit size={17} />
+                        </div>
+
+                        {/* Sidebar Toggle */}
+                        <button className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 ${isDark ? "text-neutral-600 hover:text-neutral-400 hover:bg-white/[0.04]" : "text-neutral-300 hover:text-neutral-500 hover:bg-black/[0.03]"}`}>
+                            <SidebarSimpleIcon size={20} />
+                        </button>
+                    </div>
+
+                    {/* ─── Search Bar (Premium Touch) ─── */}
+                    <button className={`w-full flex items-center gap-2.5 px-3.5 py-2 rounded-xl mb-3 transition-all duration-300 ${isDark
+                        ? "bg-white/[0.03] hover:bg-white/[0.06] text-neutral-600 border border-white/[0.04]"
+                        : "bg-neutral-100/60 hover:bg-neutral-100 text-neutral-400 border border-transparent"
+                        }`}>
+                        <Search size={14} className="opacity-50" />
+                        <span className="text-[13px] flex-1 text-left">Cerca…</span>
+                        <kbd className={style.shortcutBadge}>⌘K</kbd>
+                    </button>
+
+                    {/* ─── New Chat / Upload Button ─── */}
+                    <button
+                        className={style.newChatBtn}
+                        onClick={() => {
+                            if (isDocumentsPage) {
+                                console.log("Apri modal upload");
+                            } else {
+                                setMessageHistory([]);
+                                navigate('/app/chat/');
+                                setCurrentConversationId(null);
+                            }
+                        }}
+                    >
+                        <div className="flex items-center gap-2.5 font-medium">
+                            <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-colors ${isDark ? "bg-white/[0.08]" : "bg-neutral-100"}`}>
+                                <Plus size={13} strokeWidth={2.5} />
+                            </div>
+                            <span className="text-[13px]">{isDocumentsPage ? "Carica File" : "Nuova Chat"}</span>
+                        </div>
+                        {!isDocumentsPage && (
+                            <span className={style.shortcutBadge}>⌘I</span>
+                        )}
+                    </button>
                 </div>
-            </div>
 
-            {/* INTESTAZIONE SEZIONE DINAMICA */}
-            <p className={`px-4 text-[10px] font-bold uppercase tracking-wider mb-3 z-10 py-1 flex justify-between items-center ${style.textSecondary}`}>
-                {isDocumentsPage ? "I tuoi documenti" : "Cronologia"}
-            </p>
+                {/* ─── NAVIGATION ─── */}
+                <div className="px-3 pt-6 pb-2">
+                    <p className={style.sectionLabel}>Workspace</p>
+                    <div className="flex flex-col gap-0.5">
+                        {menuItems.map((item) => (
+                            <NavLink
+                                key={item.path}
+                                to={item.path}
+                                className={({ isActive }) =>
+                                    `nav-item-glow relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 group ${isActive || location.pathname.startsWith(item.path)
+                                        ? style.textPrimary + " font-medium"
+                                        : style.textSecondary + " " + style.itemHover
+                                    }`
+                                }
+                            >
+                                {({ isActive }) => {
+                                    const active = isActive || location.pathname.startsWith(item.path);
+                                    return (
+                                        <>
+                                            {active && (
+                                                <motion.div
+                                                    layoutId="activeNav"
+                                                    className={`absolute inset-0 rounded-xl ${isDark ? "bg-white/[0.06] ring-1 ring-white/[0.04]" : "bg-black/[0.04] ring-1 ring-black/[0.02]"}`}
+                                                    initial={false}
+                                                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                                                />
+                                            )}
+                                            <span className="relative z-10 flex items-center gap-3">
+                                                {React.cloneElement(item.icon as React.ReactElement, {
+                                                    size: 17,
+                                                    strokeWidth: active ? 2 : 1.5,
+                                                    className: `transition-colors duration-200 ${active ? style.iconActive : style.iconBase}`
+                                                })}
+                                                <span className="text-[13px]">{item.label}</span>
+                                            </span>
 
-            {/* LISTA DINAMICA */}
-            <div className={style.scrollbar}>
-                <div className="flex flex-col gap-4">
-                    <ul className="flex flex-col gap-1 relative" ref={convMenuRef} >
+                                            {/* Active Indicator Dot */}
+                                            {active && (
+                                                <motion.div
+                                                    layoutId="activeIndicator"
+                                                    className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-r-full ${isDark ? "bg-white" : "bg-neutral-900"}`}
+                                                    initial={false}
+                                                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                                                />
+                                            )}
+                                        </>
+                                    );
+                                }}
+                            </NavLink>
+                        ))}
+                    </div>
+                </div>
 
-                        {/* --- BLOCCO RENDERING CONDIZIONALE --- */}
-                        {isDocumentsPage ? (
-                            // --- VISTA DOCUMENTI ---
-                            documentList.length > 0 ? (
-                                documentList.map((doc) => (
-                                    <div key={doc.document_id} className={`relative group flex items-center rounded-md transition-colors ${style.itemHover}`}>
-                                        <NavLink
-                                            to={`/app/documents/${doc.document_id}`}
-                                            className={({ isActive }) => `flex-1 flex items-center px-3 py-2 rounded-md text-sm truncate transition-colors ${isActive ? (isDark ? "bg-neutral-800 text-white font-medium" : "bg-neutral-200/50 text-neutral-900 font-medium") : (style.textSecondary)}`}
+                {/* ─── Section Header ─── */}
+                <div className="px-3 pt-4 pb-1">
+                    <p className={style.sectionLabel}>
+                        {isDocumentsPage ? "I tuoi documenti" : "Cronologia"}
+                        <span className={`text-[10px] tabular-nums px-1.5 py-0.5 rounded-md ${isDark ? "bg-white/[0.04] text-neutral-600" : "bg-neutral-100 text-neutral-400"}`}>
+                            {isDocumentsPage ? documentList.length : conversations.length}
+                        </span>
+                    </p>
+                </div>
+
+                {/* ─── DYNAMIC LIST ─── */}
+                <div className={style.scrollbar}>
+                    <div className="flex flex-col gap-0.5">
+                        <ul className="flex flex-col gap-0.5 relative" ref={convMenuRef}>
+                            {isDocumentsPage ? (
+                                // --- DOCUMENTS VIEW ---
+                                documentList.length > 0 ? (
+                                    documentList.map((doc, index) => (
+                                        <motion.div
+                                            key={doc.document_id}
+                                            initial={{ opacity: 0, x: -8 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: index * 0.03, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                                            className={`relative group flex items-center rounded-xl transition-all duration-200 ${style.itemHover}`}
                                         >
-                                            <File size={16} className="mr-2 opacity-70" />
-                                            <span className="truncate pr-8">{doc.title}</span>
-                                        </NavLink>
+                                            <NavLink
+                                                to={`/app/documents/${doc.document_id}`}
+                                                className={({ isActive }) =>
+                                                    `flex-1 flex items-center px-3 py-2 rounded-xl text-[13px] truncate transition-all duration-200 ${isActive
+                                                        ? (isDark ? "bg-white/[0.06] text-white font-medium ring-1 ring-white/[0.04]" : "bg-black/[0.04] text-neutral-900 font-medium ring-1 ring-black/[0.02]")
+                                                        : style.textSecondary
+                                                    }`
+                                                }
+                                            >
+                                                <div className={`w-7 h-7 rounded-lg flex items-center justify-center mr-2.5 flex-shrink-0 ${isDark ? "bg-white/[0.04]" : "bg-neutral-100/80"}`}>
+                                                    <File size={13} className="opacity-50" />
+                                                </div>
+                                                <span className="truncate pr-8">{doc.title}</span>
+                                            </NavLink>
 
-                                        {/* Pulsante 3 punti Documenti */}
+                                            <button
+                                                className={`${style.contextDot} ${docMenuOpen === doc.document_id ? "opacity-100" : "opacity-0 group-hover:opacity-100"} ${isDark ? "text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.06]" : "text-neutral-400 hover:text-neutral-600 hover:bg-black/[0.04]"}`}
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    setDocMenuOpen(docMenuOpen === doc.document_id ? null : doc.document_id);
+                                                }}
+                                            >
+                                                <DotsThreeIcon size={18} weight="bold" />
+                                            </button>
+
+                                            <ContextMenu
+                                                isOpen={docMenuOpen === doc.document_id}
+                                                onShare={() => console.log("Condividi:", doc.document_id)}
+                                                onRename={() => console.log("Rinomina:", doc.document_id)}
+                                                onDelete={() => handleDeleteDocument(doc.document_id)}
+                                            />
+                                        </motion.div>
+                                    ))
+                                ) : (
+                                    <div className={`flex flex-col items-center justify-center py-12 px-4 text-center ${style.textMuted}`}>
+                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${isDark ? "bg-white/[0.04]" : "bg-neutral-100"}`}>
+                                            <FileText size={18} className="opacity-40" />
+                                        </div>
+                                        <p className="text-xs font-medium mb-1">Nessun documento</p>
+                                        <p className="text-[11px] opacity-60">Carica il tuo primo file</p>
+                                    </div>
+                                )
+                            ) : (
+                                // --- CHAT VIEW ---
+                                conversations.length > 0 ? (
+                                    conversations.map((conv: any, index: number) => (
+                                        <motion.div
+                                            key={conv.id}
+                                            initial={{ opacity: 0, x: -8 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: index * 0.03, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                                            className={`relative group flex items-center rounded-xl transition-all duration-200 ${style.itemHover}`}
+                                        >
+                                            <NavLink
+                                                to={`/app/chat/${conv.id}`}
+                                                className={({ isActive }) =>
+                                                    `flex-1 flex items-center px-3 py-2 rounded-xl text-[13px] truncate transition-all duration-200 ${isActive
+                                                        ? (isDark ? "bg-white/[0.06] text-white font-medium ring-1 ring-white/[0.04]" : "bg-black/[0.04] text-neutral-900 font-medium ring-1 ring-black/[0.02]")
+                                                        : style.textSecondary
+                                                    }`
+                                                }
+                                            >
+                                                <div className={`w-7 h-7 rounded-lg flex items-center justify-center mr-2.5 flex-shrink-0 ${isDark ? "bg-white/[0.04]" : "bg-neutral-100/80"}`}>
+                                                    <ClockCounterClockwiseIcon size={13} className="opacity-50" />
+                                                </div>
+                                                <span className="truncate pr-8">{conv.title || "Chat senza titolo"}</span>
+                                            </NavLink>
+
+                                            <button
+                                                className={`${style.contextDot} ${convMenuOpen === conv.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"} ${isDark ? "text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.06]" : "text-neutral-400 hover:text-neutral-600 hover:bg-black/[0.04]"}`}
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                    setConvMenuOpen(convMenuOpen === conv.id ? null : conv.id);
+                                                }}
+                                            >
+                                                <DotsThreeIcon size={18} weight="bold" />
+                                            </button>
+
+                                            <ContextMenu
+                                                isOpen={convMenuOpen === conv.id}
+                                                onShare={() => console.log("Condividi:", conv.id)}
+                                                onRename={() => console.log("Rinomina:", conv.id)}
+                                                onDelete={() => handleDeleteConversation(conv.id)}
+                                            />
+                                        </motion.div>
+                                    ))
+                                ) : (
+                                    <div className={`flex flex-col items-center justify-center py-12 px-4 text-center ${style.textMuted}`}>
+                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${isDark ? "bg-white/[0.04]" : "bg-neutral-100"}`}>
+                                            <MessageSquare size={18} className="opacity-40" />
+                                        </div>
+                                        <p className="text-xs font-medium mb-1">Nessuna conversazione</p>
+                                        <p className="text-[11px] opacity-60">Inizia una nuova chat</p>
+                                    </div>
+                                )
+                            )}
+                        </ul>
+                    </div>
+                </div>
+
+                {/* ─── FOOTER ─── */}
+                <div className={style.footer}>
+                    {/* Subtle top gradient border */}
+                    <div className={`absolute top-0 left-3 right-3 h-px ${isDark ? "bg-gradient-to-r from-transparent via-white/[0.06] to-transparent" : "bg-gradient-to-r from-transparent via-black/[0.06] to-transparent"}`} />
+
+                    <AnimatePresence>
+                        {isUserMenuOpen && (
+                            <motion.div
+                                ref={menuRef}
+                                initial={{ opacity: 0, y: 8, scale: 0.96 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: 8, scale: 0.96 }}
+                                transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                                className="absolute bottom-full left-0 w-[calc(100%-16px)] mx-2 mb-2 z-50 origin-bottom"
+                            >
+                                <div className={`rounded-xl border overflow-hidden backdrop-blur-xl ${style.popoverBg}`}>
+                                    <div className="p-1.5 flex flex-col gap-0.5 w-full">
                                         <button
-                                            // Sostituito doc.id con doc.document_id
-                                            className={`absolute right-2 p-1 cursor-pointer rounded-md transition-all ${docMenuOpen === doc.document_id ? "opacity-100" : "opacity-0 group-hover:opacity-100"} ${style.textSecondary} hover:${style.textPrimary}`}
-                                            onClick={(e) => {
-                                                e.preventDefault();
-                                                e.stopPropagation();
-                                                // Sostituito doc.id con doc.document_id
-                                                setDocMenuOpen(docMenuOpen === doc.document_id ? null : doc.document_id);
-                                            }}
+                                            className={`${style.popoverItem} justify-between`}
+                                            onClick={() => { setIsSettingOpen(true); setIsUserMenuOpen(false); }}
                                         >
-                                            <DotsThreeIcon size={20} weight="bold" />
+                                            <div className="flex items-center gap-2.5">
+                                                <Settings size={15} className="opacity-50" />
+                                                <span>Impostazioni</span>
+                                            </div>
+                                            <kbd className={style.shortcutBadge}>⌘I</kbd>
                                         </button>
 
-                                        {/* Dropdown Menu Documenti */}
-                                        <AnimatePresence>
-                                            {/* Sostituito doc.id con doc.document_id */}
-                                            {docMenuOpen === doc.document_id && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                                                    animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                                    transition={{ duration: 0.15 }}
-                                                    className={`absolute right-0 top-full mt-1 w-44 rounded-lg shadow-xl z-[100] p-1.5 border ${style.popoverBg}`}
-                                                >
-                                                    <button className={style.popoverItem} onClick={() => console.log("Condividi:", doc.document_id)}>
-                                                        <ShareNetworkIcon size={14} /> Condividi
-                                                    </button>
-                                                    <button className={style.popoverItem} onClick={() => console.log("Rinomina:", doc.document_id)}>
-                                                        <PencilLineIcon size={14} /> Rinomina
-                                                    </button>
-                                                    <hr className={style.divider} />
-                                                    <button
-                                                        className={`flex items-center gap-2 w-full px-3 py-2 text-sm rounded-lg transition-colors text-left ${isDark ? "text-red-400 hover:bg-red-900/20" : "text-red-600 hover:bg-red-50"}`}
-                                                        onClick={() => {
-                                                            handleDeleteDocument(doc.document_id)
-                                                        }}
-                                                    >
-                                                        <TrashIcon size={14} /> Elimina
-                                                    </button>
-                                                </motion.div>
-                                            )}
-                                        </AnimatePresence>
-                                    </div>
-                                ))
-
-                            ) : (
-                                <p className="text-xs px-3 py-2 opacity-50">Nessun documento</p>
-                            )
-                        ) : (
-                            // --- VISTA CHAT (ESISTENTE) ---
-                            conversations.map((conv: any) => (
-                                <div key={conv.id} className={`relative group flex items-center rounded-md transition-colors ${style.itemHover}`}>
-                                    <NavLink
-                                        to={`/app/chat/${conv.id}`}
-                                        className={({ isActive }) => `flex-1 flex items-center px-3 py-2 rounded-md text-sm truncate transition-colors ${isActive ? (isDark ? "bg-neutral-800 text-white font-medium" : "bg-neutral-200/50 text-neutral-900 font-medium") : (style.textSecondary)}`}
-                                    >   <ClockCounterClockwiseIcon size={16} className="mr-2 opacity-70" />
-                                        <span className="truncate pr-8">{conv.title || "Chat senza titolo"}</span>
-                                    </NavLink>
-
-                                    {/* Context Menu Chat */}
-                                    <button
-                                        className={`absolute right-2 p-1 cursor-pointer rounded-md transition-all ${convMenuOpen === conv.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"} ${style.textSecondary} hover:${style.textPrimary}`}
-                                        onClick={(e) => {
-                                            e.preventDefault(); e.stopPropagation();
-                                            setConvMenuOpen(convMenuOpen === conv.id ? null : conv.id);
-                                        }}
-                                    >
-                                        <DotsThreeIcon size={20} weight="bold" />
-                                    </button>
-
-                                    {/* Dropdown Menu Chat */}
-                                    <AnimatePresence>
-                                        {convMenuOpen === conv.id && (
-                                            <motion.div
-                                                initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                                                animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                                                transition={{ duration: 0.15 }}
-                                                className={`absolute right-0 top-full mt-1 w-44 rounded-lg shadow-xl z-[100] p-1.5 border ${style.popoverBg}`}
-                                            >
-                                                {/* Contenuto menu... omesso per brevità ma uguale a prima */}
-                                                <button className={style.popoverItem}><ShareNetworkIcon size={14} /> Condividi</button>
-                                                <button className={style.popoverItem}><PencilLineIcon size={14} /> Rinomina</button>
-                                                <hr className={style.divider} />
-                                                <button className={`flex items-center gap-2 w-full px-3 py-2 text-sm rounded-lg transition-colors text-left ${isDark ? "text-red-400 hover:bg-red-900/20" : "text-red-600 hover:bg-red-50"}`} onClick={() => handleDeleteConversation(conv.id)}>
-                                                    <TrashIcon size={14} /> Elimina
-                                                </button>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
-                            ))
-                        )}
-                    </ul>
-                </div>
-            </div>
-
-            {/* FOOTER (Invariato) */}
-            <div className={style.footer}>
-                {/* ... resto del codice del footer invariato ... */}
-                <AnimatePresence>
-                    {isUserMenuOpen && (
-                        <motion.div
-                            ref={menuRef}
-                            initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            className="absolute bottom-full left-0 w-[calc(100%-16px)] mx-2 mb-2 z-50 origin-bottom"
-                        >
-                            <div className={`rounded-xl shadow-xl border overflow-hidden ring-1 ${style.popoverBg}`}>
-                                <div className="p-1 flex flex-col gap-0.5 w-full">
-                                    <button
-                                        className={`${style.popoverItem} justify-between`}
-                                        onClick={() => { setIsSettingOpen(true); setIsUserMenuOpen(false); }}
-                                    >
-                                        <div className="flex items-center gap-2">
-                                            <Settings size={16} className={style.textSecondary} />
-                                            <span>Impostazioni</span>
-                                        </div>
-                                        <kbd className={`text-[12px] flex px-1 py-0.5 rounded border items-center gap-1 ${isDark ? "bg-neutral-800 border-neutral-700 text-neutral-400" : "bg-neutral-200/50 border-neutral-200 text-neutral-700"}`}>
-                                            <CommandIcon size={14} /> + I
-                                        </kbd>
-                                    </button>
-
-                                    {/* TEMA TOGGLE */}
-                                    <button onClick={(e) => { e.stopPropagation(); setTheme(isDark ? "light" : "dark"); }}
-                                        className={`${style.popoverItem} justify-between`}>
-                                        <div className="flex items-center gap-2 w-full">
-                                            {isDark ? <Moon size={16} className={style.textSecondary} /> : <Sun size={16} className={style.textSecondary} />}
-                                            <div className="flex items-center gap-2 justify-between w-full">
+                                        {/* Theme Toggle */}
+                                        <button
+                                            onClick={(e) => { e.stopPropagation(); setTheme(isDark ? "light" : "dark"); }}
+                                            className={`${style.popoverItem} justify-between`}
+                                        >
+                                            <div className="flex items-center gap-2.5">
+                                                {isDark
+                                                    ? <Moon size={15} className="opacity-50" />
+                                                    : <Sun size={15} className="opacity-50" />
+                                                }
                                                 <span>Tema: {isDark ? "Scuro" : "Chiaro"}</span>
                                             </div>
-                                        </div>
-                                    </button>
-
-                                    <div className={style.divider} />
-                                    <div className="p-1">
-                                        <button onClick={() => handleLogOut(convMenuOpen)}
-                                            className={`flex items-center gap-2 w-full px-3 py-2 text-sm rounded-lg transition-colors text-left ${isDark ? "text-red-400 hover:bg-red-900/20" : "text-red-600 hover:bg-red-50"}`}>
-                                            <LogOut size={16} />
-                                            <span>Esci</span>
+                                            {/* Mini Toggle Visual */}
+                                            <div className={`w-8 h-[18px] rounded-full p-[2px] transition-colors ${isDark ? "bg-white/10" : "bg-neutral-200"}`}>
+                                                <motion.div
+                                                    className={`w-[14px] h-[14px] rounded-full ${isDark ? "bg-white" : "bg-neutral-900"}`}
+                                                    animate={{ x: isDark ? 14 : 0 }}
+                                                    transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                                                />
+                                            </div>
                                         </button>
+
+                                        {/* Keyboard Shortcuts */}
+                                        <button className={style.popoverItem}>
+                                            <Keyboard size={15} className="opacity-50" />
+                                            <span>Scorciatoie</span>
+                                        </button>
+
+                                        <div className={style.divider} />
+
+                                        <div className="p-1">
+                                            <button
+                                                onClick={() => handleLogOut(convMenuOpen)}
+                                                className={`flex items-center gap-2.5 w-full px-3 py-2 text-[13px] rounded-lg transition-all duration-200 text-left ${isDark ? "text-red-400 hover:bg-red-500/10" : "text-red-500 hover:bg-red-50"}`}
+                                            >
+                                                <LogOut size={15} />
+                                                <span>Esci</span>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
-                <button className={style.userBtn} onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}>
-                    <div className="flex items-center gap-3 overflow-hidden">
-                        <img src={userDetails?.avatar_url || `https://ui-avatars.com/api/?name=${userDetails?.full_name || 'User'}&background=random`} alt="Profile" className={`w-8 h-8 rounded-full border object-cover ${isDark ? "border-neutral-700" : "border-neutral-200"}`} />
-                        <div className="flex flex-col min-w-0">
-                            <span className={`text-sm font-semibold truncate ${style.textPrimary}`}>{userDetails?.full_name || "Utente"}</span>
-                            <span className={`text-xs font-medium truncate ${style.textSecondary}`}>Pro Plan</span>
+                    {/* User Button */}
+                    <button className={style.userBtn} onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}>
+                        <div className="flex items-center gap-3 overflow-hidden">
+                            {/* Avatar with online indicator */}
+                            <div className="relative flex-shrink-0">
+                                <img
+                                    src={userDetails?.avatar_url || `https://ui-avatars.com/api/?name=${userDetails?.full_name || 'User'}&background=random&bold=true&format=svg`}
+                                    alt="Profile"
+                                    className={`w-8 h-8 rounded-lg object-cover transition-all duration-300 ${isDark ? "ring-1 ring-white/[0.08]" : "ring-1 ring-black/[0.06]"}`}
+                                />
+                                <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 bg-emerald-500 ${isDark ? "border-[#0a0a0a]" : "border-[#fafafa]"}`} />
+                            </div>
+
+                            <div className="flex flex-col min-w-0">
+                                <span className={`text-[13px] font-semibold truncate ${style.textPrimary}`}>
+                                    {userDetails?.full_name || "Utente"}
+                                </span>
+                                <span className="text-[11px] font-bold plan-badge">
+                                    Early access ✦
+                                </span>
+                            </div>
                         </div>
-                    </div>
-                    <Settings size={16} className={`transition-transform duration-200 ${isUserMenuOpen ? "rotate-90 " + style.iconActive : style.iconBase}`} />
-                </button>
-            </div>
-        </nav>
+
+                        <motion.div
+                            animate={{ rotate: isUserMenuOpen ? 180 : 0 }}
+                            transition={{ duration: 0.2 }}
+                        >
+                            <ChevronUp
+                                size={15}
+                                className={`transition-colors duration-200 ${isUserMenuOpen ? style.iconActive : (isDark ? "text-neutral-600" : "text-neutral-300")}`}
+                            />
+                        </motion.div>
+                    </button>
+                </div>
+            </nav>
+        </>
     );
 };
 
