@@ -4,7 +4,8 @@ import Tooltip from "./other/Tooltip";
 import { useChat } from "../context/ChatContext";
 import { useDocument } from "../context/DocumentContext"; // Importa il DocumentContext
 import { useAuth } from "../context/AuthContext";
-import ModelPopup from "./other/ModelPopup";
+import OptionsPopup from "./other/OptionsPopup";
+import SelectPopup, { type SelectOption } from "./other/SelectPopup";
 import { AnimatePresence, motion } from "framer-motion";
 
 interface FileWithPreview {
@@ -12,6 +13,14 @@ interface FileWithPreview {
     name: string;
     previewUrl: string | null;
 }
+
+const TONE_OPTIONS: SelectOption<string>[] = [
+    { label: "Canvas", value: "canvas", description: "live code preview" },
+    { label: "Web search", value: "web_search", description: "Search across internet" },
+    { label: "Crea immagini", value: "", description: "coming soon" },
+
+];
+
 
 const Textbar = () => {
     const path = window.location.pathname;
@@ -42,6 +51,8 @@ const Textbar = () => {
     const [files, setFiles] = useState<FileWithPreview[]>([]);
     const [isGroundingActive, setIsGroundingActive] = useState(false);
     const [inputValue, setInputValue] = useState("");
+    const [selectedTone, setSelectedTone] = useState("default");
+    const [selectedLanguage, setSelectedLanguage] = useState("auto");
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const menuRef = useRef<HTMLDivElement | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -171,7 +182,13 @@ const Textbar = () => {
                     </button>
                     <input type="file" id="file-upload" className="hidden" onChange={handleFileChange} ref={fileInputRef} multiple />
 
-                    <ModelPopup />
+                    <OptionsPopup />
+
+                    <SelectPopup
+                        options={TONE_OPTIONS}
+                        value={selectedTone}
+                        onChange={setSelectedTone}
+                    />
 
                     {/* Mostra Web Grounding solo se siamo nella Chat (opzionale, rimuovi il controllo se lo vuoi anche nei doc) */}
                     {isChatPage && (
@@ -222,7 +239,7 @@ const Textbar = () => {
                             </div>
                         }
                     >
-                        <span className="text-[10px] font-mono text-neutral-500">
+                        <span className="text-[13px] font-mono text-neutral-500" >
                             {(Number(model?.cost_per_input_token || 0) + Number(model?.cost_per_output_token || 0)).toFixed(2)}$/1M
                         </span>
                     </Tooltip>

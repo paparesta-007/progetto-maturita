@@ -2,8 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import getAllConversation from "../services/supabase/Conversation/getAllConversation";
 import { useAuth } from "./AuthContext";
 import getMessages from "../services/supabase/Conversation/getMessages";
-import { sendNormalMessage, sendStreamedMessage } from "../library/sendMessage";
-import createMessage from "../services/supabase/Conversation/createMessage";
+import { sendNormalMessage, sendStreamedMessage, type ChatOptions } from "../library/sendMessage";
 import { useNavigate } from "react-router-dom";
 interface ChatContextType {
     sendMessage: (message: string) => void;
@@ -46,16 +45,33 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
     const [currentConversationName, setCurrentConversationName] = useState<string | null>(null);
     const navigate = useNavigate();
+
+    const fetchConversations = useCallback(async () => {
+        try {
+            if (!user?.id) return;
+            const data = await getAllConversation(user?.id);
+            if (data) {
+                setConversations(data);
+            }
+        } catch (error) {
+            console.error("Errore durante il recupero delle conversazioni:", error);
+        } finally {
+            // NUOVO: Segnaliamo che il caricamento è finito (anche se vuoto o errore)
+            setAreConversationsLoaded(true);
+        }
+    }, [user?.id]);
+
     const sendMessage = useCallback(async (message: string) => {
+        const chatOptions: ChatOptions = {
+            systemPrompt,
+            personalInfo,
+            tone,
+            allowedCustomInstructions
+        };
+
         try {
             if (isStreamTextEnabled) {
-                await sendStreamedMessage(message, setMessageHistory, setLoading, model, messageHistory,{
-                        systemPrompt,
-                        personalInfo,
-                        tone,
-                        allowedCustomInstructions
-                        
-                    });
+                await sendStreamedMessage(message, setMessageHistory, setLoading, model, messageHistory, chatOptions);
             } else {
                 await sendNormalMessage(
                     message,
@@ -68,39 +84,14 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
                     setCurrentConversationId,
                     fetchConversations,
                     navigate,
-                    {
-                        systemPrompt,
-                        personalInfo,
-                        tone,
-                        allowedCustomInstructions
-                        
-                    }
+                    chatOptions
                 );
             }
         } catch (error) {
             console.error("Errore durante l'invio del messaggio:", error);
         }
-    }, [isStreamTextEnabled, model, messageHistory, currentConversationId, user, systemPrompt, personalInfo, tone, allowedCustomInstructions]);
-    const saveRunMetrics = useCallback(async (metrics: { latencyMs: number, throughput: number, model: string }) => {
-        try {
-            console.log("📝 [TODO] Salvataggio metriche su Supabase:", metrics);
-            
-            /* ESEMPIO IMPLEMENTAZIONE FUTURA:
-            const { error } = await supabase
-                .from('performance_logs')
-                .insert({
-                    user_id: user.id,
-                    model: metrics.model,
-                    latency_ms: metrics.latencyMs,
-                    throughput: metrics.throughput,
-                    created_at: new Date().toISOString()
-                });
-            */
-            
-        } catch (error) {
-            console.error("Errore salvataggio metriche:", error);
-        }
-    }, [user?.id]);
+    }, [isStreamTextEnabled, model, messageHistory, currentConversationId, user, systemPrompt, personalInfo, tone, allowedCustomInstructions, fetchConversations, navigate]);
+
     const loadConversation = useCallback(async (conversationId: string) => {
         try {
             setLoading(true);
@@ -144,21 +135,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
             setLoading(false);
         }
     }, []);
-
-    const fetchConversations = useCallback(async () => {
-        try {
-            if (!user?.id) return;
-            const data = await getAllConversation(user?.id);
-            if (data) {
-                setConversations(data);
-            }
-        } catch (error) {
-            console.error("Errore durante il recupero delle conversazioni:", error);
-        } finally {
-            // NUOVO: Segnaliamo che il caricamento è finito (anche se vuoto o errore)
-            setAreConversationsLoaded(true);
-        }
-    }, [user?.id]);
 
     useEffect(() => {
 

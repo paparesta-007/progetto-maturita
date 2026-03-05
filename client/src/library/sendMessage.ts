@@ -4,9 +4,9 @@ import createMessage from "../services/supabase/Conversation/createMessage";
 import { type NavigateFunction } from "react-router-dom";
 
 // Interfaccia per i parametri opzionali (per pulizia)
-interface ChatOptions {
+export interface ChatOptions {
     systemPrompt?: string;
-    personalInfo?: string;
+    personalInfo?: any;
     tone?: string;
     allowedCustomInstructions?: string | boolean;
 }
@@ -21,6 +21,7 @@ export const sendNormalMessage = async (
     userId: string | undefined,
     setCurrentConversationId: React.Dispatch<React.SetStateAction<string | null>>,
     fetchConversations: () => Promise<void>,
+    navigate: NavigateFunction,
     // AGGIUNGIAMO I DATI CHE PRIMA CERCAVI DI PRENDERE CON USEAUTH
     options: ChatOptions
 ) => {

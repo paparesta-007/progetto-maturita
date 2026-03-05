@@ -497,10 +497,10 @@ app.post("/api/documents/ingest", upload.single("file"), async (req: express.Req
         console.log("🤖 [5/6] Richiesta embedding a OpenRouter...");
 
         // Verifica preventiva del modello
-        const modelId = "openai/text-embedding-3-small"; // ID completo per OpenRouter
+        const modelId = "text-embedding-004"; // Google embedding model
 
         const { embeddings } = await embedMany({
-            model: openrouterEmbeddings.embedding(modelId),
+            model: "openai/text-embedding-3-small",
             values: chunks.map(chunk => chunk.content),
         });
 
@@ -553,9 +553,10 @@ app.post("/api/documents/ingest", upload.single("file"), async (req: express.Req
     }
 });
 
+
 app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response) => {
     try {
-        const {question,model} = req.body;
+        const {question} = req.body;
         
         console.log("🔍 Domanda ricevuta:", question);
 
@@ -571,7 +572,7 @@ app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response
             .rpc('match_documents', {
                 query_embedding: embedding,
                 match_threshold: 0.5, // Soglia di similarità (0.0 - 1.0)
-                match_count: 8        // Prendi i 5 pezzi più rilevanti
+                match_count: 5        // Prendi i 5 pezzi più rilevanti
             });
 
         if (error) {
@@ -597,10 +598,9 @@ app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response
         ${contextText}
         `;
 
-        console.log("Modello selezionato per la generazione:", model);
         // 4. Genera la risposta con Gemini
         const { text, usage } = await generateText({
-            model: openrouter(model), // O il modello che preferisci
+            model: openrouter("nvidia/nemotron-3-nano-30b-a3b:free"), // O il modello che preferisci
             system: systemPrompt,
             prompt: question,
         });
