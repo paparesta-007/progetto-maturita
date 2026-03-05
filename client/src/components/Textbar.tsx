@@ -28,7 +28,6 @@ const Textbar = () => {
     const path = window.location.pathname;
     const { theme } = useAuth();
     const isDark = theme === 'dark';
-
     // --- 1. RILEVAMENTO DEL PERCORSO ---
     // Controlla se siamo nella chat (adatta la stringa '/app/chat' al tuo routing esatto)
     const isChatPage = path.includes('/app/chat');
@@ -134,7 +133,7 @@ const Textbar = () => {
         }
     };
     const handleSendMessage = () => {
-       
+
         sendMessage(inputValue, functionality);
         resetTextarea();
         setFiles([]);
@@ -214,7 +213,10 @@ const Textbar = () => {
                         position="right"
                         content={
                             <div className="text-left">
-                                <b className={isDark ? "text-white" : "text-neutral-900"}>Model Pricing</b>
+                                <b className={isDark ? "text-white" : "text-neutral-900"}>Model:</b>
+                                <p className={`text-[11px] font-mono ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>
+                                    {model?.name}
+                                </p>
                                 <div className="text-[11px] text-neutral-500 mt-1">
                                     In: {model?.cost_per_input_token}$ / 1M<br />
                                     Out: {model?.cost_per_output_token}$ / 1M

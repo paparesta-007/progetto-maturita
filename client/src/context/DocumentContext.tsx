@@ -70,9 +70,9 @@ export const DocumentProvider = ({ children }: { children: React.ReactNode }) =>
     const [loading, setLoading] = useState(false);
     // Valore di default del modello (puoi personalizzarlo come nel ChatContext)
     const [model, setModel] = useState<any>({
-        name: "Gemini 2.5 Flash Lite",
-        provider: "Google",
-        name_id: "google/gemini-2.5-flash-lite",
+        name: "OpenAI: gpt-oss-safeguard-20b",
+        provider: "OpenAI",
+        name_id: "openai/gpt-oss-safeguard-20b",
         cost_per_input_token: 0.10,
         cost_per_output_token: 0.40
     });
