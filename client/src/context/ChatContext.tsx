@@ -2,10 +2,10 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import getAllConversation from "../services/supabase/Conversation/getAllConversation";
 import { useAuth } from "./AuthContext";
 import getMessages from "../services/supabase/Conversation/getMessages";
-import { sendNormalMessage, sendStreamedMessage, type ChatOptions } from "../library/sendMessage";
+import { sendNormalMessage, sendStreamedMessage, sendCanvasMessage, sendWebSearchMessage, type ChatOptions } from "../library/sendMessage";
 import { useNavigate } from "react-router-dom";
 interface ChatContextType {
-    sendMessage: (message: string) => void;
+    sendMessage: (message: string, functionality: string) => void;
     messageHistory: { role: 'user' | 'bot'; content: string; usage?: any, model?: string }[];
     loading: boolean;
     conversations: any[]; // Per tenere traccia delle conversazioni salvate
@@ -61,7 +61,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }, [user?.id]);
 
-    const sendMessage = useCallback(async (message: string) => {
+    const sendMessage = useCallback(async (message: string, functionality: string) => {
         const chatOptions: ChatOptions = {
             systemPrompt,
             personalInfo,
@@ -70,22 +70,32 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         };
 
         try {
-            if (isStreamTextEnabled) {
-                await sendStreamedMessage(message, setMessageHistory, setLoading, model, messageHistory, chatOptions);
-            } else {
-                await sendNormalMessage(
-                    message,
-                    setMessageHistory,
-                    setLoading,
-                    model,
-                    messageHistory,
-                    currentConversationId,
-                    user?.id,
-                    setCurrentConversationId,
-                    fetchConversations,
-                    navigate,
-                    chatOptions
-                );
+            switch (functionality) {
+                case "canvas":
+                    await sendCanvasMessage(message, setMessageHistory, setLoading, model, messageHistory);
+                    break;
+                case "web_search":
+                    await sendWebSearchMessage(message, setMessageHistory, setLoading, model, messageHistory);
+                    break;
+                default:
+                    if (isStreamTextEnabled) {
+                        await sendStreamedMessage(message, setMessageHistory, setLoading, model, messageHistory, chatOptions);
+                    } else {
+                        await sendNormalMessage(
+                            message,
+                            setMessageHistory,
+                            setLoading,
+                            model,
+                            messageHistory,
+                            currentConversationId,
+                            user?.id,
+                            setCurrentConversationId,
+                            fetchConversations,
+                            navigate,
+                            chatOptions
+                        );
+                    }
+                    break;
             }
         } catch (error) {
             console.error("Errore durante l'invio del messaggio:", error);

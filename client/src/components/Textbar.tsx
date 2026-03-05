@@ -8,13 +8,15 @@ import OptionsPopup from "./other/OptionsPopup";
 import SelectPopup, { type SelectOption } from "./other/SelectPopup";
 import { AnimatePresence, motion } from "framer-motion";
 
+
 interface FileWithPreview {
     originalFile: File;
     name: string;
     previewUrl: string | null;
 }
 
-const TONE_OPTIONS: SelectOption<string>[] = [
+const FUNCTIONALITIES: SelectOption<string>[] = [
+    { label: "Default", value: "default", description: "" },
     { label: "Canvas", value: "canvas", description: "live code preview" },
     { label: "Web search", value: "web_search", description: "Search across internet" },
     { label: "Crea immagini", value: "", description: "coming soon" },
@@ -36,16 +38,22 @@ const Textbar = () => {
     const docCtx = useDocument();
 
     // --- 3. LOGICA DI SWITCHING ---
-    // Se siamo in ChatPage usa chatCtx, altrimenti docCtx
-    const sendMessage = isChatPage ? chatCtx.sendMessage : docCtx.sendMessage;
-    const loading = isChatPage ? chatCtx.loading : docCtx.loading;
-    const model = isChatPage ? chatCtx.model : docCtx.model;
-    
-    // Stream: Se il DocumentContext non ha lo stream, usiamo quello della chat o disabilitiamo
-    // Assumiamo che solo la chat abbia lo stream abilitabile per ora
-    const isStreamTextEnabled = isChatPage ? chatCtx.isStreamTextEnabled : false; 
-    const setIsStreamTextEnabled = isChatPage ? chatCtx.setIsStreamTextEnabled : () => {};
+    let sendMessage = docCtx.sendMessage;
+    let loading = docCtx.loading;
+    let model = docCtx.model;
 
+    switch (true) {
+        case path.includes('/app/chat'):
+            sendMessage = chatCtx.sendMessage;
+            loading = chatCtx.loading;
+            model = chatCtx.model;
+            break;
+        case path.includes('/app/document'):
+            sendMessage = docCtx.sendMessage;
+            loading = docCtx.loading;
+            model = docCtx.model;
+            break;
+    }
 
     // --- STATI LOCALI ---
     const [files, setFiles] = useState<FileWithPreview[]>([]);
@@ -56,6 +64,7 @@ const Textbar = () => {
     const fileInputRef = useRef<HTMLInputElement | null>(null);
     const menuRef = useRef<HTMLDivElement | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+    const [functionality, setFunctionality] = useState<string>("default");
 
     // Stili dinamici per la barra
     const styles = {
@@ -82,8 +91,7 @@ const Textbar = () => {
             e.preventDefault();
             if (inputValue.trim()) {
                 // Chiama la funzione corretta in base al contesto
-                sendMessage(inputValue);
-                resetTextarea();
+                handleSendMessage();
             }
         }
     };
@@ -106,7 +114,7 @@ const Textbar = () => {
         setFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
     };
     const handleInput = (e: React.FormEvent<HTMLTextAreaElement>) => {
-        
+
         const el = e.currentTarget;
 
         const lineHeight = parseFloat(getComputedStyle(el).lineHeight);
@@ -125,7 +133,12 @@ const Textbar = () => {
             textareaRef.current.style.height = "auto";
         }
     };
-
+    const handleSendMessage = () => {
+       
+        sendMessage(inputValue, functionality);
+        resetTextarea();
+        setFiles([]);
+    }
     return (
         <div className={styles.container} ref={menuRef}>
 
@@ -168,7 +181,7 @@ const Textbar = () => {
 
                 <button
                     className={styles.sendBtn}
-                    onClick={() => { if (inputValue.trim()) { sendMessage(inputValue); setInputValue("") } }}
+                    onClick={() => { if (inputValue.trim()) { handleSendMessage(); } }}
                 >
                     {loading ? <StopIcon size={20} weight="fill" /> : <PaperPlaneTilt size={20} weight="fill" />}
                 </button>
@@ -185,47 +198,17 @@ const Textbar = () => {
                     <OptionsPopup />
 
                     <SelectPopup
-                        options={TONE_OPTIONS}
-                        value={selectedTone}
-                        onChange={setSelectedTone}
+                        options={FUNCTIONALITIES}
+                        value={functionality} // Rimosso il plurale e il fallback superfluo
+                        onChange={(value) => {
+                            setFunctionality(value); // Usa il setter corretto
+                        }}
                     />
 
-                    {/* Mostra Web Grounding solo se siamo nella Chat (opzionale, rimuovi il controllo se lo vuoi anche nei doc) */}
-                    {isChatPage && (
-                        <button
-                            className={`transition-all relative flex items-center gap-0 px-2 py-1 rounded-full ${isGroundingActive ? 'bg-blue-500/10 text-blue-500' : styles.iconBtn
-                                }`}
-                            onClick={() => setIsGroundingActive(!isGroundingActive)}
-                        >
-                            <GlobeIcon size={22} weight={isGroundingActive ? "fill" : "regular"} />
-                            <AnimatePresence>
-                                {isGroundingActive && (
-                                    <motion.span
-                                        initial={{ width: 0, opacity: 0 }} animate={{ width: 'auto', opacity: 1 }} exit={{ width: 0, opacity: 0 }}
-                                        className="ml-1 text-xs font-bold overflow-hidden whitespace-nowrap"
-                                    >
-                                        Web
-                                    </motion.span>
-                                )}
-                            </AnimatePresence>
-                        </button>
-                    )}
+
                 </div>
 
                 <div className="flex items-center gap-4">
-                    {/* Stream Toggle: Mostrato solo se siamo in Chat Page */}
-                    {isChatPage && (
-                        <div className="flex items-center gap-2 cursor-pointer group">
-                            <input
-                                type="checkbox" id="stream-toggle" className="cursor-pointer accent-neutral-800"
-                                checked={isStreamTextEnabled} onChange={(e) => setIsStreamTextEnabled(e.target.checked)}
-                            />
-                            <label htmlFor="stream-toggle" className="text-xs font-medium text-neutral-400 group-hover:text-neutral-600 dark:group-hover:text-neutral-300 cursor-pointer select-none">
-                                Stream
-                            </label>
-                        </div>
-                    )}
-
                     <Tooltip
                         background={isDark ? "dark" : "light"}
                         position="right"

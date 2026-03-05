@@ -27,7 +27,7 @@ export interface DocumentContextType {
     fetchUserDocuments: (userId: string, force?: boolean) => Promise<void>;
 
     // --- NUOVE PROPRIETÀ AGGIUNTE (Chat & Model) ---
-    sendMessage: (message: string) => Promise<void>; // Funzione sendMessage
+    sendMessage: (message: string, functionality: string) => Promise<void>; // Funzione sendMessage
     messageHistory: { role: 'user' | 'bot'; content: string; usage?: any, model?: string }[];
     setMessageHistory: React.Dispatch<React.SetStateAction<{ role: 'user' | 'bot'; content: string; usage?: any, model?: string }[]>>;
     loading: boolean;

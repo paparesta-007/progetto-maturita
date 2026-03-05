@@ -38,7 +38,7 @@ const slideVariants = {
 };
 
 const OptionsPopup: React.FC = () => {
-    const { model, setModel } = useChat();
+    const { model, setModel, isStreamTextEnabled, setIsStreamTextEnabled } = useChat();
     const { theme } = useAuth();
     const isDark = theme === "dark";
 
@@ -224,6 +224,33 @@ const OptionsPopup: React.FC = () => {
                                                     : "border-neutral-300"
                                         }`}>
                                             {safetyEnabled && (
+                                                <CheckIcon
+                                                    size={10}
+                                                    weight="bold"
+                                                    className={isDark ? "text-neutral-900" : "text-white"}
+                                                />
+                                            )}
+                                        </span>
+                                    </button>
+
+                                    {/* --- Stream text row --- */}
+                                    <button
+                                        type="button"
+                                        className={rowBase}
+                                        onClick={() => setIsStreamTextEnabled((p) => !p)}
+                                    >
+                                        <CpuIcon size={14} className="text-neutral-400 flex-shrink-0" />
+                                        <span className="flex-1">Stream text</span>
+                                        <span className={`w-4 h-4 flex items-center justify-center rounded border transition-colors flex-shrink-0 ${
+                                            isStreamTextEnabled
+                                                ? isDark
+                                                    ? "bg-neutral-100 border-neutral-100"
+                                                    : "bg-neutral-900 border-neutral-900"
+                                                : isDark
+                                                    ? "border-neutral-600"
+                                                    : "border-neutral-300"
+                                        }`}>
+                                            {isStreamTextEnabled && (
                                                 <CheckIcon
                                                     size={10}
                                                     weight="bold"
