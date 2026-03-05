@@ -18,7 +18,7 @@ import InstructionsSettingPage from "../pages/SettingPages/InstructionsSettingPa
 import BillingSettingPage from "../pages/SettingPages/BilingSettingPage";
 import { DocumentProvider } from "../context/DocumentContext";
 import AccountPage from "../pages/SettingPages/AccountPage";
-
+import ShortcutSetting from "../pages/SettingPages/Shortcut";
 const AppLayout = () => {
   const [isMinimized, setIsMinimized] = useState(false);
   const { isSettingOpen, setIsSettingOpen, setSettingPage, settingPage } = useApp();
@@ -48,6 +48,7 @@ const AppLayout = () => {
     { label: "Generale", Icon: FadersHorizontalIcon, id: "generale" },
     { label: "Istruzioni", Icon: ChartPolarIcon, id: "istruzioni" },
     { label: "Fatturazione", Icon: CreditCardIcon, id: "fatturazione" },
+    { label: "Scorciatoie", Icon: ListIcon, id: "shortcuts" }
   ];
   const accountItem = { label: "Account", Icon: UserCircleIcon, id: "account" };
   useEffect(() => {
@@ -143,6 +144,7 @@ const AppLayout = () => {
                       {settingPage === "istruzioni" && <InstructionsSettingPage />}
                       {settingPage === "fatturazione" && <BillingSettingPage />}
                       {settingPage === "account" && <AccountPage/>}
+                      {settingPage==="shortcuts" && <ShortcutSetting/>}
                     </div>
 
                     {/* Tasto Chiudi */}
