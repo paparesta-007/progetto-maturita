@@ -112,7 +112,7 @@ const BotMessage = ({ i, children, usage, model }: { i: number; children: React.
             }`,
 
         // Message Bubble
-        bubble: `relative rounded-2xl rounded-tl-lg p-5 flex-1 renderChat transition-all duration-300 ${isDark
+        bubble: `relative rounded-2xl rounded-tl-lg p-5 flex-1 renderChat transition-all duration-300 max-w-full md:max-w-[85%] lg:max-w-[90%] ${isDark
             ? "text-neutral-200 bg-white/[0.03] ring-1 ring-white/[0.04]"
             : "text-neutral-700 bg-white ring-1 ring-black/[0.04] shadow-sm shadow-black/[0.02]"
             }`,

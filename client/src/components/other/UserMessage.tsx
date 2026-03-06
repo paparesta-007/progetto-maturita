@@ -51,7 +51,7 @@ const UserMessage = ({ i, htmlContent, tokens = 0 }: { i: number; htmlContent: s
         }`,
 
         // Message Bubble
-        bubble: `relative max-w-[85%] rounded-2xl rounded-tr-sm p-4 text-sm leading-relaxed transition-all duration-300 ${
+        bubble: `relative max-w-full md:max-w-[85%] lg:max-w-[90%] rounded-2xl rounded-tr-sm p-4 text-sm leading-relaxed transition-all duration-300 ${
             isDark
                 ? "text-neutral-100 bg-neutral-800/50 ring-1 ring-white/[0.06]"
                 : "text-neutral-800 bg-neutral-50 ring-1 ring-black/[0.04] shadow-sm shadow-black/[0.02]"

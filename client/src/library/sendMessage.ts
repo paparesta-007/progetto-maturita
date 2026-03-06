@@ -1,7 +1,8 @@
 import createConversation from "../services/supabase/Conversation/createConversation";
 import createMessage from "../services/supabase/Conversation/createMessage";
 import { type NavigateFunction } from "react-router-dom";
-
+import {Sandpack} from "@codesandbox/sandpack-react";
+import {z} from "zod";
 export interface ChatOptions {
     systemPrompt?: string;
     personalInfo?: any;

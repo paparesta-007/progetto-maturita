@@ -9,7 +9,7 @@ import {
   UserCircleIcon,
   XIcon
 } from "@phosphor-icons/react";
-import { ChatProvider, useChat } from "../context/ChatContext";
+import { ChatProvider } from "../context/ChatContext";
 import { useApp } from "../context/AppContext";
 import { useAuth } from "../context/AuthContext"; // Importa per il tema
 import { AnimatePresence, motion } from "framer-motion";
@@ -21,9 +21,10 @@ import AccountPage from "../pages/SettingPages/AccountPage";
 import ShortcutSetting from "../pages/SettingPages/Shortcut";
 const AppLayout = () => {
   const [isMinimized, setIsMinimized] = useState(false);
-  const { isSettingOpen, setIsSettingOpen, setSettingPage, settingPage } = useApp();
+  const { isSettingOpen, setIsSettingOpen, setSettingPage, settingPage, isLivePreview } = useApp();
   const { theme, setTheme } = useAuth(); // Estrai il tema globale
   const isDark = theme === 'dark';
+  const effectiveSidebarMinimized = isLivePreview || isMinimized;
 
   // --- Palette dinamica ---
   const style = {
@@ -70,7 +71,7 @@ const AppLayout = () => {
       <DocumentProvider>
         <div className={style.layoutContainer}>
           {/* Toggle per Sidebar minimizzata */}
-          {isMinimized && (
+          {isMinimized && !isLivePreview && (
             <button
               className={`fixed top-4 left-4 z-50 p-2 rounded-lg transition-colors ${isDark ? "bg-neutral-900 text-white hover:bg-neutral-800" : "bg-white text-neutral-900 hover:bg-neutral-100 shadow-md"}`}
               onClick={() => setIsMinimized(false)}
@@ -79,9 +80,13 @@ const AppLayout = () => {
             </button>
           )}
 
-          {!isMinimized && <Sidebar />}
+          <Sidebar
+            isMinimized={effectiveSidebarMinimized}
+            setIsMinimized={setIsMinimized}
+            isLockedMinimized={isLivePreview}
+          />
 
-          <main className="flex-1 overflow-auto relative">
+          <main className="flex-1 min-w-0 overflow-hidden relative">
             <Outlet />
           </main>
 
