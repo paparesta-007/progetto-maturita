@@ -554,6 +554,137 @@ app.post("/api/documents/ingest", upload.single("file"), async (req: express.Req
 });
 
 
+// ============================================================
+// ENDPOINT: Gestione Conversazioni e Messaggi (Supabase server-side)
+// ============================================================
+
+// Crea una nuova conversazione
+app.post("/api/conversations/create", async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    try {
+        const { user_id, title } = req.body;
+        if (!user_id) throw new Error("user_id mancante");
+
+        const { data, error } = await supabase
+            .from("conversations")
+            .insert({
+                user_id: user_id,
+                title: title || "New Chat",
+                created_at: new Date().toISOString(),
+                updated_at: new Date().toISOString(),
+            })
+            .select();
+
+        if (error) {
+            console.error("Errore creazione conversazione:", error);
+            return res.status(500).json({ error: error.message });
+        }
+
+        res.json(data);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Crea un nuovo messaggio in una conversazione
+app.post("/api/conversations/messages/create", async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    try {
+        const { conversation_id, sender, content, usage, model } = req.body;
+        if (!conversation_id) throw new Error("conversation_id mancante");
+
+        const { data, error } = await supabase
+            .from("messages")
+            .insert({
+                conversation_id: conversation_id,
+                created_at: new Date().toISOString(),
+                sender: sender,
+                content: content,
+                usage: usage,
+                model: model,
+            });
+
+        if (error) {
+            console.error("Errore creazione messaggio:", error);
+            return res.status(500).json({ error: error.message });
+        }
+
+        res.json(data);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Recupera tutte le conversazioni di un utente
+app.get("/api/conversations/list", async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    try {
+        const user_id = req.query.user_id as string;
+        if (!user_id) throw new Error("user_id mancante");
+
+        const { data, error } = await supabase
+            .from("conversations")
+            .select("*")
+            .eq("user_id", user_id)
+            .order("created_at", { ascending: false })
+            .limit(20);
+
+        if (error) {
+            console.error("Errore recupero conversazioni:", error);
+            return res.status(500).json({ error: error.message });
+        }
+
+        res.json(data);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Recupera i messaggi di una conversazione
+app.get("/api/conversations/messages", async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    try {
+        const conversation_id = req.query.conversation_id as string;
+        if (!conversation_id) throw new Error("conversation_id mancante");
+
+        const { data, error } = await supabase
+            .from("messages")
+            .select("*")
+            .eq("conversation_id", conversation_id)
+            .order("created_at", { ascending: false })
+            .limit(20);
+
+        if (error) {
+            console.error("Errore recupero messaggi:", error);
+            return res.status(500).json({ error: error.message });
+        }
+
+        // Inverti per avere ordine cronologico (vecchio → nuovo)
+        res.json(data ? data.reverse() : []);
+    } catch (error) {
+        next(error);
+    }
+});
+
+// Cancella una conversazione
+app.delete("/api/conversations/delete", async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    try {
+        const { user_id, conversation_id } = req.body;
+        if (!user_id || !conversation_id) throw new Error("user_id e conversation_id richiesti");
+
+        const { data, error } = await supabase
+            .from("conversations")
+            .delete()
+            .eq("user_id", user_id)
+            .eq("id", conversation_id);
+
+        if (error) {
+            console.error("Errore cancellazione conversazione:", error);
+            return res.status(500).json({ error: error.message });
+        }
+
+        res.json({ success: true, data });
+    } catch (error) {
+        next(error);
+    }
+});
+
 app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response) => {
     try {
         const {question} = req.body;

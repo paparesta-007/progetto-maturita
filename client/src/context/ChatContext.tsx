@@ -79,7 +79,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
                     break;
                 default:
                     if (isStreamTextEnabled) {
-                        await sendStreamedMessage(message, setMessageHistory, setLoading, model, messageHistory, chatOptions);
+                        await sendStreamedMessage(message, setMessageHistory, setLoading, model, messageHistory, currentConversationId, user?.id, setCurrentConversationId, fetchConversations, navigate, chatOptions);
                     } else {
                         await sendNormalMessage(
                             message,
