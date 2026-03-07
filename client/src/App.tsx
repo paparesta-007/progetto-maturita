@@ -5,6 +5,7 @@ import AppLayout from './layouts/AppLayout';
 import ProtectedRoute from './components/ProtectedRoute'; // Importalo!
 import LandingPage from './pages/LandingPage';
 import LoginPage from './pages/LoginPage';
+import CreateNewPassword from './pages/CreateNewPassword';
 import ChatPage from './pages/ChatPage';
 import CompleteProfile from './pages/CompleteProfilePage';
 import DocumentPage from './layouts/DocumentLayout';
@@ -22,6 +23,7 @@ function App() {
           {/* ROTTE PUBBLICHE */}
           <Route path='/' element={<LandingPage />} />
           <Route path='/login' element={<LoginPage />} />
+          <Route path='/reset-password' element={<CreateNewPassword />} />
 
           {/* ROTTE PROTETTE (Layout + Guard) */}
           {/* Il ProtectedRoute avvolge tutto ciò che deve essere privato */}
