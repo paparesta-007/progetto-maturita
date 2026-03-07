@@ -91,7 +91,7 @@ const LoginPage = () => {
     }
 
     if (session?.user) {
-        return <Navigate to="/app" replace />;
+        return <Navigate to="/app/chat" replace />;
     }
 
     const handleAuth = async (e: React.FormEvent) => {
@@ -118,7 +118,7 @@ const LoginPage = () => {
             } else {
                 const { error } = await supabase.auth.signInWithPassword({ email, password });
                 if (error) throw error;
-                navigate("/app");
+                navigate("/app/chat");
             }
         } catch (err: any) {
             setError(err.message || "Si è verificato un errore.");
@@ -128,11 +128,51 @@ const LoginPage = () => {
     };
 
     const handleGoogleLogin = async () => {
-        console.log("Login con Google non ancora implementato");
+        setError("");
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: "google",
+            options: {
+                redirectTo: "app/chat",
+            },
+        });
+
+        if (error) {
+            setError(error.message || "Si e verificato un errore durante il login con Google.");
+        }
     };
 
-    const handleGitHubLogin = () => {
-        console.log("Login con Github non ancora implementato");
+    const handleGitHubLogin = async () => {
+        setError("");
+        const { error } = await supabase.auth.signInWithOAuth({
+            provider: "github",
+            options: {
+                redirectTo: "/app/chat",
+            },
+        });
+
+        if (error) {
+            setError(error.message || "Si e verificato un errore durante il login con GitHub.");
+        }
+    };
+
+    const handleForgotPassword = async () => {
+        setError("");
+
+        if (!email) {
+            setError("Inserisci prima la tua email per ricevere il link di reset.");
+            return;
+        }
+
+        const { error } = await supabase.auth.resetPasswordForEmail(email, {
+            redirectTo: `${window.location.origin}/reset-password`,
+        });
+
+        if (error) {
+            setError(error.message || "Errore durante l'invio dell'email di reset.");
+            return;
+        }
+
+        alert("Ti abbiamo inviato un link per creare una nuova password.");
     };
 
     // ─── Transition Variants ───
@@ -335,6 +375,7 @@ const LoginPage = () => {
                                         <div className="flex justify-end -mt-1">
                                             <button
                                                 type="button"
+                                                onClick={handleForgotPassword}
                                                 className="text-[12px] font-medium text-neutral-600 hover:text-neutral-700 transition-colors"
                                             >
                                                 Password dimenticata?
