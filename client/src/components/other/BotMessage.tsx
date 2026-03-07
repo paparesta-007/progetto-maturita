@@ -286,7 +286,7 @@ const BotMessage = ({ i, children, usage, model }: { i: number; children: React.
                                                 <span className={`text-[11px] font-semibold ${isDark ? "text-neutral-300" : "text-neutral-600"}`}>Totale</span>
                                                 <span className={`${s.tooltipValue} text-right font-bold ${isDark ? "text-neutral-500" : "text-neutral-900"}`}>{usage?.totalTokens || 0}</span>
                                                 <span className={`text-[11px] font-semibold ${isDark ? "text-neutral-300" : "text-neutral-600"}`}>Costo</span>
-                                                <span className={`${s.tooltipValue} text-right  ${isDark ? "text-white" : "text-neutral-900"}`}>${usage?.raw.cost?.toFixed(4) || "0.0000"}</span>
+                                                <span className={`${s.tooltipValue} text-right  ${isDark ? "text-white" : "text-neutral-900"}`}>${usage?.raw?.cost?.toFixed(4) || "0.0000"}</span>
                                             </div>
                                             
                                         </div>

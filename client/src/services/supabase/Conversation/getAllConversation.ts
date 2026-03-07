@@ -1,21 +1,13 @@
-import supabase from "../../../library/supabaseclient";
-
-
 const getAllConversation = async (userId: string) => {
     try {
-        const { data, error } = await supabase
-            .from('conversations')
-            .select('*')
-            .eq('user_id', userId)
-            .order('created_at', { ascending: false })
-            .limit(20); 
-            
+        const response = await fetch(`http://localhost:3000/api/conversations/list?user_id=${encodeURIComponent(userId)}`);
 
-        if (error) {
-            console.error("Errore nel recupero delle conversazioni:", error);
+        if (!response.ok) {
+            console.error("Errore nel recupero delle conversazioni:", response.statusText);
             return null;
         }
 
+        const data = await response.json();
         return data;
     } catch (error) {
         console.error("Errore imprevisto:", error);

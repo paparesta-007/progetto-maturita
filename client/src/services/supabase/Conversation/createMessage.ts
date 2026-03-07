@@ -1,28 +1,32 @@
-import supabase from "../../../library/supabaseclient";
-
 const createMessage = async (response: any, conversation_id: any, model: any) => {
-    let content=response.content;
-    let sender=response.sender;
-    let usage=response.usage;
-    const { data, error } = await supabase
-        .from("messages")
-        .insert({
-            conversation_id: conversation_id,
-            created_at: new Date(),
-            sender: sender,
-            content: content,
-            usage: usage,
-            model: model.name_id
+    let content = response.content;
+    let sender = response.sender;
+    let usage = response.usage;
+
+    try {
+        const res = await fetch("http://localhost:3000/api/conversations/messages/create", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                conversation_id: conversation_id,
+                sender: sender,
+                content: content,
+                usage: usage,
+                model: model.name_id,
+            }),
         });
 
-    if (error) {
+        if (!res.ok) {
+            console.error("Error creating message:", res.statusText);
+            return [];
+        }
+
+        const data = await res.json();
+        return data;
+    } catch (error) {
         console.error("Error creating message:", error);
         return [];
     }
-    return data;
 }
 
 export default createMessage;
-
-
-

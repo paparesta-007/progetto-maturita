@@ -1,8 +1,8 @@
 import createConversation from "../services/supabase/Conversation/createConversation";
 import createMessage from "../services/supabase/Conversation/createMessage";
 import { type NavigateFunction } from "react-router-dom";
-import {Sandpack} from "@codesandbox/sandpack-react";
-import {z} from "zod";
+import { Sandpack } from "@codesandbox/sandpack-react";
+import { z } from "zod";
 export interface ChatOptions {
     systemPrompt?: string;
     personalInfo?: any;
@@ -120,6 +120,11 @@ export const sendStreamedMessage = async (
     setLoading: React.Dispatch<React.SetStateAction<boolean>>,
     model: any,
     messageHistory: any[],
+    currentConversationId: string | null,
+    userId: string | undefined,
+    setCurrentConversationId: React.Dispatch<React.SetStateAction<string | null>>,
+    fetchConversations: () => Promise<void>,
+    _navigate: NavigateFunction,
     options: ChatOptions
 ) => {
     if (!message.trim()) return;
@@ -185,6 +190,39 @@ export const sendStreamedMessage = async (
                     }
                     return newHistory;
                 });
+            }
+        }
+
+        // Save the message after streaming is complete
+        const messagePayload = {
+            sender: message,
+            content: accumulatedText,
+            usage: { total_tokens: 0 },
+            model: model
+        };
+
+        if (currentConversationId && userId) {
+            await createMessage(messagePayload, currentConversationId, model);
+        } else if (userId) {
+            let newTitle = "New Chat";
+            try {
+                const titleRes = await fetch("http://localhost:3000/api/gemini/getTitleConversation", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message }),
+                });
+                const titleData = await titleRes.json();
+                newTitle = titleData.text || "New Chat";
+            } catch (e) {
+                console.warn("Fallimento generazione titolo, uso default");
+            }
+
+            const newConvData = await createConversation(userId, newTitle);
+            if (newConvData && newConvData.length > 0) {
+                const newConvId = newConvData[0].id;
+                await createMessage(messagePayload, newConvId, model);
+                setCurrentConversationId(newConvId);
+                await fetchConversations();
             }
         }
 
