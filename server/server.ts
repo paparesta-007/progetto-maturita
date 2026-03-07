@@ -328,6 +328,18 @@ app.post("/api/streamingOutput", async function (req: express.Request, res: expr
     }
 });
 
+// ✅ HELPER: Normalizza il testo estratto dal PDF prima del chunking
+function normalizeText(text: string): string {
+    return text
+        .normalize('NFC')                    // Normalizza Unicode (caratteri accentati, legature)
+        .replace(/\0/g, '')                  // Rimuovi null bytes
+        // eslint-disable-next-line no-control-regex
+        .replace(/[\x01-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Rimuovi caratteri di controllo (preserva \t \n \r)
+        .replace(/[\t ]{2,}/g, ' ')          // Sostituisci spazi/tab multipli con singolo spazio
+        .replace(/\n{4,}/g, '\n\n\n')        // Limita newline consecutive a massimo 3
+        .trim();
+}
+
 // ✅ VERSIONE MIGLIORATA: Parser intelligente con overlapping preservato
 function splitTextIntoChunks(
     text: string,
@@ -478,8 +490,12 @@ app.post("/api/documents/ingest", upload.single("file"), async (req: express.Req
 
         console.log(`📄 [3/6] Testo estratto: ${text.length} caratteri`);
 
-        // 3. Chunking
-        const chunks = splitTextIntoChunks(text, 1000, 200, {
+        // 2.5 Normalizza il testo prima del chunking
+        text = normalizeText(text);
+        console.log(`🧹 [3/6] Testo normalizzato: ${text.length} caratteri`);
+
+        // 3. Chunking (800 char chunks + 250 overlap per granularità migliore con modelli embedding piccoli)
+        const chunks = splitTextIntoChunks(text, 800, 250, {
             respectSentences: true,
             respectParagraphs: true,
             minChunkSize: 100
@@ -497,9 +513,11 @@ app.post("/api/documents/ingest", upload.single("file"), async (req: express.Req
         console.log("🤖 [5/6] Richiesta embedding a OpenRouter...");
 
 
+        // Prefisso contestuale per arricchire gli embedding con info sulla fonte
+        const filename = req.file?.originalname || 'sconosciuto';
         const { embeddings } = await embedMany({
             model: openrouterEmbeddings.embedding("openai/text-embedding-3-small"),
-            values: chunks.map(chunk => chunk.content),
+            values: chunks.map(chunk => `[Documento: ${filename}] ${chunk.content}`),
         });
 
         console.log(`✨ [5/6] Ricevuti ${embeddings.length} vettori da OpenRouter`);
@@ -701,7 +719,7 @@ app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response
             .rpc('match_documents', {
                 query_embedding: embedding,
                 match_threshold: 0.3, // Soglia di similarità (0.0 - 1.0)
-                match_count: 5        // Prendi i 5 pezzi più rilevanti
+                match_count: 7        // Prendi i 5 pezzi più rilevanti
             });
 
         if (error) {
@@ -729,7 +747,7 @@ app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response
 
         // 4. Genera la risposta con Gemini
         const { text, usage } = await generateText({
-            model: openrouter("openai/gpt-oss-20b"), // O il modello che preferisci
+            model: openrouter("google/gemini-2.5-flash-lite"), // O il modello che preferisci
             system: systemPrompt,
             prompt: question,
         });
