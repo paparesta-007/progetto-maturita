@@ -20,10 +20,10 @@ const GeneralSettings: React.FC = () => {
     const styles = {
         container: `flex flex-col h-full relative transition-colors ${isDark ? "" : "bg-white"}`,
         title: `text-xl font-semibold ${isDark ? "text-white" : "text-neutral-900"}`,
-        subtitle: `text-sm ${isDark ? "text-neutral-400" : "text-neutral-500"}`,
-        sectionTitle: `text-sm font-semibold uppercase tracking-wide ${isDark ? "text-neutral-400" : "text-neutral-900"}`,
+        subtitle: `text-sm ${isDark ? "text-neutral-600" : "text-neutral-500"}`,
+        sectionTitle: `text-sm font-semibold uppercase tracking-wide ${isDark ? "text-neutral-600" : "text-neutral-900"}`,
         label: `text-sm font-medium ${isDark ? "text-neutral-200" : "text-neutral-700"}`,
-        description: `text-xs font-normal mt-0.5 ${isDark ? "text-neutral-500" : "text-neutral-400"}`,
+        description: `text-xs font-normal mt-0.5 ${isDark ? "text-neutral-500" : "text-neutral-600"}`,
         card: `rounded-xl p-4 border transition-colors ${isDark ? "bg-neutral-900/50 border-neutral-800" : "bg-neutral-50 border-neutral-100"}`,
         input: `text-sm border rounded-lg px-2 py-1.5 outline-none transition-all ${
             isDark 
@@ -55,7 +55,7 @@ const GeneralSettings: React.FC = () => {
                 {/* Sezione 1: Costi */}
                 <section>
                     <div className="flex items-center gap-2 mb-3">
-                        <CurrencyDollar size={18} className={isDark ? "text-neutral-500" : "text-neutral-400"} />
+                        <CurrencyDollar size={18} className={isDark ? "text-neutral-500" : "text-neutral-600"} />
                         <h3 className={styles.sectionTitle}>Limiti e Costi</h3>
                     </div>
                     
@@ -78,7 +78,7 @@ const GeneralSettings: React.FC = () => {
 
                             {allowExpensive === 'yes' && (
                                 <div className={`mt-2 pt-3 border-t flex items-center justify-between animate-in fade-in slide-in-from-top-1 ${isDark ? "border-neutral-800" : "border-neutral-200/60"}`}>
-                                    <span className={`text-sm ${isDark ? "text-neutral-400" : "text-neutral-600"}`}>Soglia massima</span>
+                                    <span className={`text-sm ${isDark ? "text-neutral-600" : "text-neutral-600"}`}>Soglia massima</span>
                                     <div className="relative">
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                             <span className="text-neutral-500 text-sm">$</span>
@@ -100,7 +100,7 @@ const GeneralSettings: React.FC = () => {
                 {/* Sezione 2: Preferenze */}
                 <section>
                     <div className="flex items-center gap-2 mb-3">
-                        <Globe size={18} className={isDark ? "text-neutral-500" : "text-neutral-400"} />
+                        <Globe size={18} className={isDark ? "text-neutral-500" : "text-neutral-600"} />
                         <h3 className={styles.sectionTitle}>Preferenze</h3>
                     </div>
 
@@ -119,7 +119,7 @@ const GeneralSettings: React.FC = () => {
 
                         <div className="flex justify-between items-center">
                             <div className="flex gap-3 items-start">
-                                <div className={`mt-0.5 p-1.5 rounded-md ${isDark ? "bg-neutral-800 text-neutral-400" : "bg-neutral-100 text-neutral-500"}`}>
+                                <div className={`mt-0.5 p-1.5 rounded-md ${isDark ? "bg-neutral-800 text-neutral-600" : "bg-neutral-100 text-neutral-500"}`}>
                                     <Flask size={16} />
                                 </div>
                                 <label className={`${styles.label} cursor-pointer`} onClick={() => setExperimental(!experimental)}>
@@ -138,7 +138,7 @@ const GeneralSettings: React.FC = () => {
                 <section>
                     <div className="flex items-center justify-between mb-3">
                         <div className="flex items-center gap-2">
-                            <Plug size={18} className={isDark ? "text-neutral-500" : "text-neutral-400"} />
+                            <Plug size={18} className={isDark ? "text-neutral-500" : "text-neutral-600"} />
                             <h3 className={styles.sectionTitle}>Integrazioni</h3>
                         </div>
                         <button className="text-xs font-medium text-blue-500 hover:text-blue-400 flex items-center gap-1">

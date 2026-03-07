@@ -38,11 +38,11 @@ const AppLayout = () => {
       flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg transition-all text-sm
       ${active
         ? (isDark ? "bg-neutral-800 text-white shadow-sm" : "bg-neutral-200/80 text-neutral-900 shadow-sm")
-        : (isDark ? "text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200" : "text-neutral-500 hover:bg-neutral-200/60 hover:text-neutral-900")
+        : (isDark ? "text-neutral-600 hover:bg-neutral-800/50 hover:text-neutral-200" : "text-neutral-500 hover:bg-neutral-200/60 hover:text-neutral-900")
       }
     `,
     divider: `md:my-2 ${isDark ? "border-neutral-800" : "border-neutral-200"}`,
-    closeBtn: `absolute top-4 right-4 transition-colors ${isDark ? "text-neutral-500 hover:text-neutral-300" : "text-neutral-400 hover:text-neutral-600"}`
+    closeBtn: `absolute top-4 right-4 transition-colors ${isDark ? "text-neutral-500 hover:text-neutral-300" : "text-neutral-600 hover:text-neutral-600"}`
   };
 
   const menuItems = [
@@ -116,7 +116,7 @@ const AppLayout = () => {
                   {/* Menu laterale del modale */}
                   <div className={style.modalSidebar}>
                     <div className="flex md:flex-col gap-1 flex-1">
-                      <p className={`hidden md:block px-3 text-[10px] font-bold uppercase tracking-wider mb-2 ${isDark ? "text-neutral-500" : "text-neutral-400"}`}>
+                      <p className={`hidden md:block px-3 text-[10px] font-bold uppercase tracking-wider mb-2 ${isDark ? "text-neutral-500" : "text-neutral-600"}`}>
                         Impostazioni
                       </p>
                       {menuItems.map(({ label, Icon, id }) => (

@@ -134,10 +134,10 @@ const Sidebar = ({
         sidebar: `sidebar-premium ${isMinimized ? 'w-[72px]' : 'w-[280px]'} h-screen flex flex-col font-sans text-sm transition-all duration-500 ease-in-out relative ${isDark ? "bg-[#0a0a0a]" : "bg-[#fafafa]"}`,
 
         textPrimary: isDark ? "text-neutral-100" : "text-neutral-900",
-        textSecondary: isDark ? "text-neutral-500" : "text-neutral-400",
+        textSecondary: isDark ? "text-neutral-500" : "text-neutral-600",
         textMuted: isDark ? "text-neutral-600" : "text-neutral-300",
 
-        iconBase: isDark ? "text-neutral-500 group-hover:text-neutral-300" : "text-neutral-400 group-hover:text-neutral-700",
+        iconBase: isDark ? "text-neutral-500 group-hover:text-neutral-300" : "text-neutral-600 group-hover:text-neutral-700",
         iconActive: isDark ? "text-white" : "text-neutral-900",
 
         itemHover: isDark ? "hover:bg-white/[0.04]" : "hover:bg-black/[0.03]",
@@ -150,7 +150,7 @@ const Sidebar = ({
 
         shortcutBadge: `text-[11px] px-1.5 py-0.5 rounded-md font-mono transition-colors ${isDark
             ? "bg-white/[0.06] text-neutral-500 border border-white/[0.04]"
-            : "bg-neutral-100 text-neutral-400 border border-neutral-200/60"
+            : "bg-neutral-100 text-neutral-600 border border-neutral-200/60"
             }`,
 
         popoverBg: isDark
@@ -349,7 +349,7 @@ const Sidebar = ({
                                 if (isLockedMinimized) return;
                                 setIsMinimized(!isMinimized);
                             }}
-                            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 ${isDark ? "text-neutral-600 hover:text-neutral-400 hover:bg-white/[0.04]" : "text-neutral-300 hover:text-neutral-500 hover:bg-black/[0.03]"} ${isLockedMinimized ? "opacity-40 cursor-not-allowed" : ""}`}
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 ${isDark ? "text-neutral-600 hover:text-neutral-600 hover:bg-white/[0.04]" : "text-neutral-300 hover:text-neutral-500 hover:bg-black/[0.03]"} ${isLockedMinimized ? "opacity-40 cursor-not-allowed" : ""}`}
                         >
                             <SidebarSimpleIcon size={20} />
                         </button>
@@ -359,7 +359,7 @@ const Sidebar = ({
                     {!isMinimized && (
                         <button className={`w-full flex items-center gap-2.5 px-3.5 py-2 rounded-xl mb-3 transition-all duration-300 ${isDark
                             ? "bg-white/[0.03] hover:bg-white/[0.06] text-neutral-600 border border-white/[0.04]"
-                            : "bg-neutral-100/60 hover:bg-neutral-100 text-neutral-400 border border-transparent"
+                            : "bg-neutral-100/60 hover:bg-neutral-100 text-neutral-600 border border-transparent"
                             }`}>
                             <Search size={14} className="opacity-50" />
                             <span className="text-[13px] flex-1 text-left">Cerca…</span>
@@ -450,7 +450,7 @@ const Sidebar = ({
                     <div className="px-3 pt-4 pb-1">
                         <p className={style.sectionLabel}>
                             {isDocumentsPage ? "I tuoi documenti" : "Cronologia"}
-                            <span className={`text-[10px] tabular-nums px-1.5 py-0.5 rounded-md ${isDark ? "bg-white/[0.04] text-neutral-600" : "bg-neutral-100 text-neutral-400"}`}>
+                            <span className={`text-[10px] tabular-nums px-1.5 py-0.5 rounded-md ${isDark ? "bg-white/[0.04] text-neutral-600" : "bg-neutral-100 text-neutral-600"}`}>
                                 {isDocumentsPage ? documentList.length : conversations.length}
                             </span>
                         </p>
@@ -488,7 +488,7 @@ const Sidebar = ({
                                             </NavLink>
 
                                             <button
-                                                className={`${style.contextDot} ${docMenuOpen === doc.document_id ? "opacity-100" : "opacity-0 group-hover:opacity-100"} ${isDark ? "text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.06]" : "text-neutral-400 hover:text-neutral-600 hover:bg-black/[0.04]"}`}
+                                                className={`${style.contextDot} ${docMenuOpen === doc.document_id ? "opacity-100" : "opacity-0 group-hover:opacity-100"} ${isDark ? "text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.06]" : "text-neutral-600 hover:text-neutral-600 hover:bg-black/[0.04]"}`}
                                                 onClick={(e) => {
                                                     e.preventDefault();
                                                     e.stopPropagation();
@@ -542,7 +542,7 @@ const Sidebar = ({
                                             </NavLink>
 
                                             <button
-                                                className={`${style.contextDot} ${convMenuOpen === conv.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"} ${isDark ? "text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.06]" : "text-neutral-400 hover:text-neutral-600 hover:bg-black/[0.04]"}`}
+                                                className={`${style.contextDot} ${convMenuOpen === conv.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"} ${isDark ? "text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.06]" : "text-neutral-600 hover:text-neutral-600 hover:bg-black/[0.04]"}`}
                                                 onClick={(e) => {
                                                     e.preventDefault();
                                                     e.stopPropagation();

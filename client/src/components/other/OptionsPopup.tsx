@@ -137,7 +137,7 @@ const OptionsPopup: React.FC = () => {
                                 >
                                     {/* Section label */}
                                     <span className={`px-3 pt-1.5 pb-0.5 text-[10px] font-bold uppercase tracking-widest ${
-                                        isDark ? "text-neutral-500" : "text-neutral-400"
+                                        isDark ? "text-neutral-500" : "text-neutral-600"
                                     }`}>
                                         Options
                                     </span>
@@ -148,14 +148,14 @@ const OptionsPopup: React.FC = () => {
                                         className={rowBase}
                                         onClick={() => setView("model")}
                                     >
-                                        <CpuIcon size={14} className="text-neutral-400 flex-shrink-0" />
+                                        <CpuIcon size={14} className="text-neutral-600 flex-shrink-0" />
                                         <span className="flex-1">Model</span>
                                         <span className={`text-xs truncate max-w-[100px] text-right mr-1 ${
-                                            isDark ? "text-neutral-500" : "text-neutral-400"
+                                            isDark ? "text-neutral-500" : "text-neutral-600"
                                         }`}>
                                             {model?.name ?? "None"}
                                         </span>
-                                        <CaretRightIcon size={12} className="text-neutral-400 flex-shrink-0" />
+                                        <CaretRightIcon size={12} className="text-neutral-600 flex-shrink-0" />
                                     </button>
 
                                     {/* Divider */}
@@ -167,16 +167,16 @@ const OptionsPopup: React.FC = () => {
                                         className={rowBase}
                                         onClick={() => setTempExpanded((p) => !p)}
                                     >
-                                        <ThermometerIcon size={14} className="text-neutral-400 flex-shrink-0" />
+                                        <ThermometerIcon size={14} className="text-neutral-600 flex-shrink-0" />
                                         <span className="flex-1">Temperature</span>
-                                        <span className={`text-xs font-mono mr-1 ${isDark ? "text-neutral-500" : "text-neutral-400"}`}>
+                                        <span className={`text-xs font-mono mr-1 ${isDark ? "text-neutral-500" : "text-neutral-600"}`}>
                                             {temperature.toFixed(1)}
                                         </span>
                                         <motion.span
                                             animate={{ rotate: tempExpanded ? 90 : 0 }}
                                             transition={{ duration: 0.15 }}
                                         >
-                                            <CaretRightIcon size={12} className="text-neutral-400" />
+                                            <CaretRightIcon size={12} className="text-neutral-600" />
                                         </motion.span>
                                     </button>
 
@@ -190,7 +190,7 @@ const OptionsPopup: React.FC = () => {
                                                 className="overflow-hidden px-3 pb-1"
                                             >
                                                 <div className="flex items-center gap-2 pt-1">
-                                                    <span className={`text-[11px] ${isDark ? "text-neutral-500" : "text-neutral-400"}`}>0</span>
+                                                    <span className={`text-[11px] ${isDark ? "text-neutral-500" : "text-neutral-600"}`}>0</span>
                                                     <input
                                                         type="range"
                                                         min={0}
@@ -200,7 +200,7 @@ const OptionsPopup: React.FC = () => {
                                                         onChange={(e) => setTemperature(Number(e.target.value))}
                                                         className={`flex-1 h-1 cursor-pointer accent-neutral-500`}
                                                     />
-                                                    <span className={`text-[11px] ${isDark ? "text-neutral-500" : "text-neutral-400"}`}>2</span>
+                                                    <span className={`text-[11px] ${isDark ? "text-neutral-500" : "text-neutral-600"}`}>2</span>
                                                 </div>
                                             </motion.div>
                                         )}
@@ -212,7 +212,7 @@ const OptionsPopup: React.FC = () => {
                                         className={rowBase}
                                         onClick={() => setSafetyEnabled((p) => !p)}
                                     >
-                                        <ShieldCheckIcon size={14} className="text-neutral-400 flex-shrink-0" />
+                                        <ShieldCheckIcon size={14} className="text-neutral-600 flex-shrink-0" />
                                         <span className="flex-1">Safety filter</span>
                                         <span className={`w-4 h-4 flex items-center justify-center rounded border transition-colors flex-shrink-0 ${
                                             safetyEnabled
@@ -239,7 +239,7 @@ const OptionsPopup: React.FC = () => {
                                         className={rowBase}
                                         onClick={() => setIsStreamTextEnabled((p) => !p)}
                                     >
-                                        <CpuIcon size={14} className="text-neutral-400 flex-shrink-0" />
+                                        <CpuIcon size={14} className="text-neutral-600 flex-shrink-0" />
                                         <span className="flex-1">Stream text</span>
                                         <span className={`w-4 h-4 flex items-center justify-center rounded border transition-colors flex-shrink-0 ${
                                             isStreamTextEnabled
@@ -284,12 +284,12 @@ const OptionsPopup: React.FC = () => {
                                             type="button"
                                             onClick={() => setView("main")}
                                             className={`p-1 rounded-lg transition-colors ${
-                                                isDark ? "text-neutral-400 hover:bg-neutral-800 hover:text-white" : "text-neutral-400 hover:bg-neutral-100 hover:text-neutral-900"
+                                                isDark ? "text-neutral-600 hover:bg-neutral-800 hover:text-white" : "text-neutral-600 hover:bg-neutral-100 hover:text-neutral-900"
                                             }`}
                                         >
                                             <ArrowLeftIcon size={14} />
                                         </button>
-                                        <MagnifyingGlassIcon size={15} className="text-neutral-400 flex-shrink-0" />
+                                        <MagnifyingGlassIcon size={15} className="text-neutral-600 flex-shrink-0" />
                                         <input
                                             type="text"
                                             placeholder="Search models..."
@@ -326,7 +326,7 @@ const OptionsPopup: React.FC = () => {
                                                             <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
                                                                 {providerName}
                                                             </span>
-                                                            <span className="text-[10px] text-neutral-400">{group.length}</span>
+                                                            <span className="text-[10px] text-neutral-600">{group.length}</span>
                                                         </div>
                                                         <div className="flex flex-col gap-0.5">
                                                             {group.map((m: any, idx: number) => {
@@ -353,7 +353,7 @@ const OptionsPopup: React.FC = () => {
                                                                             </span>
                                                                         </span>
                                                                         <span className="flex items-center gap-1.5 flex-shrink-0">
-                                                                            <span className={`text-[11px] font-mono ${isDark ? "text-neutral-500" : "text-neutral-400"}`}>
+                                                                            <span className={`text-[11px] font-mono ${isDark ? "text-neutral-500" : "text-neutral-600"}`}>
                                                                                 {(Number(m.cost_per_input_token) + Number(m.cost_per_output_token)).toFixed(2)}$
                                                                             </span>
                                                                             {isSelected && (

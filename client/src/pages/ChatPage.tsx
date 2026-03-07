@@ -15,7 +15,7 @@ import "katex/dist/katex.min.css";
 const LivePreviewMock = ({ isDark }: { isDark: boolean }) => {
     const shellBg = isDark ? "bg-neutral-900 border-neutral-700" : "bg-neutral-50 border-neutral-200";
     const cardBg = isDark ? "bg-neutral-950 border-neutral-800" : "bg-white border-neutral-200";
-    const softText = isDark ? "text-neutral-400" : "text-neutral-600";
+    const softText = isDark ? "text-neutral-600" : "text-neutral-600";
     const titleText = isDark ? "text-white" : "text-neutral-900";
 
     return (
@@ -57,7 +57,7 @@ const ChatContent = () => {
 
         // Footer: fisso in basso, ma gestito con width dinamiche
         footer: `flex-shrink-0 w-full pt-0 pb-4 transition-colors duration-300 z-10 ${isDark ? "bg-neutral-950" : "bg-white"}`,
-        disclaimer: `text-center text-[10px] mt-2 ${isDark ? "text-neutral-600" : "text-neutral-400"}`
+        disclaimer: `text-center text-[10px] mt-2 ${isDark ? "text-neutral-600" : "text-neutral-600"}`
     };
 
     const scrollToBottom = () => {
@@ -118,7 +118,7 @@ const ChatContent = () => {
                 htmlFor="live-preview-toggle"
                 className={`fixed bottom-24 right-8 z-50 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium cursor-pointer transition-all shadow-lg border ${isLivePreview
                         ? (isDark ? "bg-emerald-600 border-emerald-500 text-white" : "bg-emerald-500 border-emerald-400 text-white")
-                        : (isDark ? "bg-neutral-800 border-neutral-700 text-neutral-400 hover:text-white" : "bg-white border-neutral-200 text-neutral-600 hover:text-black")
+                        : (isDark ? "bg-neutral-800 border-neutral-700 text-neutral-600 hover:text-white" : "bg-white border-neutral-200 text-neutral-600 hover:text-black")
                     }`}
             >
                 <span className={isLivePreview ? "animate-pulse" : ""}>●</span>

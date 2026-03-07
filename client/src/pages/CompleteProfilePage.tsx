@@ -76,7 +76,7 @@ const CompleteProfile = () => {
                 <div className="space-y-5">
                     {/* Full Name */}
                     <div>
-                        <label className="text-xs font-semibold text-neutral-400 mb-1.5 block">Full Name</label>
+                        <label className="text-xs font-semibold text-neutral-600 mb-1.5 block">Full Name</label>
                         <input
                             type="text"
                             placeholder="John Doe"
@@ -87,7 +87,7 @@ const CompleteProfile = () => {
 
                     {/* Birthday Grid */}
                     <div>
-                        <label className="text-xs font-semibold text-neutral-400 mb-1.5 block flex items-center gap-1.5">Birthday
+                        <label className="text-xs font-semibold text-neutral-600 mb-1.5 block flex items-center gap-1.5">Birthday
                            
                             <Tooltip content="Only 18+ can register." position="top" background="light">
                                  <QuestionIcon size={20} />
@@ -126,7 +126,7 @@ const CompleteProfile = () => {
                         </div>
                     </div>
                 </div>
-                <p className="text-xs text-neutral-400 mt-4">
+                <p className="text-xs text-neutral-600 mt-4">
                     Your data will not be shared
                 </p>
                 {error && <p className="bg-red-100 border border-red-200 text-red-500 text-sm mt-4 p-2 rounded">{error}</p>}

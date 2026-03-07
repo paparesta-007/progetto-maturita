@@ -80,7 +80,7 @@ const Textbar = () => {
                 max-h-[15rem] overflow-y-auto`,
         sendBtn: `p-2.5 rounded-xl transition-all active:scale-95 flex items-center justify-center ${isDark ? "bg-white text-neutral-900 hover:bg-neutral-200" : "bg-neutral-900 text-white hover:bg-neutral-800"
             }`,
-        iconBtn: `transition-colors ${isDark ? "text-neutral-500 hover:text-neutral-200" : "text-neutral-400 hover:text-neutral-800"}`,
+        iconBtn: `transition-colors ${isDark ? "text-neutral-500 hover:text-neutral-200" : "text-neutral-600 hover:text-neutral-800"}`,
         fileItem: `relative group flex items-center gap-2 border rounded-lg p-1.5 pr-8 ${isDark ? "bg-neutral-800 border-neutral-700" : "bg-white border-neutral-200"
             }`
     };
@@ -155,9 +155,9 @@ const Textbar = () => {
                             )}
                             <div className="flex flex-col">
                                 <span className={`text-xs font-medium max-w-[120px] truncate ${isDark ? "text-neutral-200" : "text-neutral-700"}`}>{file.name}</span>
-                                <span className="text-[10px] text-neutral-400">{(file.originalFile.size / 1024).toFixed(0)} KB</span>
+                                <span className="text-[10px] text-neutral-600">{(file.originalFile.size / 1024).toFixed(0)} KB</span>
                             </div>
-                            <button onClick={() => removeFile(index)} className="absolute top-1 right-1 text-neutral-400 hover:text-red-500 transition-colors">
+                            <button onClick={() => removeFile(index)} className="absolute top-1 right-1 text-neutral-600 hover:text-red-500 transition-colors">
                                 <XIcon size={14} weight="bold" />
                             </button>
                         </div>
@@ -170,7 +170,7 @@ const Textbar = () => {
                 <textarea
                     ref={textareaRef}
                     rows={1}
-                    placeholder={isChatPage ? "Chat with AI..." : "Ask your document..."} // Placeholder dinamico
+                    placeholder={isChatPage ? `Chat with ${model?.name || "AI"}` : "Ask your document..."} // Placeholder dinamico
                     onChange={(e) => setInputValue(e.target.value)}
                     onInput={handleInput}
                     value={inputValue}
@@ -214,7 +214,7 @@ const Textbar = () => {
                         content={
                             <div className="text-left">
                                 <b className={isDark ? "text-white" : "text-neutral-900"}>Model:</b>
-                                <p className={`text-[11px] font-mono ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>
+                                <p className={`text-[11px] font-mono ${isDark ? "text-neutral-600" : "text-neutral-500"}`}>
                                     {model?.name}
                                 </p>
                                 <div className="text-[11px] text-neutral-500 mt-1">

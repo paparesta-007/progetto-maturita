@@ -12,7 +12,7 @@ const BillingSettingPage: React.FC = () => {
         container: `flex flex-col h-full relative ${isDark ? "" : "bg-white"}`,
         headerText: `text-md font-medium ${isDark ? "text-white" : "text-neutral-900"}`,
         label: `text-sm font-medium ${isDark ? "text-neutral-200" : "text-neutral-700"}`,
-        subLabel: `text-xs font-normal ${isDark ? "text-neutral-500" : "text-neutral-400"}`,
+        subLabel: `text-xs font-normal ${isDark ? "text-neutral-500" : "text-neutral-600"}`,
         divider: `border-t ${isDark ? "border-neutral-800" : "border-neutral-200"} my-4`,
         buttonSecondary: `flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
             isDark 

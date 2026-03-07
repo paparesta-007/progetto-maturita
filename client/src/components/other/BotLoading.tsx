@@ -24,7 +24,7 @@ const BotLoading = () => {
       <div className="w-2 h-2 opacity-0 rounded-full bg-neutral-500" />
       
       {/* Il testo pulsante */}
-      <span className="text-neutral-400 animate-pulse transition-opacity duration-500">
+      <span className="text-neutral-600 animate-pulse transition-opacity duration-500">
         {messages[index]}
       </span>
     </div>
