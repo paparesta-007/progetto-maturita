@@ -9,7 +9,7 @@ import {
   UserCircleIcon,
   XIcon
 } from "@phosphor-icons/react";
-import { ChatProvider, useChat } from "../context/ChatContext";
+import { ChatProvider } from "../context/ChatContext";
 import { useApp } from "../context/AppContext";
 import { useAuth } from "../context/AuthContext"; // Importa per il tema
 import { AnimatePresence, motion } from "framer-motion";
@@ -21,9 +21,10 @@ import AccountPage from "../pages/SettingPages/AccountPage";
 import ShortcutSetting from "../pages/SettingPages/Shortcut";
 const AppLayout = () => {
   const [isMinimized, setIsMinimized] = useState(false);
-  const { isSettingOpen, setIsSettingOpen, setSettingPage, settingPage } = useApp();
+  const { isSettingOpen, setIsSettingOpen, setSettingPage, settingPage, isLivePreview } = useApp();
   const { theme, setTheme } = useAuth(); // Estrai il tema globale
   const isDark = theme === 'dark';
+  const effectiveSidebarMinimized = isLivePreview || isMinimized;
 
   // --- Palette dinamica ---
   const style = {
@@ -37,11 +38,11 @@ const AppLayout = () => {
       flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg transition-all text-sm
       ${active
         ? (isDark ? "bg-neutral-800 text-white shadow-sm" : "bg-neutral-200/80 text-neutral-900 shadow-sm")
-        : (isDark ? "text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200" : "text-neutral-500 hover:bg-neutral-200/60 hover:text-neutral-900")
+        : (isDark ? "text-neutral-600 hover:bg-neutral-800/50 hover:text-neutral-200" : "text-neutral-500 hover:bg-neutral-200/60 hover:text-neutral-900")
       }
     `,
     divider: `md:my-2 ${isDark ? "border-neutral-800" : "border-neutral-200"}`,
-    closeBtn: `absolute top-4 right-4 transition-colors ${isDark ? "text-neutral-500 hover:text-neutral-300" : "text-neutral-400 hover:text-neutral-600"}`
+    closeBtn: `absolute top-4 right-4 transition-colors ${isDark ? "text-neutral-500 hover:text-neutral-300" : "text-neutral-600 hover:text-neutral-600"}`
   };
 
   const menuItems = [
@@ -70,7 +71,7 @@ const AppLayout = () => {
       <DocumentProvider>
         <div className={style.layoutContainer}>
           {/* Toggle per Sidebar minimizzata */}
-          {isMinimized && (
+          {isMinimized && !isLivePreview && (
             <button
               className={`fixed top-4 left-4 z-50 p-2 rounded-lg transition-colors ${isDark ? "bg-neutral-900 text-white hover:bg-neutral-800" : "bg-white text-neutral-900 hover:bg-neutral-100 shadow-md"}`}
               onClick={() => setIsMinimized(false)}
@@ -79,9 +80,13 @@ const AppLayout = () => {
             </button>
           )}
 
-          {!isMinimized && <Sidebar />}
+          <Sidebar
+            isMinimized={effectiveSidebarMinimized}
+            setIsMinimized={setIsMinimized}
+            isLockedMinimized={isLivePreview}
+          />
 
-          <main className="flex-1 overflow-auto relative">
+          <main className="flex-1 min-w-0 overflow-hidden relative">
             <Outlet />
           </main>
 
@@ -111,7 +116,7 @@ const AppLayout = () => {
                   {/* Menu laterale del modale */}
                   <div className={style.modalSidebar}>
                     <div className="flex md:flex-col gap-1 flex-1">
-                      <p className={`hidden md:block px-3 text-[10px] font-bold uppercase tracking-wider mb-2 ${isDark ? "text-neutral-500" : "text-neutral-400"}`}>
+                      <p className={`hidden md:block px-3 text-[10px] font-bold uppercase tracking-wider mb-2 ${isDark ? "text-neutral-500" : "text-neutral-600"}`}>
                         Impostazioni
                       </p>
                       {menuItems.map(({ label, Icon, id }) => (

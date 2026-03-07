@@ -19,7 +19,7 @@ const ShortcutSetting = () => {
         container: `flex flex-col h-full w-full bg-transparent`,
         header: `px-8 pt-8 pb-6 shrink-0`,
         title: `text-2xl font-bold tracking-tight ${isDark ? "text-white" : "text-neutral-900"}`,
-        subtitle: `text-sm mt-1 ${isDark ? "text-neutral-500" : "text-neutral-400"}`,
+        subtitle: `text-sm mt-1 ${isDark ? "text-neutral-500" : "text-neutral-600"}`,
         
         tableWrapper: `px-8 pb-10`,
         gridRow: `grid grid-cols-2 py-4 items-center border-b ${
@@ -27,7 +27,7 @@ const ShortcutSetting = () => {
         }`,
         
         actionLabel: `flex items-center gap-3 text-sm font-medium ${isDark ? "text-neutral-300" : "text-neutral-700"}`,
-        iconBox: `p-2 rounded-lg ${isDark ? "bg-white/[0.03] text-neutral-500" : "bg-black/[0.03] text-neutral-400"}`,
+        iconBox: `p-2 rounded-lg ${isDark ? "bg-white/[0.03] text-neutral-500" : "bg-black/[0.03] text-neutral-600"}`,
         
         keycap: `inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded-md border text-[11px] font-bold shadow-sm ${
             isDark 
@@ -80,7 +80,7 @@ const ShortcutSetting = () => {
                 <div className={`mt-8 p-4 rounded-xl border text-center ${
                     isDark ? "bg-white/[0.02] border-white/[0.05]" : "bg-neutral-50 border-black/[0.03]"
                 }`}>
-                    <p className={`text-xs ${isDark ? "text-neutral-500" : "text-neutral-400"}`}>
+                    <p className={`text-xs ${isDark ? "text-neutral-500" : "text-neutral-600"}`}>
                         <Command size={12} className="inline mr-1 mb-0.5" />
                         Usa il tasto <strong>Ctrl</strong> al posto di <strong>⌘</strong> su Windows o Linux.
                     </p>

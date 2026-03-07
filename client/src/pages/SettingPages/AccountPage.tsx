@@ -40,10 +40,10 @@ const AccountPage: React.FC = () => {
     const styles = {
         container: `flex flex-col h-full relative transition-colors ${isDark ? "" : "bg-white"}`,
         title: `text-xl font-semibold ${isDark ? "text-white" : "text-neutral-900"}`,
-        subtitle: `text-sm ${isDark ? "text-neutral-400" : "text-neutral-500"}`,
-        sectionTitle: `text-sm font-semibold uppercase tracking-wide ${isDark ? "text-neutral-400" : "text-neutral-900"}`,
+        subtitle: `text-sm ${isDark ? "text-neutral-600" : "text-neutral-500"}`,
+        sectionTitle: `text-sm font-semibold uppercase tracking-wide ${isDark ? "text-neutral-600" : "text-neutral-900"}`,
         label: `text-sm font-medium ${isDark ? "text-neutral-200" : "text-neutral-700"}`,
-        description: `text-xs font-normal mt-0.5 ${isDark ? "text-neutral-500" : "text-neutral-400"}`,
+        description: `text-xs font-normal mt-0.5 ${isDark ? "text-neutral-500" : "text-neutral-600"}`,
         card: `rounded-xl p-4 border transition-colors ${isDark ? "bg-neutral-900/50 border-neutral-800" : "bg-neutral-50 border-neutral-100"}`,
         input: `w-full text-sm border rounded-lg px-3 py-2 outline-none transition-all ${
             isDark 
@@ -53,7 +53,7 @@ const AccountPage: React.FC = () => {
         readOnlyInput: `w-full text-sm border rounded-lg px-3 py-2 outline-none transition-all cursor-not-allowed ${
             isDark 
                 ? "bg-neutral-800/50 border-neutral-700 text-neutral-500" 
-                : "bg-neutral-100 border-neutral-200 text-neutral-400"
+                : "bg-neutral-100 border-neutral-200 text-neutral-600"
         }`,
         footer: `p-4 border-t shrink-0 flex justify-end transition-colors ${
             isDark ? "border-neutral-800" : "border-neutral-200 bg-white"
@@ -83,7 +83,7 @@ const AccountPage: React.FC = () => {
                 {/* Profile Section */}
                 <section>
                     <div className="flex items-center gap-2 mb-4">
-                        <User size={18} className={isDark ? "text-neutral-500" : "text-neutral-400"} />
+                        <User size={18} className={isDark ? "text-neutral-500" : "text-neutral-600"} />
                         <h3 className={styles.sectionTitle}>Profilo Personale</h3>
                     </div>
 
@@ -108,7 +108,7 @@ const AccountPage: React.FC = () => {
                                     onChange={(e) => setBirthday(e.target.value)}
                                     className={styles.input}
                                 />
-                                <Calendar size={18} className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none ${isDark ? "text-neutral-500" : "text-neutral-400"}`} />
+                                <Calendar size={18} className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none ${isDark ? "text-neutral-500" : "text-neutral-600"}`} />
                             </div>
                         </div>
                     </div>
@@ -119,7 +119,7 @@ const AccountPage: React.FC = () => {
                 {/* Account Details */}
                 <section>
                     <div className="flex items-center gap-2 mb-4">
-                        <Envelope size={18} className={isDark ? "text-neutral-500" : "text-neutral-400"} />
+                        <Envelope size={18} className={isDark ? "text-neutral-500" : "text-neutral-600"} />
                         <h3 className={styles.sectionTitle}>Dati d'accesso</h3>
                     </div>
 
@@ -138,13 +138,13 @@ const AccountPage: React.FC = () => {
                 {/* Avatar Section (Placeholder) */}
                 <section>
                     <div className="flex items-center gap-2 mb-4">
-                        <Camera size={18} className={isDark ? "text-neutral-500" : "text-neutral-400"} />
+                        <Camera size={18} className={isDark ? "text-neutral-500" : "text-neutral-600"} />
                         <h3 className={styles.sectionTitle}>Immagine del profilo</h3>
                     </div>
 
                     <div className={styles.card}>
                         <div className="flex items-center gap-4">
-                            <div className={`w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold ${isDark ? "bg-neutral-800 text-neutral-400" : "bg-neutral-200 text-neutral-500"}`}>
+                            <div className={`w-16 h-16 rounded-full flex items-center justify-center text-xl font-bold ${isDark ? "bg-neutral-800 text-neutral-600" : "bg-neutral-200 text-neutral-500"}`}>
                                 {fullName.charAt(0).toUpperCase() || user?.email?.charAt(0).toUpperCase()}
                             </div>
                             <div>

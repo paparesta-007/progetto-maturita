@@ -85,7 +85,7 @@ const LoginPage = () => {
     if (loading) {
         return (
             <div className="min-h-screen flex items-center justify-center bg-[#fafafa]">
-                <Loader2 size={20} className="animate-spin text-neutral-400" />
+                <Loader2 size={20} className="animate-spin text-neutral-600" />
             </div>
         );
     }
@@ -160,7 +160,7 @@ const LoginPage = () => {
                         </Link>
                         <Link
                             to="/"
-                            className="text-sm font-medium text-neutral-400 hover:text-neutral-900 transition-colors duration-200"
+                            className="text-sm font-medium text-neutral-600 hover:text-neutral-900 transition-colors duration-200"
                         >
                             ← Torna alla home
                         </Link>
@@ -191,7 +191,7 @@ const LoginPage = () => {
                                         <h1 className="text-2xl font-bold text-neutral-900 tracking-tight">
                                             {isSignUp ? "Crea il tuo account" : "Bentornato"}
                                         </h1>
-                                        <p className="mt-2 text-sm text-neutral-400 leading-relaxed">
+                                        <p className="mt-2 text-sm text-neutral-600 leading-relaxed">
                                             {isSignUp
                                                 ? "Inserisci i tuoi dati per creare il tuo workspace."
                                                 : "Accedi al tuo workspace per continuare."
@@ -271,7 +271,7 @@ const LoginPage = () => {
                                         <input
                                             type="email"
                                             required
-                                            className="input-premium w-full pl-10 pr-4 py-3 rounded-xl text-sm text-neutral-900 placeholder:text-neutral-400 bg-neutral-50/80 ring-1 ring-black/[0.06] outline-none focus:ring-black/[0.12]"
+                                            className="input-premium w-full pl-10 pr-4 py-3 rounded-xl text-sm text-neutral-900 placeholder:text-neutral-600 bg-neutral-50/80 ring-1 ring-black/[0.06] outline-none focus:ring-black/[0.12]"
                                             placeholder="Email"
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
@@ -284,7 +284,7 @@ const LoginPage = () => {
                                         <input
                                             type={showPassword ? "text" : "password"}
                                             required
-                                            className="input-premium w-full pl-10 pr-11 py-3 rounded-xl text-sm text-neutral-900 placeholder:text-neutral-400 bg-neutral-50/80 ring-1 ring-black/[0.06] outline-none focus:ring-black/[0.12]"
+                                            className="input-premium w-full pl-10 pr-11 py-3 rounded-xl text-sm text-neutral-900 placeholder:text-neutral-600 bg-neutral-50/80 ring-1 ring-black/[0.06] outline-none focus:ring-black/[0.12]"
                                             placeholder="Password"
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
@@ -313,7 +313,7 @@ const LoginPage = () => {
                                                     <input
                                                         type={showConfirmPassword ? "text" : "password"}
                                                         required
-                                                        className="input-premium w-full pl-10 pr-11 py-3 rounded-xl text-sm text-neutral-900 placeholder:text-neutral-400 bg-neutral-50/80 ring-1 ring-black/[0.06] outline-none focus:ring-black/[0.12] focus:bg-white"
+                                                        className="input-premium w-full pl-10 pr-11 py-3 rounded-xl text-sm text-neutral-900 placeholder:text-neutral-600 bg-neutral-50/80 ring-1 ring-black/[0.06] outline-none focus:ring-black/[0.12] focus:bg-white"
                                                         placeholder="Conferma Password"
                                                         value={confirmPassword}
                                                         onChange={(e) => setConfirmPassword(e.target.value)}
@@ -335,7 +335,7 @@ const LoginPage = () => {
                                         <div className="flex justify-end -mt-1">
                                             <button
                                                 type="button"
-                                                className="text-[12px] font-medium text-neutral-400 hover:text-neutral-700 transition-colors"
+                                                className="text-[12px] font-medium text-neutral-600 hover:text-neutral-700 transition-colors"
                                             >
                                                 Password dimenticata?
                                             </button>
@@ -369,7 +369,7 @@ const LoginPage = () => {
                         </div>
 
                         {/* ─── Toggle Link ─── */}
-                        <p className="mt-6 text-center text-[13px] text-neutral-400">
+                        <p className="mt-6 text-center text-[13px] text-neutral-600">
                             {isSignUp ? "Hai già un account?" : "Non hai un account?"}{" "}
                             <button
                                 onClick={() => {

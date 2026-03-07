@@ -64,7 +64,7 @@ const ModelPopup = React.forwardRef<HTMLDivElement>((_, modalRef) => {
                 onClick={() => setIsOpen((prev) => !prev)}
                 className={`flex items-center gap-1 px-2 py-1 rounded-lg text-sm transition-colors select-none ${
                     isDark
-                        ? "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200"
+                        ? "text-neutral-600 hover:bg-neutral-800 hover:text-neutral-200"
                         : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800"
                 }`}
             >
@@ -92,7 +92,7 @@ const ModelPopup = React.forwardRef<HTMLDivElement>((_, modalRef) => {
                         <div className={`flex items-center gap-2 px-3 py-2 border-b ${
                             isDark ? "border-neutral-800" : "border-neutral-100"
                         }`}>
-                            <MagnifyingGlassIcon size={16} className="text-neutral-400 flex-shrink-0" />
+                            <MagnifyingGlassIcon size={16} className="text-neutral-600 flex-shrink-0" />
                             <input
                                 type="text"
                                 placeholder="Search models..."
@@ -130,7 +130,7 @@ const ModelPopup = React.forwardRef<HTMLDivElement>((_, modalRef) => {
                                                 <span className="text-[10px] font-bold uppercase tracking-widest text-neutral-500">
                                                     {providerName}
                                                 </span>
-                                                <span className="text-[10px] text-neutral-400">
+                                                <span className="text-[10px] text-neutral-600">
                                                     {group.length}
                                                 </span>
                                             </div>
@@ -161,7 +161,7 @@ const ModelPopup = React.forwardRef<HTMLDivElement>((_, modalRef) => {
                                                                 </span>
                                                             </span>
                                                             <span className="flex items-center gap-1.5 flex-shrink-0">
-                                                                <span className={`text-[11px] font-mono ${isDark ? "text-neutral-500" : "text-neutral-400"}`}>
+                                                                <span className={`text-[11px] font-mono ${isDark ? "text-neutral-500" : "text-neutral-600"}`}>
                                                                     {(Number(m.cost_per_input_token) + Number(m.cost_per_output_token)).toFixed(2)}$
                                                                 </span>
                                                                 {isSelected && (
@@ -186,12 +186,12 @@ const ModelPopup = React.forwardRef<HTMLDivElement>((_, modalRef) => {
 
                             {/* Temperature */}
                             <div className="flex items-center gap-3">
-                                <ThermometerIcon size={14} className="text-neutral-400 flex-shrink-0" />
+                                <ThermometerIcon size={14} className="text-neutral-600 flex-shrink-0" />
                                 <span className={`text-sm flex-1 ${
                                     isDark ? "text-neutral-300" : "text-neutral-700"
                                 }`}>Temperature</span>
                                 <span className={`text-xs font-mono w-8 text-right ${
-                                    isDark ? "text-neutral-400" : "text-neutral-500"
+                                    isDark ? "text-neutral-600" : "text-neutral-500"
                                 }`}>{temperature.toFixed(1)}</span>
                                 <input
                                     type="range"
@@ -212,7 +212,7 @@ const ModelPopup = React.forwardRef<HTMLDivElement>((_, modalRef) => {
                                     isDark ? "text-neutral-300 hover:text-white" : "text-neutral-700 hover:text-neutral-900"
                                 }`}
                             >
-                                <ShieldCheckIcon size={14} className="text-neutral-400 flex-shrink-0" />
+                                <ShieldCheckIcon size={14} className="text-neutral-600 flex-shrink-0" />
                                 <span className="flex-1">Safety filter</span>
                                 <span className={`w-4 h-4 flex items-center justify-center rounded border transition-colors ${
                                     safetyEnabled

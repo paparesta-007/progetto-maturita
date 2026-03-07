@@ -6,6 +6,8 @@ export interface AppContextType {
     toggleSetting: () => void;
     settingPage: string;
     setSettingPage: (page: string) => void;
+    isLivePreview: boolean;
+    setIsLivePreview: (val: boolean) => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -14,6 +16,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 export const AppProvider = ({ children }: { children: React.ReactNode }) => {
     const [isSettingOpen, setIsSettingOpen] = useState(false);
     const [settingPage, setSettingPage] = useState("generale");
+    const [isLivePreview, setIsLivePreview] = useState(false);
     const toggleSetting = () => {
         setIsSettingOpen(!isSettingOpen);
     };
@@ -24,6 +27,8 @@ export const AppProvider = ({ children }: { children: React.ReactNode }) => {
         toggleSetting,
         settingPage,
         setSettingPage,
+        isLivePreview,
+        setIsLivePreview,
     };
 
     return (

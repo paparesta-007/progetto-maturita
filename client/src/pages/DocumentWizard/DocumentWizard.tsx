@@ -55,7 +55,7 @@ const DocumentWizard = () => {
 
         // Text
         textPrimary: isDark ? "text-white" : "text-neutral-900",
-        textSecondary: isDark ? "text-neutral-400" : "text-neutral-500",
+        textSecondary: isDark ? "text-neutral-600" : "text-neutral-500",
         heading: `text-lg font-semibold tracking-tight ${isDark ? "text-white" : "text-neutral-900"}`,
 
         // Inputs
@@ -64,7 +64,7 @@ const DocumentWizard = () => {
         input: `w-full px-4 py-2.5 rounded-lg border text-sm transition-all duration-200 outline-none
             ${isDark
                 ? "bg-neutral-950 border-neutral-800 text-white placeholder:text-neutral-600 focus:border-neutral-600 focus:ring-1 focus:ring-neutral-600"
-                : "bg-neutral-50 border-neutral-200 text-neutral-900 placeholder:text-neutral-400 focus:border-neutral-400 focus:ring-1 focus:ring-neutral-400"
+                : "bg-neutral-50 border-neutral-200 text-neutral-900 placeholder:text-neutral-600 focus:border-neutral-400 focus:ring-1 focus:ring-neutral-400"
             }`,
 
         // Custom File Upload Styles
@@ -88,7 +88,7 @@ const DocumentWizard = () => {
             }`,
         buttonSecondary: `flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium border transition-all duration-200
             ${isDark
-                ? "border-neutral-800 text-neutral-400 hover:text-white hover:bg-neutral-800"
+                ? "border-neutral-800 text-neutral-600 hover:text-white hover:bg-neutral-800"
                 : "border-neutral-200 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100"
             }`,
 
@@ -249,7 +249,7 @@ const DocumentWizard = () => {
                                                 ref={fileInputRef}
                                                 accept=".pdf,.txt,.docx,.md"
                                             />
-                                            <div className={`p-3 rounded-full mb-3 transition-colors ${isDark ? "bg-neutral-800 group-hover:bg-neutral-700 text-neutral-400" : "bg-neutral-100 group-hover:bg-neutral-200 text-neutral-500"}`}>
+                                            <div className={`p-3 rounded-full mb-3 transition-colors ${isDark ? "bg-neutral-800 group-hover:bg-neutral-700 text-neutral-600" : "bg-neutral-100 group-hover:bg-neutral-200 text-neutral-500"}`}>
                                                 <UploadSimple size={24} />
                                             </div>
                                             <p className={`text-sm font-medium mb-1 ${style.textPrimary}`}>Click to upload or drag and drop</p>
@@ -268,7 +268,7 @@ const DocumentWizard = () => {
                                             </div>
                                             <button
                                                 onClick={removeFile}
-                                                className={`p-2 rounded-md transition-colors ${isDark ? "hover:bg-red-900/30 text-neutral-400 hover:text-red-400" : "hover:bg-red-50 text-neutral-400 hover:text-red-600"}`}
+                                                className={`p-2 rounded-md transition-colors ${isDark ? "hover:bg-red-900/30 text-neutral-600 hover:text-red-400" : "hover:bg-red-50 text-neutral-600 hover:text-red-600"}`}
                                             >
                                                 <Trash size={18} />
                                             </button>

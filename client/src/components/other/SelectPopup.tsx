@@ -95,7 +95,7 @@ function SelectPopup<T = any>({
                                             <span className="font-medium leading-snug">{option.label}</span>
                                             {option.description && (
                                                 <span className={`text-[11px] leading-tight mt-0.5 ${
-                                                    isDark ? "text-neutral-500" : "text-neutral-400"
+                                                    isDark ? "text-neutral-500" : "text-neutral-600"
                                                 }`}>
                                                     {option.description}
                                                 </span>

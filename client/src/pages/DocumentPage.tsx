@@ -20,7 +20,7 @@ const DocumentPage = () => {
         headerText: `text-md px-4 pt-4 font-medium mb-2 ${isDark ? "text-neutral-300" : "text-neutral-700"}`,
         main: `flex-1 overflow-y-auto p-4 custom-scrollbar relative`,
         footer: `flex-shrink-0 w-full pt-0 px-4 pb-4 transition-colors duration-300 ${isDark ? "bg-neutral-950" : "bg-white"}`,
-        disclaimer: `text-center text-[10px] mt-2 ${isDark ? "text-neutral-600" : "text-neutral-400"}`
+        disclaimer: `text-center text-[10px] mt-2 ${isDark ? "text-neutral-600" : "text-neutral-600"}`
     };
     useEffect(() => {
         const fetchDocument = async () => {
@@ -75,7 +75,7 @@ const DocumentPage = () => {
                 ) : (
                     <div className="flex-1 overflow-y-auto">
                         {/* <PromptStarter /> */}
-                        <h2 className={`text-center text-lg mt-20 ${isDark ? "text-neutral-500" : "text-neutral-400"}`}>
+                        <h2 className={`text-center text-lg mt-20 ${isDark ? "text-neutral-500" : "text-neutral-600"}`}>
                             {currentDocument ? "Inizia a chattare sul tuo documento!" : "Carica un documento per iniziare a chattare!"}
                         </h2>
                     </div>

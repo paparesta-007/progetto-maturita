@@ -51,7 +51,7 @@ const UserMessage = ({ i, htmlContent, tokens = 0 }: { i: number; htmlContent: s
         }`,
 
         // Message Bubble
-        bubble: `relative max-w-[85%] rounded-2xl rounded-tr-sm p-4 text-sm leading-relaxed transition-all duration-300 ${
+        bubble: `relative max-w-full md:max-w-[85%] lg:max-w-[90%] rounded-2xl rounded-tr-sm p-4 text-sm leading-relaxed transition-all duration-300 ${
             isDark
                 ? "text-neutral-100 bg-neutral-800/50 ring-1 ring-white/[0.06]"
                 : "text-neutral-800 bg-neutral-50 ring-1 ring-black/[0.04] shadow-sm shadow-black/[0.02]"
@@ -62,12 +62,12 @@ const UserMessage = ({ i, htmlContent, tokens = 0 }: { i: number; htmlContent: s
         actionBtn: `p-1.5 rounded-lg transition-all duration-200 cursor-pointer ${
             isDark
                 ? "text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.06]"
-                : "text-neutral-400 hover:text-neutral-600 hover:bg-black/[0.04]"
+                : "text-neutral-600 hover:text-neutral-600 hover:bg-black/[0.04]"
         }`,
         
         // Token Badge
         tokenBadge: `text-[10px] font-medium px-1.5 py-0.5 rounded ml-2 select-none ${
-            isDark ? "text-neutral-600 bg-white/[0.02]" : "text-neutral-400 bg-black/[0.02]"
+            isDark ? "text-neutral-600 bg-white/[0.02]" : "text-neutral-600 bg-black/[0.02]"
         }`
     };
 

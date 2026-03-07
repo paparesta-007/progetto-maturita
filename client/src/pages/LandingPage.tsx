@@ -169,7 +169,7 @@ const PremiumBadge = ({ children }: { children: React.ReactNode }) => (
 
 /* --- Section Label Component --- */
 const SectionLabel = ({ children }: { children: React.ReactNode }) => (
-    <div className="inline-flex items-center gap-2 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-neutral-400 mb-6">
+    <div className="inline-flex items-center gap-2 px-3 py-1 text-xs font-bold uppercase tracking-[0.2em] text-neutral-600 mb-6">
         <div className="w-8 h-px bg-neutral-300" />
         {children}
     </div>
@@ -287,7 +287,7 @@ const Hero = () => {
                         </Button>
                     </div>
 
-                    <div className="mt-14 flex items-center justify-center lg:justify-start gap-10 text-xs text-neutral-400 font-medium">
+                    <div className="mt-14 flex items-center justify-center lg:justify-start gap-10 text-xs text-neutral-600 font-medium">
                         <div className="flex items-center gap-2">
                             <div className="w-4 h-4 rounded-full bg-emerald-50 border border-emerald-200 flex items-center justify-center">
                                 <Check size={10} className="text-emerald-600" />
@@ -315,7 +315,7 @@ const Hero = () => {
                             </div>
                             <div className="flex items-center gap-2">
                                 <div className="h-6 w-48 bg-neutral-100 rounded-md flex items-center px-2 gap-1">
-                                    <Search size={10} className="text-neutral-400" />
+                                    <Search size={10} className="text-neutral-600" />
                                     <div className="h-2 w-24 bg-neutral-200 rounded-sm"></div>
                                 </div>
                             </div>
@@ -358,7 +358,7 @@ const Hero = () => {
                                                 </li>
                                             </ul>
                                             <div className="mt-4 pt-3 border-t border-neutral-200/60">
-                                                <p className="text-[10px] font-bold uppercase text-neutral-400 mb-2 tracking-wider">To-Do List — Meeting 15:00</p>
+                                                <p className="text-[10px] font-bold uppercase text-neutral-600 mb-2 tracking-wider">To-Do List — Meeting 15:00</p>
                                                 <div className="flex items-center gap-2.5 text-neutral-800 text-[13px]">
                                                     <div className="w-4 h-4 border-2 border-neutral-300 rounded hover:border-neutral-500 transition-colors cursor-pointer"></div>
                                                     Review design di Giulia
@@ -386,7 +386,7 @@ const Hero = () => {
                         </div>
                         <div>
                             <div className="text-[10px] font-bold text-neutral-900">End-to-End Encrypted</div>
-                            <div className="text-[9px] text-neutral-400">AES-256 bit</div>
+                            <div className="text-[9px] text-neutral-600">AES-256 bit</div>
                         </div>
                     </motion.div>
 
@@ -408,7 +408,7 @@ const TrustBar = () => {
     return (
         <div className="py-20 border-y border-neutral-100 bg-white relative overflow-hidden">
             <div className="max-w-6xl mx-auto px-6 text-center">
-                <p className="text-[11px] font-bold text-neutral-400 uppercase tracking-[0.25em] mb-14">Trusted by the most productive teams</p>
+                <p className="text-[11px] font-bold text-neutral-600 uppercase tracking-[0.25em] mb-14">Trusted by the most productive teams</p>
                 <div className="flex flex-wrap justify-center gap-x-20 gap-y-8 items-center">
                     {["Notion", "Linear", "Vercel", "Shopify", "Intercom"].map((company, i) => (
                         <motion.span
@@ -474,7 +474,7 @@ const Features = () => {
                     <h2 className="text-4xl md:text-5xl font-bold text-neutral-900 mb-6 tracking-tight leading-tight">
                         Your Routine,<br />Supercharged.
                     </h2>
-                    <p className="text-neutral-400 text-lg max-w-xl font-light mb-20">
+                    <p className="text-neutral-600 text-lg max-w-xl font-light mb-20">
                         Tutti gli strumenti di cui hai bisogno per eliminare il lavoro ripetitivo e concentrarti su ciò che conta.
                     </p>
                 </FadeIn>
@@ -526,7 +526,7 @@ const ModelSelection = () => {
                     <h2 className="text-4xl md:text-5xl font-bold text-neutral-900 mb-6 tracking-tight leading-tight">
                         You choose the model,<br />we deliver.
                     </h2>
-                    <p className="text-neutral-400 text-lg max-w-xl font-light mb-10">
+                    <p className="text-neutral-600 text-lg max-w-xl font-light mb-10">
                         Scegli tra i modelli di ultima generazione come Google, OpenAI, Anthropic e molto altro. Noi ci occupiamo di connetterli in modo sicuro al tuo workspace.
                     </p>
                     <ul className="space-y-5">
@@ -610,7 +610,7 @@ const PrivacySection = () => {
                                 </FadeIn>
                             ))}
                         </ul>
-                        <p className="text-xs text-neutral-400 mt-8 flex items-start gap-1.5 leading-relaxed">
+                        <p className="text-xs text-neutral-600 mt-8 flex items-start gap-1.5 leading-relaxed">
                             <span className="text-neutral-300">*</span>
                             <span>Solo i modelli <span className="font-mono text-neutral-500 bg-neutral-100 px-1 py-0.5 rounded text-[10px]">free</span> possono essere usati senza inserire una chiave API, e in questo caso i dati 
                             vengono usati per migliorare quei modelli. Per tutti gli altri modelli, è necessario inserire la propria chiave API, e in quel caso i dati non 
@@ -630,7 +630,7 @@ const PrivacySection = () => {
                                         <div className="w-14 h-14 bg-neutral-100 rounded-2xl flex items-center justify-center border border-neutral-200 text-neutral-900 shadow-sm">
                                             <User size={22} />
                                         </div>
-                                        <span className="text-[10px] font-bold uppercase text-neutral-400 tracking-wider">Tu</span>
+                                        <span className="text-[10px] font-bold uppercase text-neutral-600 tracking-wider">Tu</span>
                                     </div>
 
                                     {/* Connection Line */}
@@ -666,10 +666,10 @@ const PrivacySection = () => {
                                             </div>
                                         </div>
                                         <div className="flex flex-col items-center gap-2">
-                                            <div className="w-11 h-11 bg-neutral-50 rounded-xl flex items-center justify-center border border-neutral-200 text-neutral-400">
+                                            <div className="w-11 h-11 bg-neutral-50 rounded-xl flex items-center justify-center border border-neutral-200 text-neutral-600">
                                                 <BrainCircuit size={17} />
                                             </div>
-                                            <span className="text-[9px] font-bold uppercase text-neutral-400 tracking-wider">AI Training</span>
+                                            <span className="text-[9px] font-bold uppercase text-neutral-600 tracking-wider">AI Training</span>
                                         </div>
                                     </div>
 
@@ -684,10 +684,10 @@ const PrivacySection = () => {
                                             </div>
                                         </div>
                                         <div className="flex flex-col items-center gap-2">
-                                            <div className="w-11 h-11 bg-neutral-50 rounded-xl flex items-center justify-center border border-neutral-200 text-neutral-400">
+                                            <div className="w-11 h-11 bg-neutral-50 rounded-xl flex items-center justify-center border border-neutral-200 text-neutral-600">
                                                 <EyeOff size={17} />
                                             </div>
-                                            <span className="text-[9px] font-bold uppercase text-neutral-400 tracking-wider">Staff Access</span>
+                                            <span className="text-[9px] font-bold uppercase text-neutral-600 tracking-wider">Staff Access</span>
                                         </div>
                                     </div>
                                 </div>
@@ -720,7 +720,7 @@ const Pricing = () => {
                 <FadeIn className="text-center mb-24">
                     <SectionLabel>Pricing</SectionLabel>
                     <h2 className="text-4xl md:text-5xl font-bold text-neutral-900 mb-5 tracking-tight">Investi nella tua produttività.</h2>
-                    <p className="text-neutral-400 text-lg font-light">Piani semplici che scalano con le tue ambizioni.</p>
+                    <p className="text-neutral-600 text-lg font-light">Piani semplici che scalano con le tue ambizioni.</p>
                 </FadeIn>
 
                 <div className="grid md:grid-cols-3 gap-6 mb-20">
@@ -728,14 +728,14 @@ const Pricing = () => {
                     <FadeIn>
                         <div className="p-10 border border-neutral-200/80 rounded-2xl bg-white hover:shadow-lg hover:shadow-neutral-200/50 transition-all duration-500 flex flex-col h-full">
                             <div className="text-sm font-bold text-neutral-500 mb-3 uppercase tracking-wider">Free</div>
-                            <div className="text-5xl font-bold text-neutral-900 mb-8">€0<span className="text-base font-normal text-neutral-400 ml-1">/mo</span></div>
+                            <div className="text-5xl font-bold text-neutral-900 mb-8">€0<span className="text-base font-normal text-neutral-600 ml-1">/mo</span></div>
                             <p className="text-neutral-500 text-sm mb-8 leading-relaxed">Perfetto per organizzare la routine personale.</p>
                             <Button variant="secondary" className="w-full mb-10 !rounded-xl">Crea Account</Button>
                             <ul className="space-y-4 text-sm text-neutral-600 flex-1">
                                 <li className="flex gap-3 items-start"><Check size={16} className="text-emerald-500 mt-0.5 flex-shrink-0" /> Accesso limitato a diversi modelli</li>
                                 <li className="flex gap-3 items-start"><Check size={16} className="text-emerald-500 mt-0.5 flex-shrink-0" /> 5 Upload Documenti/giorno</li>
                                 <li className="flex gap-3 items-start"><Check size={16} className="text-emerald-500 mt-0.5 flex-shrink-0" /> Integrazione Calendario (Read-only)</li>
-                                <li className="flex gap-3 items-start text-neutral-400"><Minus size={16} className="mt-0.5 flex-shrink-0" /> No Email Assistant</li>
+                                <li className="flex gap-3 items-start text-neutral-600"><Minus size={16} className="mt-0.5 flex-shrink-0" /> No Email Assistant</li>
                             </ul>
                         </div>
                     </FadeIn>
@@ -785,7 +785,7 @@ const Pricing = () => {
 
                         <div className="relative z-10">
                             <h3 className="text-2xl md:text-3xl font-bold mb-3">Sei un'azienda Enterprise?</h3>
-                            <p className="text-neutral-400 text-sm max-w-lg leading-relaxed">
+                            <p className="text-neutral-600 text-sm max-w-lg leading-relaxed">
                                 Offriamo deployment su Cloud Privato (VPC), SSO, Audit Logs e conformità GDPR avanzata per grandi organizzazioni.
                             </p>
                         </div>
@@ -815,7 +815,7 @@ const Footer = () => {
                         </div>
                         <span className="text-base font-bold text-neutral-900 tracking-tight">NeuralTrust</span>
                     </div>
-                    <p className="text-xs text-neutral-400 mb-6 leading-relaxed max-w-xs">
+                    <p className="text-xs text-neutral-600 mb-6 leading-relaxed max-w-xs">
                         Il tuo assistente quotidiano. <br />Made in Milan, Italy 🇮🇹
                     </p>
                 </div>
@@ -827,7 +827,7 @@ const Footer = () => {
                 ].map((col, idx) => (
                     <div key={idx}>
                         <h4 className="text-neutral-900 font-bold text-sm mb-6 tracking-wide">{col.title}</h4>
-                        <ul className="space-y-4 text-sm text-neutral-400">
+                        <ul className="space-y-4 text-sm text-neutral-600">
                             {col.links.map(link => (
                                 <li key={link}>
                                     <a href="#" className="hover:text-neutral-900 transition-colors duration-200">
@@ -842,7 +842,7 @@ const Footer = () => {
 
             <div className="max-w-6xl mx-auto px-6">
                 <div className="h-px bg-gradient-to-r from-transparent via-neutral-200 to-transparent mb-8" />
-                <div className="flex flex-col md:flex-row justify-between items-center text-xs text-neutral-400">
+                <div className="flex flex-col md:flex-row justify-between items-center text-xs text-neutral-600">
                     <p>&copy; {new Date().getFullYear()} NeuralTrust Inc. All rights reserved.</p>
                     <div className="flex gap-6 mt-4 md:mt-0">
                         <span className="flex items-center gap-2 text-neutral-600 font-medium">

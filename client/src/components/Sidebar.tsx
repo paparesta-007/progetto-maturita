@@ -10,24 +10,19 @@ import {
     Plus,
     BrainCircuit,
     LogOut,
-    User,
     Sun,
     Moon,
     File,
-    Sparkles,
     ChevronUp,
-    Crown,
     Search,
     Keyboard
 } from 'lucide-react';
-import { ArrowFatUpIcon, ClockCounterClockwiseIcon, CommandIcon, DotsThreeIcon, PencilLineIcon, ShareNetworkIcon, SidebarSimpleIcon, TrashIcon } from "@phosphor-icons/react";
+import { ClockCounterClockwiseIcon, DotsThreeIcon, PencilLineIcon, ShareNetworkIcon, SidebarSimpleIcon, TrashIcon } from "@phosphor-icons/react";
 import supabase from "../library/supabaseclient";
 import selectUserDetails from "../services/supabase/User/SelectuserDetails";
 import { useChat } from "../context/ChatContext";
 import deleteConversation from "../services/supabase/Conversation/deleteConversation";
 import { useApp } from "../context/AppContext";
-import getAllDocuments from "../services/supabase/documents/getAllDocuments";
-import getDocumentsMetadata from "../services/supabase/documents/getAllDocuments";
 import { useDocument } from "../context/DocumentContext";
 import deleteCurrentDocument from "../services/supabase/documents/deleteCurrentDocument";
 
@@ -106,7 +101,15 @@ const SidebarStyles = () => (
     `}</style>
 );
 
-const Sidebar = () => {
+const Sidebar = ({
+    isMinimized,
+    setIsMinimized,
+    isLockedMinimized = false,
+}: {
+    isMinimized: boolean;
+    setIsMinimized: (val: boolean) => void;
+    isLockedMinimized?: boolean;
+}) => {
     // --- Context & State ---
     const { user, theme, setTheme } = useAuth() || { user: { displayName: "Matteo Rossi", photoURL: null } };
     const { conversations, setMessageHistory, fetchConversations, setCurrentConversationId, setCurrentConversationName } = useChat();
@@ -128,13 +131,13 @@ const Sidebar = () => {
 
     // ─── Premium Style System ───
     const style = {
-        sidebar: `sidebar-premium w-[280px] h-screen flex flex-col font-sans text-sm transition-all duration-500 relative ${isDark ? "bg-[#0a0a0a]" : "bg-[#fafafa]"}`,
+        sidebar: `sidebar-premium ${isMinimized ? 'w-[72px]' : 'w-[280px]'} h-screen flex flex-col font-sans text-sm transition-all duration-500 ease-in-out relative ${isDark ? "bg-[#0a0a0a]" : "bg-[#fafafa]"}`,
 
         textPrimary: isDark ? "text-neutral-100" : "text-neutral-900",
-        textSecondary: isDark ? "text-neutral-500" : "text-neutral-400",
+        textSecondary: isDark ? "text-neutral-500" : "text-neutral-600",
         textMuted: isDark ? "text-neutral-600" : "text-neutral-300",
 
-        iconBase: isDark ? "text-neutral-500 group-hover:text-neutral-300" : "text-neutral-400 group-hover:text-neutral-700",
+        iconBase: isDark ? "text-neutral-500 group-hover:text-neutral-300" : "text-neutral-600 group-hover:text-neutral-700",
         iconActive: isDark ? "text-white" : "text-neutral-900",
 
         itemHover: isDark ? "hover:bg-white/[0.04]" : "hover:bg-black/[0.03]",
@@ -147,7 +150,7 @@ const Sidebar = () => {
 
         shortcutBadge: `text-[11px] px-1.5 py-0.5 rounded-md font-mono transition-colors ${isDark
             ? "bg-white/[0.06] text-neutral-500 border border-white/[0.04]"
-            : "bg-neutral-100 text-neutral-400 border border-neutral-200/60"
+            : "bg-neutral-100 text-neutral-600 border border-neutral-200/60"
             }`,
 
         popoverBg: isDark
@@ -244,7 +247,7 @@ const Sidebar = () => {
     const handleLogOut = async (conversationId: string | null) => {
         try {
             await supabase.auth.signOut();
-            if (conversationId) await deleteConversation(user.id, conversationId);
+            if (conversationId && user?.id) await deleteConversation(user.id, conversationId);
             fetchConversations();
             navigate("/login");
         } catch (error) { alert("Errore logout"); }
@@ -323,10 +326,11 @@ const Sidebar = () => {
             <nav className={style.sidebar} style={cssVars}>
 
                 {/* ─── HEADER ─── */}
-                <div className="p-3 pb-0">
-                    <div className="flex items-center justify-between gap-2 mb-5">
+                <div className={`p-3 pb-0 ${isMinimized ? 'items-center' : ''}`}>
+                    <div className={`flex items-center ${isMinimized ? 'justify-center' : 'justify-between'} gap-2 mb-5`}>
                         {/* Logo */}
-                        <div
+                       {!isMinimized && (
+                         <div
                             className={`w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 ${isDark
                                 ? "bg-white text-neutral-900 shadow-sm shadow-white/10"
                                 : "bg-neutral-900 text-white shadow-md shadow-neutral-900/20"
@@ -335,22 +339,33 @@ const Sidebar = () => {
                         >
                             <BrainCircuit size={17} />
                         </div>
+                       )}
 
                         {/* Sidebar Toggle */}
-                        <button className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 ${isDark ? "text-neutral-600 hover:text-neutral-400 hover:bg-white/[0.04]" : "text-neutral-300 hover:text-neutral-500 hover:bg-black/[0.03]"}`}>
+                        <button
+                            type="button"
+                            disabled={isLockedMinimized}
+                            onClick={() => {
+                                if (isLockedMinimized) return;
+                                setIsMinimized(!isMinimized);
+                            }}
+                            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 ${isDark ? "text-neutral-600 hover:text-neutral-600 hover:bg-white/[0.04]" : "text-neutral-300 hover:text-neutral-500 hover:bg-black/[0.03]"} ${isLockedMinimized ? "opacity-40 cursor-not-allowed" : ""}`}
+                        >
                             <SidebarSimpleIcon size={20} />
                         </button>
                     </div>
 
                     {/* ─── Search Bar (Premium Touch) ─── */}
-                    <button className={`w-full flex items-center gap-2.5 px-3.5 py-2 rounded-xl mb-3 transition-all duration-300 ${isDark
-                        ? "bg-white/[0.03] hover:bg-white/[0.06] text-neutral-600 border border-white/[0.04]"
-                        : "bg-neutral-100/60 hover:bg-neutral-100 text-neutral-400 border border-transparent"
-                        }`}>
-                        <Search size={14} className="opacity-50" />
-                        <span className="text-[13px] flex-1 text-left">Cerca…</span>
-                        <kbd className={style.shortcutBadge}>⌘K</kbd>
-                    </button>
+                    {!isMinimized && (
+                        <button className={`w-full flex items-center gap-2.5 px-3.5 py-2 rounded-xl mb-3 transition-all duration-300 ${isDark
+                            ? "bg-white/[0.03] hover:bg-white/[0.06] text-neutral-600 border border-white/[0.04]"
+                            : "bg-neutral-100/60 hover:bg-neutral-100 text-neutral-600 border border-transparent"
+                            }`}>
+                            <Search size={14} className="opacity-50" />
+                            <span className="text-[13px] flex-1 text-left">Cerca…</span>
+                            <kbd className={style.shortcutBadge}>⌘K</kbd>
+                        </button>
+                    )}
 
                     {/* ─── New Chat / Upload Button ─── */}
                     <button
@@ -365,13 +380,13 @@ const Sidebar = () => {
                             }
                         }}
                     >
-                        <div className="flex items-center gap-2.5 font-medium">
+                        <div className={`flex items-center ${isMinimized ? 'justify-center' : 'gap-2.5'} font-medium`}>
                             <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-colors ${isDark ? "bg-white/[0.08]" : "bg-neutral-100"}`}>
                                 <Plus size={13} strokeWidth={2.5} />
                             </div>
-                            <span className="text-[13px]">{isDocumentsPage ? "Carica File" : "Nuova Chat"}</span>
+                            {!isMinimized && <span className="text-[13px]">{isDocumentsPage ? "Carica File" : "Nuova Chat"}</span>}
                         </div>
-                        {!isDocumentsPage && (
+                        {!isDocumentsPage && !isMinimized && (
                             <span className={style.shortcutBadge}>⌘I</span>
                         )}
                     </button>
@@ -379,7 +394,7 @@ const Sidebar = () => {
 
                 {/* ─── NAVIGATION ─── */}
                 <div className="px-3 pt-6 pb-2">
-                    <p className={style.sectionLabel}>Workspace</p>
+                    {!isMinimized && <p className={style.sectionLabel}>Workspace</p>}
                     <div className="flex flex-col gap-0.5">
                         {menuItems.map((item) => (
                             <NavLink
@@ -405,12 +420,12 @@ const Sidebar = () => {
                                                 />
                                             )}
                                             <span className="relative z-10 flex items-center gap-3">
-                                                {React.cloneElement(item.icon as React.ReactElement, {
+                                                {React.cloneElement(item.icon as React.ReactElement<any>, {
                                                     size: 17,
                                                     strokeWidth: active ? 2 : 1.5,
                                                     className: `transition-colors duration-200 ${active ? style.iconActive : style.iconBase}`
                                                 })}
-                                                <span className="text-[13px]">{item.label}</span>
+                                                {!isMinimized && <span className="text-[13px]">{item.label}</span>}
                                             </span>
 
                                             {/* Active Indicator Dot */}
@@ -431,17 +446,19 @@ const Sidebar = () => {
                 </div>
 
                 {/* ─── Section Header ─── */}
-                <div className="px-3 pt-4 pb-1">
-                    <p className={style.sectionLabel}>
-                        {isDocumentsPage ? "I tuoi documenti" : "Cronologia"}
-                        <span className={`text-[10px] tabular-nums px-1.5 py-0.5 rounded-md ${isDark ? "bg-white/[0.04] text-neutral-600" : "bg-neutral-100 text-neutral-400"}`}>
-                            {isDocumentsPage ? documentList.length : conversations.length}
-                        </span>
-                    </p>
-                </div>
+                {!isMinimized && (
+                    <div className="px-3 pt-4 pb-1">
+                        <p className={style.sectionLabel}>
+                            {isDocumentsPage ? "I tuoi documenti" : "Cronologia"}
+                            <span className={`text-[10px] tabular-nums px-1.5 py-0.5 rounded-md ${isDark ? "bg-white/[0.04] text-neutral-600" : "bg-neutral-100 text-neutral-600"}`}>
+                                {isDocumentsPage ? documentList.length : conversations.length}
+                            </span>
+                        </p>
+                    </div>
+                )}
 
                 {/* ─── DYNAMIC LIST ─── */}
-                <div className={style.scrollbar}>
+                {!isMinimized && <div className={style.scrollbar}>
                     <div className="flex flex-col gap-0.5">
                         <ul className="flex flex-col gap-0.5 relative" ref={convMenuRef}>
                             {isDocumentsPage ? (
@@ -471,7 +488,7 @@ const Sidebar = () => {
                                             </NavLink>
 
                                             <button
-                                                className={`${style.contextDot} ${docMenuOpen === doc.document_id ? "opacity-100" : "opacity-0 group-hover:opacity-100"} ${isDark ? "text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.06]" : "text-neutral-400 hover:text-neutral-600 hover:bg-black/[0.04]"}`}
+                                                className={`${style.contextDot} ${docMenuOpen === doc.document_id ? "opacity-100" : "opacity-0 group-hover:opacity-100"} ${isDark ? "text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.06]" : "text-neutral-600 hover:text-neutral-600 hover:bg-black/[0.04]"}`}
                                                 onClick={(e) => {
                                                     e.preventDefault();
                                                     e.stopPropagation();
@@ -525,7 +542,7 @@ const Sidebar = () => {
                                             </NavLink>
 
                                             <button
-                                                className={`${style.contextDot} ${convMenuOpen === conv.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"} ${isDark ? "text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.06]" : "text-neutral-400 hover:text-neutral-600 hover:bg-black/[0.04]"}`}
+                                                className={`${style.contextDot} ${convMenuOpen === conv.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"} ${isDark ? "text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.06]" : "text-neutral-600 hover:text-neutral-600 hover:bg-black/[0.04]"}`}
                                                 onClick={(e) => {
                                                     e.preventDefault();
                                                     e.stopPropagation();
@@ -555,7 +572,7 @@ const Sidebar = () => {
                             )}
                         </ul>
                     </div>
-                </div>
+                </div>}
 
                 {/* ─── FOOTER ─── */}
                 <div className={style.footer}>
@@ -632,7 +649,7 @@ const Sidebar = () => {
 
                     {/* User Button */}
                     <button className={style.userBtn} onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}>
-                        <div className="flex items-center gap-3 overflow-hidden">
+                        <div className={`flex items-center ${isMinimized ? 'justify-center' : 'gap-3'} overflow-hidden`}>
                             {/* Avatar with online indicator */}
                             <div className="relative flex-shrink-0">
                                 <img
@@ -643,25 +660,31 @@ const Sidebar = () => {
                                 <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 bg-emerald-500 ${isDark ? "border-[#0a0a0a]" : "border-[#fafafa]"}`} />
                             </div>
 
-                            <div className="flex flex-col min-w-0">
-                                <span className={`text-[13px] font-semibold truncate ${style.textPrimary}`}>
-                                    {userDetails?.full_name || "Utente"}
-                                </span>
-                                <span className="text-[11px] font-bold plan-badge">
-                                    Early access ✦
-                                </span>
-                            </div>
+                            {!isMinimized && (
+                                <>
+                                    <div className="flex flex-col min-w-0">
+                                        <span className={`text-[13px] font-semibold truncate ${style.textPrimary}`}>
+                                            {userDetails?.full_name || "Utente"}
+                                        </span>
+                                        <span className="text-[11px] font-bold plan-badge">
+                                            Early access ✦
+                                        </span>
+                                    </div>
+                                </>
+                            )}
                         </div>
 
-                        <motion.div
-                            animate={{ rotate: isUserMenuOpen ? 180 : 0 }}
-                            transition={{ duration: 0.2 }}
-                        >
-                            <ChevronUp
-                                size={15}
-                                className={`transition-colors duration-200 ${isUserMenuOpen ? style.iconActive : (isDark ? "text-neutral-600" : "text-neutral-300")}`}
-                            />
-                        </motion.div>
+                        {!isMinimized && (
+                            <motion.div
+                                animate={{ rotate: isUserMenuOpen ? 180 : 0 }}
+                                transition={{ duration: 0.2 }}
+                            >
+                                <ChevronUp
+                                    size={15}
+                                    className={`transition-colors duration-200 ${isUserMenuOpen ? style.iconActive : (isDark ? "text-neutral-600" : "text-neutral-300")}`}
+                                />
+                            </motion.div>
+                        )}
                     </button>
                 </div>
             </nav>

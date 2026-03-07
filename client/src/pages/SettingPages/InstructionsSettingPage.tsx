@@ -34,7 +34,7 @@ const InstructionsSettingPage: React.FC = () => {
     const styles = {
         title: `text-xl font-semibold ${isDark ? "text-white" : "text-neutral-900"}`,
         label: `text-sm font-medium ${isDark ? "text-neutral-200" : "text-neutral-700"}`,
-        description: `text-xs ${isDark ? "text-neutral-500" : "text-neutral-400"}`,
+        description: `text-xs ${isDark ? "text-neutral-500" : "text-neutral-600"}`,
         input: `w-full border rounded-lg px-3 py-2 text-sm outline-none transition-all ${
             isDark 
                 ? "bg-neutral-900 border-neutral-700 text-white focus:ring-neutral-700" 
@@ -125,7 +125,7 @@ const InstructionsSettingPage: React.FC = () => {
 
 const InputGroup = ({ label, placeholder, value, onChange, isDark }: any) => (
     <div className="flex flex-col gap-1.5">
-        <label className={`text-xs font-semibold uppercase tracking-wide ${isDark ? "text-neutral-500" : "text-neutral-400"}`}>
+        <label className={`text-xs font-semibold uppercase tracking-wide ${isDark ? "text-neutral-500" : "text-neutral-600"}`}>
             {label}
         </label>
         <input
