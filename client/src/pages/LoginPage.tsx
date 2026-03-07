@@ -129,29 +129,31 @@ const LoginPage = () => {
 
     const handleGoogleLogin = async () => {
         setError("");
-        const { error } = await supabase.auth.signInWithOAuth({
+        const { data,error } = await supabase.auth.signInWithOAuth({
             provider: "google",
             options: {
-                redirectTo: "app/chat",
+                redirectTo: `${window.location.origin}/app/chat`,
             },
+         
         });
 
         if (error) {
-            setError(error.message || "Si e verificato un errore durante il login con Google.");
+            setError(error.message || "Si è verificato un errore durante il login con Google.");
         }
     };
 
     const handleGitHubLogin = async () => {
         setError("");
-        const { error } = await supabase.auth.signInWithOAuth({
+        const { data,error } = await supabase.auth.signInWithOAuth({
             provider: "github",
             options: {
-                redirectTo: "/app/chat",
+                redirectTo: `${window.location.origin}/app/chat`,
             },
+        
         });
 
         if (error) {
-            setError(error.message || "Si e verificato un errore durante il login con GitHub.");
+            setError(error.message || "Si è verificato un errore durante il login con GitHub.");
         }
     };
 
