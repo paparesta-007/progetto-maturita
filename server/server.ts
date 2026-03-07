@@ -271,13 +271,13 @@ app.post("/api/streamingOutput", async function (req: express.Request, res: expr
         // Funzione per il delay
         const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
         console.log("Custom User Instruction:", systemPromptUser);
-        
-        const systemPrompt = getSystemPrompt({ 
-            selectedModel, 
-            systemPromptUser, 
-            personalInfo, 
-            tone, 
-            allowedCustomInstructions 
+
+        const systemPrompt = getSystemPrompt({
+            selectedModel,
+            systemPromptUser,
+            personalInfo,
+            tone,
+            allowedCustomInstructions
         } as any);
 
         const messages = [
@@ -496,11 +496,9 @@ app.post("/api/documents/ingest", upload.single("file"), async (req: express.Req
         // 4. Generazione Embeddings
         console.log("🤖 [5/6] Richiesta embedding a OpenRouter...");
 
-        // Verifica preventiva del modello
-        const modelId = "text-embedding-004"; // Google embedding model
 
         const { embeddings } = await embedMany({
-            model: "openai/text-embedding-3-small",
+            model: openrouterEmbeddings.embedding("openai/text-embedding-3-small"),
             values: chunks.map(chunk => chunk.content),
         });
 
@@ -687,8 +685,8 @@ app.delete("/api/conversations/delete", async (req: express.Request, res: expres
 
 app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response) => {
     try {
-        const {question} = req.body;
-        
+        const { question } = req.body;
+
         console.log("🔍 Domanda ricevuta:", question);
 
         // 1. Genera l'embedding della domanda 
@@ -702,7 +700,7 @@ app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response
         const { data: chunks, error } = await supabase
             .rpc('match_documents', {
                 query_embedding: embedding,
-                match_threshold: 0.5, // Soglia di similarità (0.0 - 1.0)
+                match_threshold: 0.3, // Soglia di similarità (0.0 - 1.0)
                 match_count: 5        // Prendi i 5 pezzi più rilevanti
             });
 
@@ -731,14 +729,14 @@ app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response
 
         // 4. Genera la risposta con Gemini
         const { text, usage } = await generateText({
-            model: openrouter("nvidia/nemotron-3-nano-30b-a3b:free"), // O il modello che preferisci
+            model: openrouter("openai/gpt-oss-20b"), // O il modello che preferisci
             system: systemPrompt,
             prompt: question,
         });
 
         // Rispondi al client
-        res.json({ 
-            answer: text, 
+        res.json({
+            answer: text,
             sources: chunks.map((c: any) => c.metadata.source) // Opzionale: mostra le fonti usate
         });
 
