@@ -16,12 +16,13 @@ export const sendEmbeddingMessage = async (
 
     try {
         // 2. Chiamata al Backend (Endpoint RAG)
+        console.log("modello del ask-pdf", model)
         const response = await fetch("http://localhost:3000/api/chat/ask-pdf", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
                 question: message,
-                model: model?.name || "google/gemini-2.5-flash-lite" 
+                model: typeof model === "string" ? model : (model?.name_id || "google/gemini-2.5-flash-lite")
             }),
         });
 

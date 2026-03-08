@@ -328,110 +328,191 @@ app.post("/api/streamingOutput", async function (req: express.Request, res: expr
     }
 });
 
-// ✅ HELPER: Normalizza il testo estratto dal PDF prima del chunking
+// ─── HELPER: Normalizza il testo estratto dal PDF prima del chunking ───
 function normalizeText(text: string): string {
     return text
-        .normalize('NFC')                    // Normalizza Unicode (caratteri accentati, legature)
-        .replace(/\0/g, '')                  // Rimuovi null bytes
+        .normalize('NFC')
+        .replace(/\0/g, '')
         // eslint-disable-next-line no-control-regex
-        .replace(/[\x01-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '') // Rimuovi caratteri di controllo (preserva \t \n \r)
-        .replace(/[\t ]{2,}/g, ' ')          // Sostituisci spazi/tab multipli con singolo spazio
-        .replace(/\n{4,}/g, '\n\n\n')        // Limita newline consecutive a massimo 3
+        .replace(/[\x01-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
+        .replace(/[\t ]{2,}/g, ' ')
+        .replace(/\n{4,}/g, '\n\n\n')
         .trim();
 }
 
+// ─── HELPER: Rileva heading/titoli di sezione nel testo ───
+function detectHeadings(text: string): Array<{ position: number; heading: string }> {
+    const headings: Array<{ position: number; heading: string }> = [];
+    const lines = text.split('\n');
+    let charPos = 0;
+
+    for (const line of lines) {
+        const trimmed = line.trim();
+        // Rileva heading: linee corte (<120 char), non vuote,
+        // che sono TUTTE MAIUSCOLE, oppure iniziano con numeri tipo "1.", "1.2", "Capitolo"
+        // oppure sono seguite da una riga vuota (tipico dei titoli in PDF)
+        const isHeading =
+            trimmed.length > 0 &&
+            trimmed.length < 120 &&
+            (
+                trimmed === trimmed.toUpperCase() && trimmed.length > 3 ||   // TUTTO MAIUSCOLO
+                /^(\d+\.)+\s/.test(trimmed) ||                                // 1. 1.2. 3.1.4.
+                /^(capitolo|cap\.|sezione|sez\.|parte|appendice)\s/i.test(trimmed) // Parole chiave italiane
+            );
+
+        if (isHeading) {
+            headings.push({ position: charPos, heading: trimmed });
+        }
+        charPos += line.length + 1; // +1 per il \n
+    }
+    return headings;
+}
+
+// ─── HELPER: Trova l'heading più vicino che precede una posizione ───
+function getNearestHeading(position: number, headings: Array<{ position: number; heading: string }>): string | null {
+    let nearest: string | null = null;
+    for (const h of headings) {
+        if (h.position <= position) {
+            nearest = h.heading;
+        } else {
+            break; // Headings sono ordinati per posizione
+        }
+    }
+    return nearest;
+}
+
+// ─── HELPER: Splitta un blocco di testo in frasi ───
+function splitIntoSentences(text: string): string[] {
+    // Regex che splitta dopo . ! ? ; seguiti da spazio o fine stringa
+    // Evita split su abbreviazioni comuni (es. "dott.", "pag.", "fig.", "es.", "ecc.")
+    const sentences = text.split(/(?<=[.!?;])\s+(?=[A-Z\d"«(])/g);
+    return sentences.filter(s => s.trim().length > 0);
+}
+
+// ─── CHUNKING ENGINE: Recursive Paragraph → Sentence → Word splitting ───
 function splitTextIntoChunks(
     text: string,
-    chunkSize: number = 1000,
-    overlap: number = 200,
+    chunkSize: number = 1500,
+    overlap: number = 300,
     options: {
-        respectSentences?: boolean;  // Rispetta i confini delle frasi
-        respectParagraphs?: boolean; // Preferisce i limiti dei paragrafi
-        minChunkSize?: number;       // Grandezza minima del chunk
+        respectSentences?: boolean;
+        respectParagraphs?: boolean;
+        minChunkSize?: number;
     } = {}
-): Array<{ content: string; metadata: { startChar: number; endChar: number; order: number } }> {
+): Array<{ content: string; metadata: { startChar: number; endChar: number; order: number; length: number; sectionHeading: string | null } }> {
 
-    const {
-        respectSentences = true,
-        respectParagraphs = true,
-        minChunkSize = 100
-    } = options;
+    const { minChunkSize = 100 } = options;
 
-    // Pulisci il testo mantenendo la struttura
-    let cleanedText = text
-        .replace(/\r\n/g, '\n')      // Normalizza line endings
-        .replace(/\n{3,}/g, '\n\n'); // Riduci spazi verticali eccessivi
+    // 1️⃣ Normalizza line endings
+    const cleanedText = text
+        .replace(/\r\n/g, '\n')
+        .replace(/\n{3,}/g, '\n\n');
 
+    // 2️⃣ Rileva gli heading del documento
+    const headings = detectHeadings(cleanedText);
+
+    // 3️⃣ Livello 1: splitta per paragrafi (doppio newline)
+    const paragraphs: Array<{ text: string; startChar: number }> = [];
+    let pos = 0;
+    for (const para of cleanedText.split(/\n\n+/)) {
+        const trimmed = para.trim();
+        if (trimmed.length > 0) {
+            paragraphs.push({ text: trimmed, startChar: pos });
+        }
+        pos += para.length + 2; // +2 per \n\n
+    }
+
+    // 4️⃣ Assembla i chunk combinando paragrafi fino a raggiungere chunkSize
     const chunks: Array<{ content: string; metadata: any }> = [];
-    let currentPosition = 0;
+    let currentContent = '';
+    let currentStartChar = paragraphs.length > 0 ? paragraphs[0].startChar : 0;
     let chunkOrder = 0;
 
-    while (currentPosition < cleanedText.length) {
-        let endPosition = Math.min(currentPosition + chunkSize, cleanedText.length);
-
-        // 1️⃣ Se non siamo alla fine, evita di spezzare le parole
-        if (endPosition < cleanedText.length && cleanedText[endPosition] !== ' ' && cleanedText[endPosition] !== '\n') {
-            // Torna indietro fino allo spazio più vicino
-            const lastSpace = cleanedText.lastIndexOf(' ', endPosition);
-            const lastNewline = cleanedText.lastIndexOf('\n', endPosition);
-            const breakPoint = Math.max(lastSpace, lastNewline);
-
-            if (breakPoint > currentPosition) {
-                endPosition = breakPoint;
-            }
-        }
-
-        // 2️⃣ Se respectSentences è attivo, tenta di spezzare dopo un punto
-        if (respectSentences && endPosition < cleanedText.length) {
-            const nextSentenceEnd = cleanedText.indexOf('.', endPosition);
-            const nextParagraph = cleanedText.indexOf('\n\n', endPosition);
-
-            // Se il prossimo punto è vicino (entro 10% del chunkSize), usa quello
-            if (nextSentenceEnd !== -1 && nextSentenceEnd - endPosition < chunkSize * 0.1) {
-                endPosition = nextSentenceEnd + 1;
-            }
-            // Altrimenti se c'è un paragrafo, preferisci quello
-            else if (respectParagraphs && nextParagraph !== -1 && nextParagraph - endPosition < chunkSize * 0.15) {
-                endPosition = nextParagraph;
-            }
-        }
-
-        // 3️⃣ Estrai il chunk
-        let chunk = cleanedText.substring(currentPosition, endPosition).trim();
-
-        // 4️⃣ Salta chunk troppo piccoli (a meno che non sia l'ultimo)
-        if (chunk.length < minChunkSize && currentPosition + chunkSize < cleanedText.length) {
-            currentPosition = endPosition;
-            continue;
-        }
-
-        if (chunk.length > 0) {
+    function pushChunk(content: string, startChar: number, endChar: number) {
+        const trimmed = content.trim();
+        if (trimmed.length >= minChunkSize) {
             chunks.push({
-                content: chunk,
+                content: trimmed,
                 metadata: {
-                    startChar: currentPosition,
-                    endChar: endPosition,
+                    startChar,
+                    endChar,
                     order: chunkOrder++,
-                    length: chunk.length
+                    length: trimmed.length,
+                    sectionHeading: getNearestHeading(startChar, headings)
                 }
             });
         }
+    }
 
-        // 5️⃣ Calcola il prossimo punto di partenza CON overlapping intelligente
-        // L'overlapping si basa sulla posizione precedente, non sulla nuova
-        const stepSize = Math.max(chunkSize - overlap, minChunkSize);
-        currentPosition += stepSize;
+    // Funzione per spezzare un blocco troppo grande in sotto-frasi
+    function splitLargeBlock(blockText: string, blockStart: number) {
+        const sentences = splitIntoSentences(blockText);
 
-        // Evita che i chunk si sovrappongano eccessivamente
-        if (currentPosition < endPosition - overlap) {
-            currentPosition = endPosition - overlap;
+        let sentenceBuffer = '';
+        let bufferStart = blockStart;
+
+        for (const sentence of sentences) {
+            if (sentenceBuffer.length + sentence.length + 1 > chunkSize && sentenceBuffer.length > 0) {
+                // Salva il buffer corrente come chunk
+                pushChunk(sentenceBuffer, bufferStart, bufferStart + sentenceBuffer.length);
+                // Overlap: mantieni le ultime N chars
+                const overlapText = sentenceBuffer.slice(-overlap);
+                bufferStart = bufferStart + sentenceBuffer.length - overlapText.length;
+                sentenceBuffer = overlapText;
+            }
+            sentenceBuffer += (sentenceBuffer.length > 0 ? ' ' : '') + sentence;
         }
+
+        // Flush buffer rimanente
+        if (sentenceBuffer.trim().length > 0) {
+            pushChunk(sentenceBuffer, bufferStart, bufferStart + sentenceBuffer.length);
+        }
+    }
+
+    for (let i = 0; i < paragraphs.length; i++) {
+        const para = paragraphs[i];
+
+        // Se il singolo paragrafo è già più grande di chunkSize, spezzalo per frasi
+        if (para.text.length > chunkSize) {
+            // Prima salva ciò che abbiamo accumulato
+            if (currentContent.length > 0) {
+                pushChunk(currentContent, currentStartChar, currentStartChar + currentContent.length);
+                currentContent = '';
+            }
+            // Splitta il paragrafo grande
+            splitLargeBlock(para.text, para.startChar);
+            currentStartChar = para.startChar + para.text.length;
+            continue;
+        }
+
+        // Se aggiungere questo paragrafo supera chunkSize, salva il chunk corrente
+        if (currentContent.length + para.text.length + 2 > chunkSize && currentContent.length > 0) {
+            pushChunk(currentContent, currentStartChar, currentStartChar + currentContent.length);
+
+            // Overlap: prendi le ultime N chars del chunk salvato
+            const overlapText = currentContent.slice(-overlap);
+            currentContent = overlapText + '\n\n' + para.text;
+            currentStartChar = currentStartChar + currentContent.length - overlapText.length - para.text.length - 2;
+        } else {
+            // Aggiungi il paragrafo al chunk corrente
+            if (currentContent.length > 0) {
+                currentContent += '\n\n' + para.text;
+            } else {
+                currentContent = para.text;
+                currentStartChar = para.startChar;
+            }
+        }
+    }
+
+    // Flush dell'ultimo chunk
+    if (currentContent.trim().length > 0) {
+        pushChunk(currentContent, currentStartChar, currentStartChar + currentContent.length);
     }
 
     return chunks;
 }
 
-// ✅ HELPER FUNCTION: Validazione dei chunk
+// ─── HELPER: Validazione dei chunk ───
 function validateChunks(chunks: Array<any>): { isValid: boolean; gaps: number[]; overlaps: number[] } {
     const gaps: number[] = [];
     const overlaps: number[] = [];
@@ -441,9 +522,9 @@ function validateChunks(chunks: Array<any>): { isValid: boolean; gaps: number[];
         const nextStart = chunks[i + 1].metadata.startChar;
 
         if (nextStart > currentEnd) {
-            gaps.push(nextStart - currentEnd); // Testo mancante tra i chunk
+            gaps.push(nextStart - currentEnd);
         } else if (nextStart < currentEnd) {
-            overlaps.push(currentEnd - nextStart); // Overlapping tra i chunk
+            overlaps.push(currentEnd - nextStart);
         }
     }
 
@@ -493,8 +574,8 @@ app.post("/api/documents/ingest", upload.single("file"), async (req: express.Req
         text = normalizeText(text);
         console.log(`🧹 [3/6] Testo normalizzato: ${text.length} caratteri`);
 
-        // 3. Chunking (800 char chunks + 250 overlap per granularità migliore con modelli embedding piccoli)
-        const chunks = splitTextIntoChunks(text, 800, 250, {
+        // 3. Chunking (1500 chars ≈ 375 tokens, 300 overlap ≈ 20%)
+        const chunks = splitTextIntoChunks(text, 1500, 300, {
             respectSentences: true,
             respectParagraphs: true,
             minChunkSize: 100
@@ -512,11 +593,14 @@ app.post("/api/documents/ingest", upload.single("file"), async (req: express.Req
         console.log("🤖 [5/6] Richiesta embedding a OpenRouter...");
 
 
-        // Prefisso contestuale per arricchire gli embedding con info sulla fonte
+        // Prefisso contestuale arricchito con sezione heading
         const filename = req.file?.originalname || 'sconosciuto';
         const { embeddings } = await embedMany({
             model: openrouterEmbeddings.embedding("openai/text-embedding-3-small"),
-            values: chunks.map(chunk => `[Documento: ${filename}] ${chunk.content}`),
+            values: chunks.map(chunk => {
+                const heading = chunk.metadata.sectionHeading ? ` | Sezione: ${chunk.metadata.sectionHeading}` : '';
+                return `[Documento: ${filename}${heading}] ${chunk.content}`;
+            }),
         });
 
         console.log(`✨ [5/6] Ricevuti ${embeddings.length} vettori da OpenRouter`);
@@ -702,23 +786,23 @@ app.delete("/api/conversations/delete", async (req: express.Request, res: expres
 
 app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response) => {
     try {
-        const { question } = req.body;
+        const { question,model } = req.body;
 
         console.log("🔍 Domanda ricevuta:", question);
 
-        // 1. Genera l'embedding della domanda 
+        // 1. Genera l'embedding della domanda con prefisso contestuale 
         // (DEVE ESSERE LO STESSO MODELLO USATO PER L'INGESTIONE!)
         const { embedding } = await embed({
             model: openrouterEmbeddings.embedding("openai/text-embedding-3-small"),
-            value: question,
+            value: `Ricerca nel documento: ${question}`,
         });
 
         // 2. Chiama la funzione RPC su Supabase per cercare i chunk simili
         const { data: chunks, error } = await supabase
             .rpc('match_documents', {
                 query_embedding: embedding,
-                match_threshold: 0.3, // Soglia di similarità (0.0 - 1.0)
-                match_count: 7        // Prendi i 5 pezzi più rilevanti
+                match_threshold: 0.4, // Soglia alzata per ridurre rumore
+                match_count: 7
             });
 
         if (error) {
@@ -730,10 +814,17 @@ app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response
             return res.json({ answer: "Mi dispiace, non ho trovato informazioni pertinenti nei documenti caricati." });
         }
 
-        console.log(`📚 Trovati ${chunks.length} chunk rilevanti.`);
+        // Log dei punteggi di similarità per debug
+        console.log(`📚 Trovati ${chunks.length} chunk rilevanti:`);
+        chunks.forEach((c: any, i: number) => {
+            console.log(`  [${i}] similarity: ${c.similarity?.toFixed(4)} | source: ${c.metadata?.source} | section: ${c.metadata?.sectionHeading || 'N/A'}`);
+        });
 
         const contextText = chunks
-            .map((chunk: any) => `\n\n FONTE: ${chunk.metadata.source} ---\n${chunk.content}`)
+            .map((chunk: any) => {
+                const section = chunk.metadata?.sectionHeading ? `[Sezione: ${chunk.metadata.sectionHeading}]` : '';
+                return `--- FONTE: ${chunk.metadata.source} ${section} ---\n${chunk.content}`;
+            })
             .join("\n\n");
 
         const systemPrompt = `
@@ -748,10 +839,11 @@ app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response
         ### CONTESTO:
         ${contextText}
         `;
-
+        
+        const currentModel = model || "google/gemini-2.5-flash-lite";
         // 4. Genera la risposta con Gemini
         const { text, usage } = await generateText({
-            model: openrouter("google/gemini-2.5-flash-lite"), // O il modello che preferisci
+            model: openrouter(currentModel), // O il modello che preferisci
             system: systemPrompt,
             prompt: question,
         });
