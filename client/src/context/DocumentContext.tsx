@@ -2,6 +2,7 @@ import { createContext, useContext, useMemo, useState, useCallback } from "react
 // Assicurati che il percorso di importazione sia corretto in base alla tua struttura cartelle
 import getDocumentsMetadata from "../services/supabase/documents/getAllDocuments";
 import { sendEmbeddingMessage } from "../library/sendEmbeddingMessage";
+import { useChat } from "./ChatContext";
 
 export type DocumentStep = 1 | 2 | 3;
 
@@ -69,13 +70,7 @@ export const DocumentProvider = ({ children }: { children: React.ReactNode }) =>
     const [messageHistory, setMessageHistory] = useState<{ role: 'user' | 'bot'; content: string; usage?: any, model?: string }[]>([]);
     const [loading, setLoading] = useState(false);
     // Valore di default del modello (puoi personalizzarlo come nel ChatContext)
-    const [model, setModel] = useState<any>({
-        name: "OpenAI: gpt-oss-safeguard-20b",
-        provider: "OpenAI",
-        name_id: "openai/gpt-oss-safeguard-20b",
-        cost_per_input_token: 0.10,
-        cost_per_output_token: 0.40
-    });
+    const {model,setModel} =useChat()
 
     const documentText = useMemo(() => {
         return `Step ${stepContent.step}: ${stepContent.title}. ${stepContent.description}`;
@@ -104,11 +99,12 @@ export const DocumentProvider = ({ children }: { children: React.ReactNode }) =>
     // --- NUOVA FUNZIONE SENDMESSAGE (Placeholder) ---
     const sendMessage = useCallback(async (message: string) => {
         // Chiamiamo la versione "volatile" che non salva su DB
+        console.log("modello del ask-pdf", model)
         await sendEmbeddingMessage(
             message,
             setMessageHistory,
             setLoading,
-            model.name_id
+            model
         );
     }, [model]);
     const value: DocumentContextType = {

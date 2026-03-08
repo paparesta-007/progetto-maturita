@@ -71,7 +71,14 @@ const ChatContent = () => {
     }, [messageHistory, loading]);
 
     useEffect(() => {
-        if (!conversationId || !areConversationsLoaded) return;
+        if (!conversationId) {
+            setMessageHistory([]);
+            setCurrentConversationId(null);
+            setCurrentConversationName(null);
+            return;
+        }
+        if (!areConversationsLoaded) return;
+        
         const isOwner = userOwnsConversation(conversationId);
         if (isOwner) {
             loadConversation(conversationId);
@@ -79,7 +86,7 @@ const ChatContent = () => {
         } else {
             navigate('/app');
         }
-    }, [conversationId, areConversationsLoaded, user?.id]);
+    }, [conversationId, areConversationsLoaded, user?.id, setMessageHistory, setCurrentConversationId, setCurrentConversationName, loadConversation, userOwnsConversation, navigate]);
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {

@@ -14,7 +14,7 @@ const DocumentPage = () => {
     const { documentId } = useParams();
     const { user, theme } = useAuth();
     const isDark = theme === 'dark';
-    const { currentStep, currentDocument, setCurrentDocument, messageHistory, loading } = useDocument();
+    const { currentStep, currentDocument, setCurrentDocument, messageHistory, loading, setMessageHistory } = useDocument();
     const styles = {
         wrapper: `flex flex-col h-screen overflow-hidden relative transition-colors duration-300 ${isDark ? "bg-neutral-950" : "bg-white"}`,
         headerText: `text-md px-4 pt-4 font-medium mb-2 ${isDark ? "text-neutral-300" : "text-neutral-700"}`,
@@ -27,20 +27,27 @@ const DocumentPage = () => {
             // Se abbiamo già i dati e l'ID coincide, non fare nulla
             if (currentDocument && currentDocument[0]?.document_id === documentId) {
                 console.log("Documento già caricato, nessuna fetch necessaria.");
-                console.log("Documento caricato:", currentDocument);
                 return;
             }
 
             const data = await getCurrentDocument(user?.id || "", documentId || "");
             setCurrentDocument(data);
-
         };
         
+        if (!documentId) {
+            if (currentDocument) setCurrentDocument(null);
+            setMessageHistory([]);
+            return;
+        }
 
         if (user?.id && documentId) {
+            // Se stiamo per caricare un documento diverso da quello attuale, puliamo la chat
+            if (!currentDocument || currentDocument[0]?.document_id !== documentId) {
+                setMessageHistory([]);
+            }
             fetchDocument();
         }
-    }, [documentId, user?.id, currentDocument, setCurrentDocument]);
+    }, [documentId, user?.id, setCurrentDocument, setMessageHistory]);
     if (currentStep < 4 && !documentId) {
         return <DocumentWizard />;
     }

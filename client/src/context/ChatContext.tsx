@@ -105,6 +105,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const loadConversation = useCallback(async (conversationId: string) => {
         try {
             setLoading(true);
+            setMessageHistory([]); // Pulisci la cronologia precedente prima di caricare
 
             const rawData = await getMessages(conversationId);
 
