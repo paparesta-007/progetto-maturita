@@ -329,17 +329,17 @@ const Sidebar = ({
                 <div className={`p-3 pb-0 ${isMinimized ? 'items-center' : ''}`}>
                     <div className={`flex items-center ${isMinimized ? 'justify-center' : 'justify-between'} gap-2 mb-5`}>
                         {/* Logo */}
-                       {!isMinimized && (
-                         <div
-                            className={`w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 ${isDark
-                                ? "bg-white text-neutral-900 shadow-sm shadow-white/10"
-                                : "bg-neutral-900 text-white shadow-md shadow-neutral-900/20"
-                                }`}
-                            onClick={() => navigate("/")}
-                        >
-                            <BrainCircuit size={17} />
-                        </div>
-                       )}
+                        {!isMinimized && (
+                            <div
+                                className={`w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 ${isDark
+                                    ? "bg-white text-neutral-900 shadow-sm shadow-white/10"
+                                    : "bg-neutral-900 text-white shadow-md shadow-neutral-900/20"
+                                    }`}
+                                onClick={() => navigate("/")}
+                            >
+                                <BrainCircuit size={17} />
+                            </div>
+                        )}
 
                         {/* Sidebar Toggle */}
                         <button
@@ -473,6 +473,10 @@ const Sidebar = ({
                                             className={`relative group flex items-center rounded-xl transition-all duration-200 ${style.itemHover}`}
                                         >
                                             <NavLink
+                                                onClick={() => {
+                                                    setMessageHistory([]);
+                                                    navigate(`/app/documents/${doc.document_id}`);
+                                                }}
                                                 to={`/app/documents/${doc.document_id}`}
                                                 className={({ isActive }) =>
                                                     `flex-1 flex items-center px-3 py-2 rounded-xl text-[13px] truncate transition-all duration-200 ${isActive
@@ -493,6 +497,7 @@ const Sidebar = ({
                                                     e.preventDefault();
                                                     e.stopPropagation();
                                                     setDocMenuOpen(docMenuOpen === doc.document_id ? null : doc.document_id);
+
                                                 }}
                                             >
                                                 <DotsThreeIcon size={18} weight="bold" />

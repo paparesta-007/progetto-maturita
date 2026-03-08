@@ -340,7 +340,6 @@ function normalizeText(text: string): string {
         .trim();
 }
 
-// ✅ VERSIONE MIGLIORATA: Parser intelligente con overlapping preservato
 function splitTextIntoChunks(
     text: string,
     chunkSize: number = 1000,
@@ -734,14 +733,19 @@ app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response
         console.log(`📚 Trovati ${chunks.length} chunk rilevanti.`);
 
         const contextText = chunks
-            .map((chunk: any) => `--- FONTE: ${chunk.metadata.source} ---\n${chunk.content}`)
+            .map((chunk: any) => `\n\n FONTE: ${chunk.metadata.source} ---\n${chunk.content}`)
             .join("\n\n");
 
         const systemPrompt = `
-        Sei un assistente intelligente che risponde alle domande basandosi SOLO sul contesto fornito qui sotto.
-        Se la risposta non è nel contesto, dì chiaramente che non lo sai. Non inventare nulla.
-        
-        CONTESTO:
+        Sei un esperto Analista di Documenti. Il tuo compito è rispondere alle domande dell'utente basandoti ESCLUSIVAMENTE sul CONTESTO fornito qui sotto.
+
+        ### REGOLE RIGIDE DI RISPOSTA:
+        1.  **Fedeltà al Testo**: Rispondi solo utilizzando le informazioni presenti nel CONTESTO. Se la risposta non è contenuta nel testo, dichiara esplicitamente: "Mi dispiace, ma le informazioni fornite nei documenti non mi permettono di rispondere a questa domanda." Non utilizzare conoscenze esterne.
+        2.  **Formattazione Markdown**: Usa titolazioni (###), elenchi puntati e grassetti per rendere la risposta professionale e facile da leggere.
+        3.  **Formule Matematiche**: Ogni formula, simbolo matematico o equazione DEVE essere scritta in LaTeX utilizzando il delimitatore "$$" per i blocchi (es. $$E = mc^2$$) o "$" per le formule in linea (es. $x = 2$).
+        4.  **Lingua**: Rispondi sempre nella lingua della domanda dell'utente (predefinito: Italiano).
+
+        ### CONTESTO:
         ${contextText}
         `;
 
