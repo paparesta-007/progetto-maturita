@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from "react";
 import type { User, Session } from "@supabase/supabase-js";
 import supabase from "../library/supabaseclient"; // Assicurati che il percorso sia corretto
 import getInstructions from "../services/supabase/User/getInstructions";
+import getUserPreferences from "../services/supabase/User/getUserPreferences";
 
 interface AuthContextType {
     user: User | null;
@@ -22,6 +23,8 @@ interface AuthContextType {
     setPersonalInfo: React.Dispatch<React.SetStateAction<{ name: string; job: string; hobbies: string }>>;
     theme: string;
     setTheme: React.Dispatch<React.SetStateAction<string>>;
+    stylePreferences:any;
+    setStylePreferences:React.Dispatch<React.SetStateAction<any>>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -37,7 +40,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [experimental, setExperimental] = useState(false);
     const [systemPrompt, setSystemPrompt] = useState("");
     const [personalInfo, setPersonalInfo] = useState({ name: "", job: "", hobbies: "" });
-
+    const [stylePreferences,setStylePreferences]=useState({})
     // 1. EFFETTO PER L'AUTENTICAZIONE
     useEffect(() => {
         const initAuth = async () => {
@@ -57,7 +60,6 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 
         return () => subscription.unsubscribe();
     }, []);
-
     // 2. EFFETTO PER IL CARICAMENTO ISTRUZIONI (Reagisce al cambio di user)
     useEffect(() => {
         const fetchInstructions = async () => {
@@ -66,26 +68,45 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
             try {
                 // Opzionale: puoi mettere un piccolo stato di loading specifico per i dati
                 const data = await getInstructions(user.id);
-                
+
                 if (data && data.instructions) {
-                    setTone(data.instructions.tone || "default");
-                    setAllowedCustomInstructions(data.instructions.allowedCustomInstructions ?? false);
-                    setSystemPrompt(data.instructions.systemPrompt || "");
-                    setPersonalInfo(data.instructions.personalInfo || { name: "", job: "", hobbies: "" });
+                    const instructions = typeof data.instructions === 'string' ? JSON.parse(data.instructions) : data.instructions;
+                    if (instructions) {
+                        setTone(instructions.tone || "default");
+                        setAllowedCustomInstructions(instructions.allowedCustomInstructions ?? false);
+                        setSystemPrompt(instructions.systemPrompt || "");
+                        setPersonalInfo(instructions.personalInfo || { name: "", job: "", hobbies: "" });
+                    }
                 }
             } catch (error) {
                 console.error("Errore caricamento istruzioni:", error);
             }
         };
+        const fetchPreferences = async () => {
+            if (!user?.id) return; // Se non c'è l'utente, non fare nulla
 
+            try {
+                // Opzionale: puoi mettere un piccolo stato di loading specifico per i dati
+                const data = await getUserPreferences(user.id);
+
+                if (data && data.preferences) {
+                    const preferences = typeof data.preferences === 'string' ? JSON.parse(data.preferences) : data.preferences;
+                    setStylePreferences(preferences);
+                    console.log("Preferenze: ", preferences);
+                }
+            } catch (error) {
+                console.error("Errore caricamento preferenze:", error);
+            }
+        }
         fetchInstructions();
+        fetchPreferences();
     }, [user?.id]); // <--- FONDAMENTALE: Riesegui quando l'ID utente cambia
 
     return (
         <AuthContext.Provider value={{ 
             user, session, loading, tone, allowedCustomInstructions, 
             experimental, systemPrompt, personalInfo, 
-            setTone, setAllowedCustomInstructions, setSystemPrompt, setPersonalInfo, theme, setTheme
+            setTone, setAllowedCustomInstructions, setSystemPrompt, setPersonalInfo, theme, setTheme,stylePreferences,setStylePreferences
         }}>
             {/* Mostriamo i children solo quando il check iniziale della sessione è finito.
                Se vuoi che i dati siano pronti prima di mostrare l'app, 
