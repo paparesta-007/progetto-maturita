@@ -1,6 +1,7 @@
 import { FloppyDiskIcon, Globe, Flask, CurrencyDollar, Plug, Plus } from "@phosphor-icons/react";
 import React, { useState } from "react";
 import { useAuth } from "../../context/AuthContext"; // Assicurati che il percorso sia corretto
+import { useApp } from "../../context/AppContext";
 
 const INTEGRATIONS_DATA = [
     { id: 'gcal', name: "Google Calendar", connected: true, icon: "https://fonts.gstatic.com/s/i/productlogos/calendar_2020q4/v13/192px.svg" },
@@ -11,10 +12,15 @@ const INTEGRATIONS_DATA = [
 
 const GeneralSettings: React.FC = () => {
     const { theme } = useAuth();
+    const { setIsSettingOpen } = useApp();
     const isDark = theme === 'dark';
 
     const [allowExpensive, setAllowExpensive] = useState("no");
     const [experimental, setExperimental] = useState(false);
+
+    const handleSave = () => {
+        setIsSettingOpen(false);
+    };
 
     // Mappa degli stili per pulizia del JSX
     const styles = {
@@ -186,7 +192,7 @@ const GeneralSettings: React.FC = () => {
 
             {/* FOOTER */}
             <div className={styles.footer}>
-                <button className={styles.saveButton}>
+                <button onClick={handleSave} className={styles.saveButton}>
                     <FloppyDiskIcon size={18} />
                     Salva Modifiche
                 </button>

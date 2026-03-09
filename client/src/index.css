@@ -1,260 +1,249 @@
 @import url('https://fonts.googleapis.com/css2?family=Cause:wght@100..900&family=Montserrat:ital,wght@0,100..900;1,100..900&family=Poppins:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Sansita:ital,wght@0,400;0,700;0,800;0,900;1,400;1,700;1,800;1,900&display=swap');
-
 @import url('https://fonts.googleapis.com/css2?family=Domine:wght@400..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Comic+Neue:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Overlock:ital,wght@0,400;0,700;0,900;1,400;1,700;1,900&display=swap');
 @import "tailwindcss";
 
-/* 1. Definisci i colori di default (LIGHT MODE) */
+/* =========================================
+   1. VARIABILI E TEMI
+   ========================================= */
 :root {
     --code-bg: #ffffff;
-    /* Sfondo bianco */
     --code-text: #dc2626;
-    /* Testo rosso scuro */
     --code-border: #d1d5db;
-    /* Bordo grigio chiaro */
     --pre-bg: #f3f4f6;
-    /* Sfondo blocchi codice */
+    
+    /* Variabili base per la chat (fallbacks) */
+    --color-chat-primary: #1f2937; /* Gray 800 */
+    --color-chat-muted: #6b7280;   /* Gray 500 */
+    --color-primary: #111827;      /* Gray 900 */
 }
 
-/* 2. Sovrascrivi i colori quando c'è la classe .dark (DARK MODE) */
-/* Questo selettore si attiva quando <html> ha class="dark" o data-theme="dark" */
-.dark,
-[data-theme="dark"] {
+.dark, [data-theme="dark"] {
     --code-bg: #171717;
-    /* Sfondo scuro (neutral-900) */
     --code-text: #f87171;
-    /* Testo rosso chiaro (più leggibile su scuro) */
     --code-border: #404040;
-    /* Bordo grigio scuro */
     --pre-bg: #0a0a0a;
-    /* Sfondo blocchi codice scuro */
+
+    --color-chat-primary: #e5e5e5;
+    --color-chat-muted: #a3a3a3;
+    --color-primary: #ffffff;
 }
 
+/* =========================================
+   2. CLASSI FONT SPECIFICHE (Ottimizzate)
+   ========================================= */
+
+/* --- POPPINS: Geometrico, grande --- */
+/* Non ha bisogno di essere ingrandito, anzi a volte va leggermente contenuto */
 .f-poppins {
-    font-family: 'Poppins', sans-serif;
+    font-family: 'Poppins', sans-serif !important;
+    font-size: 1rem; /* Standard reference */
+    line-height: 1.65 !important;
+    letter-spacing: 0.01em !important;
 }
 
-.f-domine {
-    font-family: 'Domine', sans-serif;
+/* --- MONTSERRAT: Molto simile a Poppins --- */
+.f-montserrat {
+    font-family: 'Montserrat', sans-serif !important;
+    font-size: 0.98rem; /* Leggermente più compatto di Poppins */
+    line-height: 1.65 !important;
+    font-weight: 500; /* Montserrat rende meglio un po' più bold */
 }
 
+/* --- DOMINE: Serif da lettura --- */
+/* Già ottimizzato nel tuo codice, mantengo le proporzioni aumentate */
 .f-domine {
     font-family: 'Domine', serif !important;
-    /* Aumenta l'interlinea per dare respiro alle lettere robuste di Domine */
-    line-height: 1.85 !important;
-    /* Leggerissima spaziatura extra orizzontale */
-    letter-spacing: 0.015em !important;
-    font-size: 1.05em;
-    /* Domine rende bene leggermente più grande */
+    font-size: 1.05rem; /* +5% grandezza */
+    line-height: 1.85 !important; /* Molta aria */
+    letter-spacing: 0.01em !important;
 }
-
-/* Gestione specifica dei paragrafi in Domine */
-.f-domine p {
-    margin-bottom: 1.5em !important;
-    /* Più spazio tra i paragrafi */
-}
-
-/* Gestione titoli/intestazioni in Domine (devono essere più compatti) */
-.f-domine h1,
-.f-domine h2,
-.f-domine h3,
-.f-domine strong {
+.f-domine h1, .f-domine h2, .f-domine h3 {
+    font-family: 'Domine', serif !important;
     line-height: 1.3 !important;
     margin-top: 1.5em;
-    margin-bottom: 0.5em;
-    color: inherit;
+    letter-spacing: -0.01em; /* Titoli serif più stretti sono più eleganti */
 }
 
+/* --- COMIC NEUE: Handwrtiting sottile --- */
+/* Ha bisogno di un GRANDE boost di dimensioni perché ha tratti sottili e x-height piccola */
+.f-comic {
+    font-family: 'Comic Neue', cursive !important;
+    font-size: 1.2rem !important; /* +20% grandezza rispetto a Poppins */
+    line-height: 1.6 !important;
+    letter-spacing: 0.03em !important; /* Un po' più spaziato per leggibilità */
+    font-weight: 400; /* Mai usare 300 per il corpo testo del Comic Neue, è illeggibile */
+}
+/* I titoli in Comic Neue devono essere molto marcati */
+.f-comic h1, .f-comic h2, .f-comic h3 {
+    font-weight: 700 !important;
+}
+
+/* --- OVERLOCK: Cursive geometrico --- */
+/* Anche questo risulta piccolo otticamente */
+.f-overlock {
+    font-family: 'Overlock', cursive !important;
+    font-size: 1.18rem !important; /* +15% grandezza */
+    line-height: 1.7 !important;
+    letter-spacing: 0.02em !important;
+}
+
+/* --- SANSITA: Display / Wavy --- */
+.f-sansita {
+    font-family: 'Sansita', sans-serif !important;
+    font-size: 1.1rem !important; /* +10% */
+    line-height: 1.6 !important;
+}
+
+/* --- CAUSE: (Assumo sia il font generico/variabile) --- */
+.f-cause {
+    font-family: 'Cause', sans-serif !important;
+    font-size: 1.05rem;
+    line-height: 1.6;
+}
+
+/* =========================================
+   3. RENDER CHAT (Stili Generali)
+   ========================================= */
+
+.renderChat {
+    /* Base text color */
+    color: var(--color-chat-primary);
+    font-size: 1rem; /* Base fallback */
+}
+
+.renderChat p {
+    margin: 12px 0;
+    /* Rimuoviamo line-height fissa qui per lasciare 
+       che vincano le classi specifiche (.f-domine, ecc) */
+}
+
+/* Liste */
 .renderChat ul,
 .renderChat ol {
-    color: var(--color-chat-primary);
-    padding-left: 20px;
-    margin: 10px 0;
-    /* spazio sopra e sotto */
+    padding-left: 24px; /* Un po' più spazio */
+    margin: 12px 0;
     list-style-position: outside;
 }
 
 .renderChat ul li,
 .renderChat ol li {
-    margin-bottom: 6px;
-    /* spazio tra gli elementi della lista */
-    line-height: 1.6;
-
-    /* migliora leggibilità */
+    margin-bottom: 8px;
+    padding-left: 4px; /* Spazio tra bullet e testo */
 }
 
-.renderChat ul li {
-    list-style-type: disc;
+.renderChat ul li { list-style-type: disc; }
+.renderChat ol li { list-style-type: decimal; }
 
-}
-
-.renderChat ol li {
-    list-style-type: decimal;
-}
-
-.renderChat p {
-    color: var(--color-chat-primary) !important;
-    margin: 10px 0;
-    line-height: 1.6;
-}
-
-.renderChat h1,
-.renderChat h2,
-.renderChat h3,
-.renderChat h4 {
-    margin: 16px 0 12px 0;
+/* Titoli Generici (Override delle classi font sopra se necessario) */
+.renderChat h1, .renderChat h2, .renderChat h3, .renderChat h4 {
+    margin: 24px 0 12px 0;
     line-height: 1.3;
-    font-weight: 600;
+    font-weight: 700;
     color: var(--color-primary);
-
 }
+.renderChat h1 { font-size: 1.8em; }
+.renderChat h2 { font-size: 1.5em; }
+.renderChat h3 { font-size: 1.25em; }
+.renderChat h4 { font-size: 1.1em; }
 
-.renderChat h1 {
-    font-size: 1.8rem !important;
-
-    font-weight: bold;
-}
-
-.renderChat h2 {
-    font-size: 1.5rem !important;
-}
-
-.renderChat h3 {
-    font-size: 1.3rem !important;
-}
-
+/* Tabelle */
 .renderChat table {
-    color: var(--color-chat-primary) !important;
-    border-collapse: collapse !important;
-    width: 100% !important;
-    margin: 20px 0 !important;
-    table-layout: auto;
-    ;
+    border-collapse: collapse;
+    width: 100%;
+    margin: 24px 0;
     overflow-x: auto;
+    display: block; /* Fix per tabelle responsive su mobile */
 }
 
 .renderChat th {
     background-color: var(--code-bg);
-    padding: 10px 12px;
+    padding: 12px 16px;
     border: 1px solid var(--code-border);
     text-align: left;
+    font-weight: 600;
 }
 
 .renderChat td {
-    padding: 10px 12px;
+    padding: 12px 16px;
     border: 1px solid var(--code-border);
-    border-radius: 5px;
-    color: var(--color-chat-primary);
 }
 
 .renderChat hr {
-    border: 1px solid var(--code-border);
-    margin: 24px 0 !important;
+    border: 0;
+    border-top: 1px solid var(--code-border);
+    margin: 32px 0;
 }
-
-.renderChat small,
-.renderChat time,
-.renderChat .meta {
-    color: var(--color-chat-muted);
-    font-size: 0.8rem;
-    display: inline-block;
-    margin-top: 2px;
-}
-
 
 .renderChat strong {
-    color: var(--color-chat-primary) !important;
-}
-
-.renderChat pre {
-    background-color: var(--background-Secondary);
-    width: auto;
-    padding: 12px;
-    border-radius: 10px;
-    line-height: 1.5;
-    word-break: break-word;
+    font-weight: 700;
+    color: var(--color-chat-primary);
 }
 
 .renderChat blockquote {
-    @apply border-l-2 border-[var(--border-primary)] pl-2;
+    border-left: 4px solid var(--code-border);
+    padding-left: 16px;
+    margin: 16px 0;
+    color: var(--color-chat-muted);
+    font-style: italic;
 }
 
-.renderChat summary {
-    padding: 8px;
-    border: 1px solid var(--code-border);
-    margin: 5px 0;
-    border-radius: 8px;
-    cursor: pointer;
-    font-weight: 500;
-    color: var(--color-primary);
-    background-color: var(--code-bg);
-}
+/* =========================================
+   4. CODICE (Pre & Code)
+   ========================================= */
 
-pre {
-    overflow-x: auto !important;
-    width: 700px !important;
-    max-width: 100%;
-}
-
-/* Stile per i blocchi di codice (Code Blocks) */
-li>pre,
-p>pre {
+.renderChat pre {
     background-color: var(--pre-bg);
-    /* Usa variabile */
+    width: 100%;
+    max-width: 100%; /* Fix width */
+    padding: 16px;
+    border-radius: 8px;
     border: 1px solid var(--code-border);
-    /* Usa variabile */
-    border-radius: 5px;
-    padding: 8px;
-    /* Aumentato leggermente per leggibilità */
     overflow-x: auto;
-    /* Importante per scrollare codice lungo */
+    margin: 16px 0;
+    font-family: 'Menlo', 'Monaco', 'Courier New', monospace; /* Font codice specifico */
+    font-size: 0.9em; /* Codice leggermente più piccolo del testo */
+    line-height: 1.5;
 }
 
-/* Stile per il codice inline (es. `const a = 1`) */
-li>code,
-td>code,
-th>code,
-p>code {
+/* Inline Code */
+.renderChat :not(pre) > code {
     color: var(--code-text);
-    /* Usa variabile rossa */
     background-color: var(--code-bg);
-    /* Usa variabile sfondo */
     border: 1px solid var(--code-border);
-    /* Usa variabile bordo */
-    border-radius: 5px;
-    padding: 2px 5px;
+    border-radius: 4px;
+    padding: 2px 6px;
     font-family: monospace;
-    font-size: 0.9em;
+    font-size: 0.85em;
+    font-weight: 500;
+    white-space: pre-wrap; /* Permette il wrap se il codice inline è lunghissimo */
+    word-break: break-word;
 }
 
-/* Scrollbar styling */
+/* =========================================
+   5. UTILITÀ & SCROLLBAR
+   ========================================= */
+
 ::-webkit-scrollbar {
     width: 8px;
     height: 8px;
 }
-
 ::-webkit-scrollbar-track {
-    background: var(--code-bg);
+    background: transparent;
 }
-
 ::-webkit-scrollbar-thumb {
     background: var(--code-border);
-    border-radius: 4px;
+    border-radius: 10px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-    background: var(--code-text);
-}
-
-/* Firefox scrollbar */
-* {
-    scrollbar-color: var(--code-border) var(--code-bg);
-    scrollbar-width: thin;
+    background: #a3a3a3; /* Un po' più scuro all'hover */
 }
 
 .loader {
     width: 24px;
     height: 24px;
-    border: 3px solid #131313;
+    border: 3px solid currentColor; /* Usa il colore del testo corrente */
     border-bottom-color: transparent;
     border-radius: 50%;
     display: inline-block;
@@ -263,16 +252,12 @@ p>code {
 }
 
 @keyframes rotation {
-    0% {
-        transform: rotate(0deg);
-    }
-
-    100% {
-        transform: rotate(360deg);
-    }
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
 }
 
 .bg-grid {
-    background-image: radial-gradient(circle at 1px 1px, lightgray 1px, transparent 1px);
+    background-image: radial-gradient(circle at 1px 1px, var(--code-border) 1px, transparent 1px);
     background-size: 40px 40px;
+    opacity: 0.3;
 }
