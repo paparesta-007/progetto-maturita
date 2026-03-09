@@ -3,9 +3,11 @@ import { User, Envelope, Calendar, Camera, FloppyDisk } from "@phosphor-icons/re
 import { useAuth } from "../../context/AuthContext";
 import selectUserDetails from "../../services/supabase/User/SelectuserDetails";
 import insertUserDetails from "../../services/supabase/User/InsertUserDetails";
+import { useApp } from "../../context/AppContext";
 
 const AccountPage: React.FC = () => {
     const { user, theme } = useAuth();
+    const { setIsSettingOpen } = useApp();
     const isDark = theme === "dark";
 
     const [fullName, setFullName] = useState("");
@@ -33,8 +35,12 @@ const AccountPage: React.FC = () => {
     const handleSave = async () => {
         if (!user) return;
         setSaving(true);
-        await insertUserDetails(user.id, fullName, birthday);
-        setSaving(false);
+        try {
+            await insertUserDetails(user.id, fullName, birthday);
+            setIsSettingOpen(false);
+        } finally {
+            setSaving(false);
+        }
     };
 
     const styles = {

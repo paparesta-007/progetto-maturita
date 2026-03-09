@@ -3,8 +3,10 @@ import { FloppyDiskIcon } from "@phosphor-icons/react";
 import { useAuth } from "../../context/AuthContext";
 import updateInstructions from "../../services/supabase/User/updateInstructions";
 import getInstructions from "../../services/supabase/User/getInstructions";
+import { useApp } from "../../context/AppContext";
 
 const InstructionsSettingPage: React.FC = () => {
+    const { setIsSettingOpen } = useApp();
     const { 
         user, theme, tone, allowedCustomInstructions, systemPrompt, personalInfo,
         setAllowedCustomInstructions, setTone, setSystemPrompt, setPersonalInfo, loading 
@@ -27,8 +29,10 @@ const InstructionsSettingPage: React.FC = () => {
     }, [user]);
 
     const handleSend = async () => {
+        if (!user) return;
         const json = { allowedCustomInstructions, tone, systemPrompt, personalInfo };
-        await updateInstructions(user!.id, json);
+        await updateInstructions(user.id, json);
+        setIsSettingOpen(false);
     }
 
     const styles = {

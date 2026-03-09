@@ -19,6 +19,8 @@ import BillingSettingPage from "../pages/SettingPages/BilingSettingPage";
 import { DocumentProvider } from "../context/DocumentContext";
 import AccountPage from "../pages/SettingPages/AccountPage";
 import ShortcutSetting from "../pages/SettingPages/Shortcut";
+import PreferencesPage from "../pages/SettingPages/PreferencesPage";
+import ToastNotification from "../components/other/ToastNotification";
 const AppLayout = () => {
   const [isMinimized, setIsMinimized] = useState(false);
   const { isSettingOpen, setIsSettingOpen, setSettingPage, settingPage, isLivePreview } = useApp();
@@ -38,7 +40,7 @@ const AppLayout = () => {
       flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg transition-all text-sm
       ${active
         ? (isDark ? "bg-neutral-800 text-white shadow-sm" : "bg-neutral-200/80 text-neutral-900 shadow-sm")
-        : (isDark ? "text-neutral-600 hover:bg-neutral-800/50 hover:text-neutral-200" : "text-neutral-500 hover:bg-neutral-200/60 hover:text-neutral-900")
+        : (isDark ? "text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200" : "text-neutral-500 hover:bg-neutral-200/60 hover:text-neutral-900")
       }
     `,
     divider: `md:my-2 ${isDark ? "border-neutral-800" : "border-neutral-200"}`,
@@ -49,7 +51,8 @@ const AppLayout = () => {
     { label: "Generale", Icon: FadersHorizontalIcon, id: "generale" },
     { label: "Istruzioni", Icon: ChartPolarIcon, id: "istruzioni" },
     { label: "Fatturazione", Icon: CreditCardIcon, id: "fatturazione" },
-    { label: "Scorciatoie", Icon: ListIcon, id: "shortcuts" }
+    { label: "Scorciatoie", Icon: ListIcon, id: "shortcuts" },
+    { label: "Aspetto", Icon: UserCircleIcon, id: "preferences" }
   ];
   const accountItem = { label: "Account", Icon: UserCircleIcon, id: "account" };
   useEffect(() => {
@@ -88,7 +91,8 @@ const AppLayout = () => {
 
           <main className="flex-1 min-w-0 overflow-hidden relative">
             <Outlet />
-          </main>
+          </main> 
+          <ToastNotification />
 
           {/* MODALE IMPOSTAZIONI */}
           <AnimatePresence>
@@ -116,7 +120,7 @@ const AppLayout = () => {
                   {/* Menu laterale del modale */}
                   <div className={style.modalSidebar}>
                     <div className="flex md:flex-col gap-1 flex-1">
-                      <p className={`hidden md:block px-3 text-[10px] font-bold uppercase tracking-wider mb-2 ${isDark ? "text-neutral-500" : "text-neutral-600"}`}>
+                      <p className={`hidden md:block px-3 text-[10px] font-bold uppercase tracking-wider mb-2 ${isDark ? "text-neutral-400" : "text-neutral-600"}`}>
                         Impostazioni
                       </p>
                       {menuItems.map(({ label, Icon, id }) => (
@@ -150,6 +154,7 @@ const AppLayout = () => {
                       {settingPage === "fatturazione" && <BillingSettingPage />}
                       {settingPage === "account" && <AccountPage/>}
                       {settingPage==="shortcuts" && <ShortcutSetting/>}
+                      {settingPage === "preferences" && <PreferencesPage/>}
                     </div>
 
                     {/* Tasto Chiudi */}

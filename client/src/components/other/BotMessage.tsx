@@ -67,10 +67,7 @@ const BotMessageStyles = () => (
         .action-btn-premium:active::after {
             opacity: 0.06;
         }
-        /* Classe per il font Domine se necessario */
-        .f-domine {
-            font-family: 'Domine', serif; 
-        }
+     
     `}</style>
 );
 
@@ -126,7 +123,7 @@ const BotMessage = ({ i, children, usage, model }: { i: number; children: React.
             ? "text-neutral-200 bg-white/[0.03] ring-1 ring-white/[0.04]"
             : "text-neutral-700 bg-white ring-1 ring-black/[0.04] shadow-sm shadow-black/[0.02]"
             } 
-            ${fontFamily === "domine" ? "f-domine" : ""}`, // FIX: Usa la variabile calcolata in modo sicuro
+            ${fontFamily === "domine" ? "f-domine" : fontFamily === "comic-neue" ? "f-comic" : fontFamily === "overlock" ? "f-overlock" : fontFamily==="poppins" ? "f-poppins" : ""}`, // FIX: Usa la variabile calcolata in modo sicuro
 
         // Action Bar
         actionBar: `flex items-center gap-1 mt-2 transition-all duration-300`,

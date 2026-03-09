@@ -1,11 +1,17 @@
 import React from "react";
 import { FloppyDiskIcon } from "@phosphor-icons/react";
 import { useAuth } from "../../context/AuthContext";
+import { useApp } from "../../context/AppContext";
 
 const BillingSettingPage: React.FC = () => {
     // Recuperiamo il tema dal context
     const { theme } = useAuth();
+    const { setIsSettingOpen } = useApp();
     const isDark = theme === 'dark';
+
+    const handleSave = () => {
+        setIsSettingOpen(false);
+    };
 
     // Stili dinamici basati sul tema
     const styles = {
@@ -93,7 +99,7 @@ const BillingSettingPage: React.FC = () => {
 
             {/* FOOTER */}
             <div className={styles.footer}>
-                <button className={styles.saveButton}>
+                <button onClick={handleSave} className={styles.saveButton}>
                     <FloppyDiskIcon size={18} />
                     Salva Modifiche
                 </button>
