@@ -12,46 +12,38 @@ const BotMessageStyles = () => (
             0%, 100% { opacity: 0.4; }
             50% { opacity: 1; }
         }
-
         .bot-message-premium .renderChat {
             line-height: 1.7;
             letter-spacing: -0.01em;
         }
-
         .bot-message-premium .renderChat p {
             margin-bottom: 0.75em;
         }
         .bot-message-premium .renderChat p:last-child {
             margin-bottom: 0;
         }
-
         .bot-message-premium .renderChat code {
             font-size: 0.85em;
             padding: 0.15em 0.4em;
             border-radius: 6px;
             font-weight: 500;
         }
-
         .bot-message-premium .renderChat pre {
             border-radius: 12px;
             margin: 1em 0;
             overflow: hidden;
         }
-
         .bot-message-premium .renderChat ul,
         .bot-message-premium .renderChat ol {
             padding-left: 1.25em;
             margin: 0.5em 0;
         }
-
         .bot-message-premium .renderChat li {
             margin-bottom: 0.35em;
         }
-
         .bot-message-premium .renderChat strong {
             font-weight: 650;
         }
-
         .bot-message-premium .renderChat blockquote {
             border-left: 3px solid;
             padding-left: 1em;
@@ -59,7 +51,6 @@ const BotMessageStyles = () => (
             font-style: italic;
             opacity: 0.85;
         }
-
         .action-btn-premium {
             position: relative;
             overflow: hidden;
@@ -76,18 +67,33 @@ const BotMessageStyles = () => (
         .action-btn-premium:active::after {
             opacity: 0.06;
         }
+        /* Classe per il font Domine se necessario */
+        .f-domine {
+            font-family: 'Domine', serif; 
+        }
     `}</style>
 );
 
 const BotMessage = ({ i, children, usage, model }: { i: number; children: React.ReactNode; usage?: any; model?: any }) => {
-    const { theme } = useAuth();
+    // Aggiungi un fallback sicuro per useAuth nel caso il contesto sia vuoto
+    const auth = useAuth();
+    const theme = auth?.theme || 'light';
+    const stylePreferences = auth?.stylePreferences || {};
+    
     const isDark = theme === 'dark';
     const [copied, setCopied] = useState(false);
     const [feedbackGiven, setFeedbackGiven] = useState<'up' | 'down' | null>(null);
 
+    // FIX: Logica sicura per recuperare il font
+    // Controlliamo se style è un array (come nel tuo JSON) o un oggetto
+    const userStyle = Array.isArray(stylePreferences?.style) 
+        ? stylePreferences.style[0] 
+        : stylePreferences?.style;
+        
+    const fontFamily = userStyle?.fontFamily;
+
     const handleCopy = async () => {
         try {
-            // Attempt to get text content from the message
             const messageEl = document.getElementById(`bot-msg-${i}`);
             const text = messageEl?.innerText || "";
             await navigator.clipboard.writeText(text);
@@ -97,9 +103,11 @@ const BotMessage = ({ i, children, usage, model }: { i: number; children: React.
             // Fallback silently
         }
     };
+
     useEffect(() => {
-        console.log("BotMessage rendered with usage:", usage);
+        // console.log("BotMessage rendered with usage:", usage);
     }, [usage]);
+
     // ─── Premium Style Tokens ───
     const s = {
         wrapper: `bot-message-premium relative group`,
@@ -117,15 +125,16 @@ const BotMessage = ({ i, children, usage, model }: { i: number; children: React.
         bubble: `relative rounded-2xl rounded-tl-lg p-5 flex-1 renderChat transition-all duration-300 max-w-full md:max-w-[85%] lg:max-w-[90%] ${isDark
             ? "text-neutral-200 bg-white/[0.03] ring-1 ring-white/[0.04]"
             : "text-neutral-700 bg-white ring-1 ring-black/[0.04] shadow-sm shadow-black/[0.02]"
-            }`,
+            } 
+            ${fontFamily === "domine" ? "f-domine" : ""}`, // FIX: Usa la variabile calcolata in modo sicuro
 
         // Action Bar
         actionBar: `flex items-center gap-1 mt-2 transition-all duration-300`,
-        actionBtn: `action-btn-premium p-1.5 rounded-lg transition-all duration-200 ${isDark
+        actionBtn: `action-btn-premium p-1.5 rounded-lg transition-all duration-200 cursor-pointer ${isDark
             ? "text-neutral-600 hover:text-neutral-300 hover:bg-white/[0.06]"
             : "text-neutral-500 hover:text-neutral-600 hover:bg-black/[0.04]"
             }`,
-        actionBtnActive: `action-btn-premium p-1.5 rounded-lg transition-all duration-200 ${isDark
+        actionBtnActive: `action-btn-premium p-1.5 rounded-lg transition-all duration-200 cursor-pointer ${isDark
             ? "text-emerald-400 bg-emerald-500/10"
             : "text-emerald-600 bg-emerald-50"
             }`,
@@ -147,10 +156,10 @@ const BotMessage = ({ i, children, usage, model }: { i: number; children: React.
 
         // Feedback
         feedbackUp: feedbackGiven === 'up'
-            ? (isDark ? "text-emerald-400 bg-emerald-500/10" : "text-emerald-600 bg-emerald-50")
+            ? (isDark ? "!text-emerald-400 !bg-emerald-500/10" : "!text-emerald-600 !bg-emerald-50")
             : "",
         feedbackDown: feedbackGiven === 'down'
-            ? (isDark ? "text-red-400 bg-red-500/10" : "text-red-500 bg-red-50")
+            ? (isDark ? "!text-red-400 !bg-red-500/10" : "!text-red-500 !bg-red-50")
             : "",
     };
 
@@ -274,10 +283,10 @@ const BotMessage = ({ i, children, usage, model }: { i: number; children: React.
                                                 <span className={`text-[11px] ${isDark ? "text-neutral-500" : "text-neutral-600"}`}>Output</span>
                                                 <span className={`${s.tooltipValue} text-right`}>{usage?.outputTokens || 0}</span>
 
-                                                {usage?.reasoningTokens > 0 && (
+                                                {(usage?.reasoningTokens || 0) > 0 && (
                                                     <>
                                                         <span className={`text-[11px] ${isDark ? "text-neutral-500" : "text-neutral-600"}`}>Reasoning</span>
-                                                        <span className={`${s.tooltipValue} text-right`}>{usage.reasoningTokens}</span>
+                                                        <span className={`${s.tooltipValue} text-right`}>{usage?.reasoningTokens}</span>
                                                     </>
                                                 )}
 
@@ -288,13 +297,13 @@ const BotMessage = ({ i, children, usage, model }: { i: number; children: React.
                                                 <span className={`text-[11px] font-semibold ${isDark ? "text-neutral-300" : "text-neutral-600"}`}>Costo</span>
                                                 <span className={`${s.tooltipValue} text-right  ${isDark ? "text-white" : "text-neutral-900"}`}>${usage?.raw?.cost?.toFixed(4) || "0.0000"}</span>
                                             </div>
-                                            
+
                                         </div>
                                     }
                                 >
                                     <span className={s.modelBadge}>
                                         <BrainCircuit size={10} />
-                                        {usage.totalTokens} tokens
+                                        {usage?.totalTokens || 0} tokens
                                     </span>
                                 </Tooltip>
                             )}
