@@ -27,6 +27,9 @@ interface ChatContextType {
     
     currentConversationName: string | null;
     setCurrentConversationName: React.Dispatch<React.SetStateAction<string | null>>;
+
+    isTemporaryConversation: boolean;
+    setIsTemporaryConversation: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 // 1. Creazione del Context
@@ -44,6 +47,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const [isStreamTextEnabled, setIsStreamTextEnabled] = useState(false);
     const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
     const [currentConversationName, setCurrentConversationName] = useState<string | null>(null);
+    const [isTemporaryConversation, setIsTemporaryConversation] = useState(false);
     const navigate = useNavigate();
 
     const fetchConversations = useCallback(async () => {
@@ -66,7 +70,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
             systemPrompt,
             personalInfo,
             tone,
-            allowedCustomInstructions
+            allowedCustomInstructions,
+            isTemporary: isTemporaryConversation
         };
 
         try {
@@ -100,7 +105,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         } catch (error) {
             console.error("Errore durante l'invio del messaggio:", error);
         }
-    }, [isStreamTextEnabled, model, messageHistory, currentConversationId, user, systemPrompt, personalInfo, tone, allowedCustomInstructions, fetchConversations, navigate]);
+    }, [isStreamTextEnabled, model, messageHistory, currentConversationId, user, systemPrompt, personalInfo, tone, allowedCustomInstructions, fetchConversations, navigate, isTemporaryConversation]);
 
     const loadConversation = useCallback(async (conversationId: string) => {
         try {
@@ -183,7 +188,9 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         currentConversationId,
         setCurrentConversationId,
         currentConversationName,
-        setCurrentConversationName
+        setCurrentConversationName,
+        isTemporaryConversation,
+        setIsTemporaryConversation
 
     }), [
 
@@ -200,7 +207,9 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         fetchConversations,
         currentConversationId,
         currentConversationName,
-        setCurrentConversationName
+        setCurrentConversationName,
+        isTemporaryConversation,
+        setIsTemporaryConversation
     ]);
 
     return (
