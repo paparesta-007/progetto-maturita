@@ -2,11 +2,12 @@ import React, { useMemo } from "react";
 import { useAuth } from "../context/AuthContext";
 import { AtomIcon, ChartAreaIcon, HistoryIcon, LaughIcon, Microchip, StarsIcon } from "lucide-react";
 import { BookIcon, DogIcon, DressIcon, EngineIcon, FilmStripIcon, GameControllerIcon, GraduationCapIcon, HeartbeatIcon, HeartIcon, HouseIcon, InstagramLogoIcon, KeyboardIcon, LightbulbIcon, MapPinAreaIcon, MoneyIcon, MusicNoteIcon, OpenAiLogoIcon, PaintBrushIcon, TentIcon, TreeIcon, TrendUpIcon, TrophyIcon, VideoCameraIcon } from "@phosphor-icons/react";
+import { useChat } from "../context/ChatContext";
 
 const PromptStarter = () => {
     const { theme, user } = useAuth();
     const isDark = theme === 'dark';
-
+    const { isTemporaryConversation } = useChat();
     const getGreeting = () => {
         const hours = new Date().getHours();
         if (hours < 12) return "Buongiorno";
@@ -234,8 +235,8 @@ const PromptStarter = () => {
         subtitle: `mb-10 transition-colors ${isDark ? "text-neutral-500" : "text-neutral-500"}`,
         grid: "grid grid-cols-1 md:grid-cols-2 gap-4 w-full",
         card: `flex flex-col text-left p-4 border rounded-xl transition-all group ${isDark
-                ? "bg-neutral-900/40 border-neutral-800 hover:bg-neutral-800 hover:border-neutral-700"
-                : "bg-white border-neutral-200 hover:bg-neutral-50 shadow-sm hover:shadow-md"
+            ? "bg-neutral-900/40 border-neutral-800 hover:bg-neutral-800 hover:border-neutral-700"
+            : "bg-white border-neutral-200 hover:bg-neutral-50 shadow-sm hover:shadow-md"
             }`,
         cardTitle: `font-semibold transition-colors ${isDark ? "text-neutral-200" : "text-neutral-900"}`,
         cardDesc: `text-sm transition-colors ${isDark ? "text-neutral-500" : "text-neutral-500"}`,
@@ -245,29 +246,45 @@ const PromptStarter = () => {
     return (
         <div className={styles.container}>
             <header>
-                <h1 className={styles.title}>
-                    {getGreeting()}, {user?.full_name?.split(' ')[0] || 'Utente'}!
-                </h1>
-                <p className={styles.subtitle}>
-                    Come posso aiutarti oggi? Scegli un suggerimento o scrivi sotto.
-                </p>
+                {/* 2. CORREZIONE: Struttura HTML pulita. Niente H1 dentro H1. */}
+                {!isTemporaryConversation ? (
+                    <>
+                        <h1 className={styles.title}>
+                            {getGreeting()}, {user?.full_name?.split(' ')[0] || 'Utente'}!
+                        </h1>
+                        <p className={styles.subtitle}>
+                            Come posso aiutarti oggi? Scegli un suggerimento o scrivi sotto.
+                        </p>
+                    </>
+                ) : (
+                    <>
+                        <h1 className={styles.title}>
+                            Chat temporanea
+                        </h1>
+                        <p className={styles.subtitle}>
+                            Non verranno salvate da nessuna parte. Sii libero di sperimentare!
+                        </p>
+                    </>
+                )}
             </header>
 
-            <div className={styles.grid}>
-                {randomSuggestions.map((item, index) => (
-                    <button
-                        key={index}
-                        onClick={() => setInputValue(item.prompt)}
-                        className={styles.card}
-                    >
-                        <div className={styles.iconWrapper} style={{ color: item.color }}>
-                            {item.icon}
-                        </div>
-                        <h3 className={styles.cardTitle}>{item.title}</h3>
-                        <p className={styles.cardDesc}>{item.desc}</p>
-                    </button>
-                ))}
-            </div>
+            {/* 3. CORREZIONE: Parentesi graffe e tonde sistemate */}
+            {!isTemporaryConversation && (
+                <div className={styles.grid}>
+                    {randomSuggestions.map((item, index) => (
+                        <button
+                            key={index}
+                            className={styles.card}
+                        >
+                            <div className={styles.iconWrapper} style={{ color: item.color }}>
+                                {item.icon}
+                            </div>
+                            <h3 className={styles.cardTitle}>{item.title}</h3>
+                            <p className={styles.cardDesc}>{item.desc}</p>
+                        </button>
+                    ))}
+                </div>
+            )}
         </div>
     );
 };

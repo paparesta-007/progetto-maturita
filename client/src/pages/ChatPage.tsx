@@ -9,9 +9,9 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useRef } from "react";
 import { useApp } from "../context/AppContext";
 import MarkdownRender from "../library/markdownRender";
-import { Rocket, ShieldCheck, Sparkles } from "lucide-react";
+import {  Rocket, ShieldCheck, Sparkles } from "lucide-react";
 import "katex/dist/katex.min.css";
-
+import {GhostIcon} from "@phosphor-icons/react"
 const LivePreviewMock = ({ isDark }: { isDark: boolean }) => {
     const shellBg = isDark ? "bg-neutral-900 border-neutral-700" : "bg-neutral-50 border-neutral-200";
     const cardBg = isDark ? "bg-neutral-950 border-neutral-800" : "bg-white border-neutral-200";
@@ -28,7 +28,7 @@ const ChatContent = () => {
     const { conversationId } = useParams();
     const navigate = useNavigate();
     const { isLivePreview, setIsLivePreview } = useApp();
-
+    const { isTemporaryConversation, setIsTemporaryConversation } = useChat();
     const {
         messageHistory,
         loadConversation,
@@ -50,7 +50,7 @@ const ChatContent = () => {
     const styles = {
         // Aggiunto overflow-x-hidden per evitare scroll orizzontali indesiderati
         wrapper: `flex flex-col h-screen w-full overflow-hidden relative transition-colors duration-300 ${isDark ? "bg-neutral-950" : "bg-white"}`,
-        headerText: `text-md px-4 pt-4 font-medium mb-2 transition-colors flex-shrink-0 ${isDark ? "text-neutral-300" : "text-neutral-700"}`,
+        headerText: `flex justify-between items-center w-full text-md px-4 pt-4 font-medium mb-2 transition-colors ${isDark ? "text-neutral-300" : "text-neutral-700"}`,
 
         // Main è un flex container orizzontale
         main: `flex-1 flex overflow-hidden overflow-x-hidden relative w-full min-w-0`,
@@ -134,8 +134,23 @@ const ChatContent = () => {
 
             <h2 className={styles.headerText}>
                 {currentConversationName || (isDark ? "Nuova Chat" : "Chat")}
+                <button onClick={() => {
+                    if (!isTemporaryConversation) {
+                        navigate('/app/chat');
+                    }
+                    setIsTemporaryConversation(!isTemporaryConversation);
+                    setCurrentConversationId(null);
+                    setCurrentConversationName(null);
+                    setMessageHistory([]);
+                }}>
+                    <GhostIcon
+                        size={24} 
+                        weight={`${isTemporaryConversation ? "fill" : "regular"}`}
+                        className={`transition-all duration-300 ${isTemporaryConversation ? "opacity-100" : "opacity-50 hover:opacity-100"}`}
+                    />
+                </button>
             </h2>
-
+             
             {/* MAIN CONTENT */}
             <main className={styles.main}>
 

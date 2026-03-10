@@ -1,9 +1,8 @@
 import React, { useEffect, useState } from "react";
-import { PaintBrush, TextT, FloppyDisk, Palette } from "@phosphor-icons/react";
+import { PaintBrush, TextT, FloppyDisk } from "@phosphor-icons/react";
 import { useAuth } from "../../context/AuthContext";
 import updatePreferences from "../../services/supabase/User/updatePreferences";
-import ToastNotification from "../../components/other/ToastNotification";
-import type { ToastType } from "../../components/other/ToastNotification";
+import SelectPopup from "../../components/other/SelectPopup";
 
 const PreferencesPage: React.FC = () => {
     // Recuperiamo stylePreferences dal context
@@ -12,7 +11,7 @@ const PreferencesPage: React.FC = () => {
 
     const [selectedTheme, setSelectedTheme] = useState("light");
     const [fontFamily, setFontFamily] = useState("domine");
-    
+
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
 
@@ -21,12 +20,12 @@ const PreferencesPage: React.FC = () => {
         const syncPreferences = () => {
             if (stylePreferences && stylePreferences.style && stylePreferences.style.length > 0) {
                 const currentPrefs = stylePreferences.style[0];
-                
+
                 // Aggiorniamo lo stato solo se i valori esistono
                 if (currentPrefs.theme) setSelectedTheme(currentPrefs.theme);
                 if (currentPrefs.fontFamily) setFontFamily(currentPrefs.fontFamily);
             }
-            
+
             // Rimuoviamo il loading (simuliamo un minimo delay per fluidità UI se necessario, o rimuovilo del tutto)
             setTimeout(() => {
                 setLoading(false);
@@ -46,7 +45,7 @@ const PreferencesPage: React.FC = () => {
 
         try {
             const result = await updatePreferences(user.id, payload);
-            
+
             if (!result) {
                 // ERRORE
             }
@@ -66,22 +65,18 @@ const PreferencesPage: React.FC = () => {
         label: `text-sm font-medium ${isDark ? "text-neutral-200" : "text-neutral-700"}`,
         description: `text-xs font-normal mt-0.5 ${isDark ? "text-neutral-500" : "text-neutral-600"}`,
         card: `rounded-xl p-4 border transition-colors ${isDark ? "bg-neutral-900/50 border-neutral-800" : "bg-neutral-50 border-neutral-100"}`,
-        input: `w-full text-sm border rounded-lg px-3 py-2 outline-none transition-all ${
-            isDark 
-                ? "bg-neutral-900 border-neutral-700 text-white focus:ring-neutral-800" 
-                : "bg-white border-neutral-300 text-neutral-700 focus:ring-neutral-200"
-        }`,
-        select: `w-full text-sm border rounded-lg px-3 py-2 outline-none transition-all appearance-none cursor-pointer ${
-            isDark 
-                ? "bg-neutral-900 border-neutral-700 text-white focus:ring-neutral-800" 
-                : "bg-white border-neutral-300 text-neutral-700 focus:ring-neutral-200"
-        }`,
-        footer: `p-4 border-t shrink-0 flex justify-end transition-colors ${
-            isDark ? "border-neutral-800" : "border-neutral-200 bg-white"
-        }`,
-        saveButton: `flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all shadow-sm ${
-            isDark ? "bg-white text-neutral-900 hover:bg-neutral-200" : "bg-neutral-900 text-white hover:bg-neutral-800"
-        } ${saving ? "opacity-70 cursor-not-allowed" : ""}`
+        input: `w-full text-sm border rounded-lg px-3 py-2 outline-none transition-all ${isDark
+            ? "bg-neutral-900 border-neutral-700 text-white focus:ring-neutral-800"
+            : "bg-white border-neutral-300 text-neutral-700 focus:ring-neutral-200"
+            }`,
+        select: `w-full text-sm border rounded-lg px-3 py-2 outline-none transition-all appearance-none cursor-pointer ${isDark
+            ? "bg-neutral-900 border-neutral-700 text-white focus:ring-neutral-800"
+            : "bg-white border-neutral-300 text-neutral-700 focus:ring-neutral-200"
+            }`,
+        footer: `p-4 border-t shrink-0 flex justify-end transition-colors ${isDark ? "border-neutral-800" : "border-neutral-200 bg-white"
+            }`,
+        saveButton: `flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all shadow-sm ${isDark ? "bg-white text-neutral-900 hover:bg-neutral-200" : "bg-neutral-900 text-white hover:bg-neutral-800"
+            } ${saving ? "opacity-70 cursor-not-allowed" : ""}`
     };
 
     if (loading) return (
@@ -100,7 +95,7 @@ const PreferencesPage: React.FC = () => {
 
             {/* BODY */}
             <div className="flex-1 overflow-y-auto px-6 py-6 space-y-8">
-                
+
                 {/* Theme Section */}
                 <section>
                     <div className="flex items-center gap-2 mb-4">
@@ -114,18 +109,17 @@ const PreferencesPage: React.FC = () => {
                                 <label className={styles.label}>Tema dell'interfaccia</label>
                                 <p className={styles.description}>Scegli se visualizzare l'app in modalità chiara o scura.</p>
                             </div>
-                            
+
                             <div className="relative">
-                                <select 
+                                <SelectPopup
                                     value={selectedTheme}
-                                    onChange={(e) => setSelectedTheme(e.target.value)}
-                                    className={styles.select}
-                                >
-                                    <option value="light">Chiaro (Light)</option>
-                                    <option value="dark">Scuro (Dark)</option>
-                                    <option value="system">Sistema</option>
-                                </select>
-                                <Palette size={18} className={`absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none ${isDark ? "text-neutral-500" : "text-neutral-600"}`} />
+                                    onChange={(value) => setSelectedTheme(value)}
+                                    options={[
+                                        { value: "light", label: "Chiaro (Light)" },
+                                        { value: "dark", label: "Scuro (Dark)" },
+                                        { value: "system", label: "Sistema" }
+                                    ]}
+                                />
                             </div>
                         </div>
                     </div>
@@ -141,32 +135,42 @@ const PreferencesPage: React.FC = () => {
                     </div>
 
                     <div className="space-y-4">
-                        <div className="flex flex-col gap-2">
+                        <div className={`flex p-4 flex-col gap-2 rounded-lg border ${isDark ? "border-neutral-800 bg-neutral-900" : "border-neutral-200 bg-neutral-50"}`}>
                             <label className={styles.label}>Font Family</label>
                             <p className={styles.description}>Seleziona il carattere principale per la lettura.</p>
                             <div className="relative mt-1">
-                                <select 
+                                <SelectPopup
                                     value={fontFamily}
-                                    onChange={(e) => setFontFamily(e.target.value)}
-                                    className={styles.select}
+                                    onChange={(value) => setFontFamily(value)}
+                                    options={[
+                                        { value: "domine", label: "Domine (Serif)" },
+                                        { value: "comic-neue", label: "Comic Neue (Cursive)" },
+                                        { value: "overlock", label: "Overlock (Cursive)" },
+                                        { value: "poppins", label: "Poppins" },
+                                        { value: "roboto", label: "Roboto" },
+                                        { value: "merriweather", label: "Merriweather" }
+                                    ]}
+                                />
+                            </div>
+                            {/* Preview Area */}
+                            <div className={`mt-4 p-4 rounded-lg border border-dashed ${isDark ? "border-neutral-800 bg-neutral-900" : "border-neutral-200 bg-neutral-50"}`}>
+                                <p className={`text-sm ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>Anteprima:</p>
+                                <p
+                                    className={`mt-2 text-lg ${fontFamily === "domine" ? "f-domine" :
+                                            fontFamily === "comic-neue" ? "f-comic" :
+                                                fontFamily === "overlock" ? "f-overlock" :
+                                                    fontFamily === "poppins" ? "f-poppins" :
+                                                        fontFamily === "roboto" ? "f-roboto" :       // Assumendo che la classe sia f-roboto
+                                                            fontFamily === "merriweather" ? "f-merriweather" : // Assumendo che la classe sia f-merriweather
+                                                                ""
+                                        }`}
                                 >
-                                    <option value="domine">Domine (Serif)</option>
-                                    <option value="comic-neue">Comic Neue (Cursive)</option>
-                                    <option value="overlock">Overlock (Cursive)</option>
-                                    <option value="poppins">Poppins</option>
-                                    <option value="roboto">Roboto</option>
-                                    <option value="merriweather">Merriweather</option>
-                                </select>
+                                    L'eleganza non è farsi notare, ma farsi ricordare.
+                                </p>
                             </div>
                         </div>
 
-                        {/* Preview Area */}
-                        <div className={`mt-4 p-4 rounded-lg border ${isDark ? "border-neutral-800 bg-neutral-900" : "border-neutral-200 bg-neutral-50"}`}>
-                            <p className={`text-sm ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>Anteprima:</p>
-                            <p className="mt-2 text-lg" style={{ fontFamily: fontFamily === 'domine' ? 'serif' : 'sans-serif' }}>
-                                L'eleganza non è farsi notare, ma farsi ricordare.
-                            </p>
-                        </div>
+
                     </div>
                 </section>
 
@@ -174,7 +178,7 @@ const PreferencesPage: React.FC = () => {
 
             {/* FOOTER */}
             <div className={styles.footer}>
-                <button 
+                <button
                     onClick={handleSend}
                     disabled={saving}
                     className={styles.saveButton}
@@ -184,7 +188,7 @@ const PreferencesPage: React.FC = () => {
                 </button>
             </div>
 
-      
+
         </div>
     );
 };

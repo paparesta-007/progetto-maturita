@@ -1,13 +1,12 @@
 import createConversation from "../services/supabase/Conversation/createConversation";
 import createMessage from "../services/supabase/Conversation/createMessage";
 import { type NavigateFunction } from "react-router-dom";
-import { Sandpack } from "@codesandbox/sandpack-react";
-import { z } from "zod";
 export interface ChatOptions {
     systemPrompt?: string;
     personalInfo?: any;
     tone?: string;
     allowedCustomInstructions?: string | boolean;
+    isTemporary?: boolean;
 }
 
 // ============================================================
@@ -77,6 +76,11 @@ export const sendNormalMessage = async (
             usage: responseUsage,
             model: model
         };
+
+        if (options.isTemporary) {
+            setLoading(false);
+            return;
+        }
 
         if (currentConversationId && userId) {
             await createMessage(messagePayload, currentConversationId, model);
@@ -200,6 +204,11 @@ export const sendStreamedMessage = async (
             usage: { total_tokens: 0 },
             model: model
         };
+
+        if (options.isTemporary) {
+            setLoading(false);
+            return;
+        }
 
         if (currentConversationId && userId) {
             await createMessage(messagePayload, currentConversationId, model);
