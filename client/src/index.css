@@ -203,7 +203,7 @@
     overflow-x: auto;
     margin: 16px 0;
     font-family: 'Menlo', 'Monaco', 'Courier New', monospace; /* Font codice specifico */
-    font-size: 0.9em; /* Codice leggermente più piccolo del testo */
+    font-size: 0.925em; /* Codice leggermente più piccolo del testo */
     line-height: 1.5;
 }
 
@@ -220,7 +220,16 @@
     white-space: pre-wrap; /* Permette il wrap se il codice inline è lunghissimo */
     word-break: break-word;
 }
+.renderChat pre code {
+    border: 0px solid transparent;
+}
 
+/* Fix double border and margins on Shiki pre blocks inside our wrapper */
+.renderChat .code-block-wrapper pre {
+    margin: 0;
+    border: none;
+    border-radius: 0;
+}
 /* =========================================
    5. UTILITÀ & SCROLLBAR
    ========================================= */

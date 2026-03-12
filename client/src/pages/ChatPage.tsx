@@ -134,7 +134,7 @@ const ChatContent = () => {
 
             <h2 className={styles.headerText}>
                 {currentConversationName || (isDark ? "Nuova Chat" : "Chat")}
-                <button onClick={() => {
+                <button onClick={() => {    
                     if (!isTemporaryConversation) {
                         navigate('/app/chat');
                     }

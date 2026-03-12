@@ -22,7 +22,7 @@ const BotMessageStyles = () => (
         .bot-message-premium .renderChat p:last-child {
             margin-bottom: 0;
         }
-        .bot-message-premium .renderChat code {
+        .bot-message-premium .renderChat :not(pre) > code {
             font-size: 0.85em;
             padding: 0.15em 0.4em;
             border-radius: 6px;
@@ -32,6 +32,10 @@ const BotMessageStyles = () => (
             border-radius: 12px;
             margin: 1em 0;
             overflow: hidden;
+        }
+        .bot-message-premium .renderChat .code-block-wrapper pre {
+            border-radius: 0;
+            margin: 0;
         }
         .bot-message-premium .renderChat ul,
         .bot-message-premium .renderChat ol {
