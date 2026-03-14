@@ -39,6 +39,7 @@ const ChatContent = () => {
         currentConversationName,
         setCurrentConversationName,
         setMessageHistory,
+        sendMessage,
     } = useChat();
 
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -164,7 +165,7 @@ const ChatContent = () => {
                                 {messageHistory.map((msg, index) => (
                                     msg.role === 'user' ?
                                         <UserMessage key={index} i={index} htmlContent={msg.content} /> :
-                                        <BotMessage key={index} i={index} usage={msg.usage} model={msg.model}>
+                                        <BotMessage key={index} i={index} usage={msg.usage} model={msg.model} suggestedQuestions={msg.suggestedQuestions} onSuggestedClick={(q) => sendMessage(q, "normal")}>
                                             <MarkdownRender text={msg.content} />
                                         </BotMessage>
                                 ))}

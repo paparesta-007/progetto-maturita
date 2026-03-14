@@ -227,12 +227,15 @@ app.post("/api/completion/chat", async function (req: express.Request, res: expr
         const throughput = latencySec > 0 && usage.outputTokens
             ? (usage.outputTokens / latencySec)
             : 0;
+        let suggestedQuestions = await getSuggestedQuestion(message, text);
+        console.log("suggestedQuestions", suggestedQuestions);  
         console.log("******TEST COMPLETATO: METRICHE******");
         console.log("Usage:", usage);
         console.log(`Latenza: ${latencyMs} ms, Throughput: ${throughput.toFixed(2)} t/s`);
         res.send({
             text,
             usage,
+            suggestedQuestions,
             metrics: {
                 latencyMs: Math.round(latencyMs),             // Es: 1250 ms
                 throughput: parseFloat(throughput.toFixed(2)) // Es: 54.30 t/s
@@ -263,6 +266,30 @@ app.post("/api/gemini/getTitleConversation", async function (req: express.Reques
         next(error);
     }
 });
+
+// FUNZIONE UTILITY PER DOMANDE SUGGERITE
+async function getSuggestedQuestion(question: string, answer: string): Promise<string[]> {
+    try {
+        const { text: jsonText } = await generateText({
+            model: openrouter("mistralai/ministral-3b-2512"),
+            system: "Sei un assistente AI. Restituisci ESATTAMENTE un array JSON valido contenente 4 stringhe. Non aggiungere testo descrittivo, non usare blocchi markdown. Solo l'array JSON.",
+            prompt: `Genera 4 domande logiche e pertinenti che l'utente potrebbe fare per approfondire l'argomento, basandoti su questo scambio:
+            
+            Domanda originale dell'utente: "${question}"
+            Risposta fornita: "${answer}"
+            
+            Output richiesto: ["Domanda 1?", "Domanda 2?", "Domanda 3?", "Domanda 4?"]`
+        });
+
+        const cleanJsonText = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
+        return JSON.parse(cleanJsonText);
+    } catch (suggestionError) {
+        console.error("Errore durante la generazione delle domande correlate:", suggestionError);
+        return [];
+    }
+}
+
+
 app.post("/api/streamingOutput", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
     try {
         const { message, history, modelName, systemPromptUser, personalInfo, tone, allowedCustomInstructions } = req.body;
@@ -783,26 +810,26 @@ app.delete("/api/conversations/delete", async (req: express.Request, res: expres
         next(error);
     }
 });
-
 app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response) => {
     try {
-        const { question,model } = req.body;
+        const { question, model, user_id, document_id } = req.body;
 
-        console.log("🔍 Domanda ricevuta:", question);
+        console.log("🔍 Domanda ricevuta:", question, document_id, user_id);
 
-        // 1. Genera l'embedding della domanda con prefisso contestuale 
-        // (DEVE ESSERE LO STESSO MODELLO USATO PER L'INGESTIONE!)
+        // 1. Genera l'embedding della domanda
         const { embedding } = await embed({
             model: openrouterEmbeddings.embedding("openai/text-embedding-3-small"),
             value: `Ricerca nel documento: ${question}`,
         });
 
-        // 2. Chiama la funzione RPC su Supabase per cercare i chunk simili
+        // 2. Chiama la funzione RPC su Supabase
         const { data: chunks, error } = await supabase
             .rpc('match_documents', {
                 query_embedding: embedding,
-                match_threshold: 0.4, // Soglia alzata per ridurre rumore
-                match_count: 7
+                match_threshold: 0.4,
+                match_count: 7,
+                filter_user_id: user_id,
+                selected_id: document_id
             });
 
         if (error) {
@@ -813,12 +840,6 @@ app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response
         if (!chunks || chunks.length === 0) {
             return res.json({ answer: "Mi dispiace, non ho trovato informazioni pertinenti nei documenti caricati." });
         }
-
-        // Log dei punteggi di similarità per debug
-        console.log(`📚 Trovati ${chunks.length} chunk rilevanti:`);
-        chunks.forEach((c: any, i: number) => {
-            console.log(`  [${i}] similarity: ${c.similarity?.toFixed(4)} | source: ${c.metadata?.source} | section: ${c.metadata?.sectionHeading || 'N/A'}`);
-        });
 
         const contextText = chunks
             .map((chunk: any) => {
@@ -839,19 +860,27 @@ app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response
         ### CONTESTO:
         ${contextText}
         `;
-        
+
         const currentModel = model || "google/gemini-2.5-flash-lite";
-        // 4. Genera la risposta con Gemini
+
+        // 3. Genera la RISPOSTA PRINCIPALE con Gemini
         const { text, usage } = await generateText({
-            model: openrouter(currentModel), // O il modello che preferisci
+            model: openrouter(currentModel),
             system: systemPrompt,
             prompt: question,
         });
 
-        // Rispondi al client
+        // =========================================================================
+        // 4. NUOVA SEZIONE: Genera le 4 domande correlate basate sulla risposta
+        // =========================================================================
+        let suggestedQuestions = await getSuggestedQuestion(question, text);
+        // =========================================================================
+
+        // 5. Rispondi al client con Risposta + Fonti + Domande Suggerite
         res.json({
             answer: text,
-            sources: chunks.map((c: any) => c.metadata.source) // Opzionale: mostra le fonti usate
+            sources: chunks.map((c: any) => c.metadata.source),
+            suggested_questions: suggestedQuestions
         });
 
     } catch (error: any) {

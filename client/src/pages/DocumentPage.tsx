@@ -14,7 +14,7 @@ const DocumentPage = () => {
     const { documentId } = useParams();
     const { user, theme } = useAuth();
     const isDark = theme === 'dark';
-    const { currentStep, currentDocument, setCurrentDocument, messageHistory, loading, setMessageHistory } = useDocument();
+    const { currentStep, currentDocument, setCurrentDocument, messageHistory, loading, setMessageHistory, sendMessage } = useDocument();
     const styles = {
         wrapper: `flex flex-col h-screen overflow-hidden relative transition-colors duration-300 ${isDark ? "bg-neutral-950" : "bg-white"}`,
         headerText: `text-md px-4 pt-4 font-medium mb-2 ${isDark ? "text-neutral-300" : "text-neutral-700"}`,
@@ -69,7 +69,10 @@ const DocumentPage = () => {
                                         return <UserMessage key={index} i={index} htmlContent={msg.content} />;
                                     } else {
                                         return (
-                                            <BotMessage key={index} i={index} usage={msg.usage} model={msg.model}>
+                                            <BotMessage key={index} i={index} usage={msg.usage} model={msg.model}
+                                                suggestedQuestions={msg.suggestedQuestions}
+                                                onSuggestedClick={(q) => sendMessage(q, "ask-pdf")}
+                                            >
                                                 <MarkdownRender text={msg.content} />
                                             </BotMessage>
                                         );

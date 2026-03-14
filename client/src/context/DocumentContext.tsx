@@ -3,6 +3,7 @@ import { createContext, useContext, useMemo, useState, useCallback } from "react
 import getDocumentsMetadata from "../services/supabase/documents/getAllDocuments";
 import { sendEmbeddingMessage } from "../library/sendEmbeddingMessage";
 import { useChat } from "./ChatContext";
+import { useAuth } from "./AuthContext";
 
 export type DocumentStep = 1 | 2 | 3;
 
@@ -29,8 +30,8 @@ export interface DocumentContextType {
 
     // --- NUOVE PROPRIETÀ AGGIUNTE (Chat & Model) ---
     sendMessage: (message: string, functionality: string) => Promise<void>; // Funzione sendMessage
-    messageHistory: { role: 'user' | 'bot'; content: string; usage?: any, model?: string }[];
-    setMessageHistory: React.Dispatch<React.SetStateAction<{ role: 'user' | 'bot'; content: string; usage?: any, model?: string }[]>>;
+    messageHistory: { role: 'user' | 'bot'; content: string; usage?: any; model?: string; suggestedQuestions?: string[] }[];
+    setMessageHistory: React.Dispatch<React.SetStateAction<{ role: 'user' | 'bot'; content: string; usage?: any; model?: string; suggestedQuestions?: string[] }[]>>;
     loading: boolean;
     setLoading: React.Dispatch<React.SetStateAction<boolean>>;
     model: any;
@@ -59,6 +60,7 @@ const DocumentContext = createContext<DocumentContextType | undefined>(undefined
 
 export const DocumentProvider = ({ children }: { children: React.ReactNode }) => {
     // --- Stati esistenti ---
+    const { user } = useAuth();
     const [currentStep, setCurrentStep] = useState<DocumentStep>(1);
     const stepContent = stepContentMap[currentStep];
 
@@ -67,7 +69,7 @@ export const DocumentProvider = ({ children }: { children: React.ReactNode }) =>
     const [isWizardFinished, setIsWizardFinished] = useState(false);
 
     // --- NUOVI STATI (Chat & Model) ---
-    const [messageHistory, setMessageHistory] = useState<{ role: 'user' | 'bot'; content: string; usage?: any, model?: string }[]>([]);
+    const [messageHistory, setMessageHistory] = useState<{ role: 'user' | 'bot'; content: string; usage?: any; model?: string; suggestedQuestions?: string[] }[]>([]);
     const [loading, setLoading] = useState(false);
     // Valore di default del modello (puoi personalizzarlo come nel ChatContext)
     const {model,setModel} =useChat()
@@ -75,8 +77,6 @@ export const DocumentProvider = ({ children }: { children: React.ReactNode }) =>
     const documentText = useMemo(() => {
         return `Step ${stepContent.step}: ${stepContent.title}. ${stepContent.description}`;
     }, [stepContent]);
-
-    // --- LOGICA FETCH ---
     const fetchUserDocuments = useCallback(async (userId: string, force: boolean = false) => {
         if (!userId) return;
 
@@ -99,14 +99,16 @@ export const DocumentProvider = ({ children }: { children: React.ReactNode }) =>
     // --- NUOVA FUNZIONE SENDMESSAGE (Placeholder) ---
     const sendMessage = useCallback(async (message: string) => {
         // Chiamiamo la versione "volatile" che non salva su DB
-        console.log("modello del ask-pdf", model)
+        console.log("modello del ask-pdf", model, currentDocument?.[0]?.document_id)
         await sendEmbeddingMessage(
             message,
             setMessageHistory,
             setLoading,
-            model
+            model,
+            user?.id || "",
+            currentDocument?.[0]?.document_id || currentDocument?.document_id || ""
         );
-    }, [model]);
+    }, [model, user?.id, currentDocument]);
     const value: DocumentContextType = {
         currentStep,
         setCurrentStep,
