@@ -6,7 +6,9 @@ export const sendEmbeddingMessage = async (
     message: string,
     setMessageHistory: React.Dispatch<React.SetStateAction<any[]>>,
     setLoading: React.Dispatch<React.SetStateAction<boolean>>,
-    model: any
+    model: any,
+    userId: string,
+    documentId: string
 ) => {
     if (!message.trim()) return;
 
@@ -22,7 +24,9 @@ export const sendEmbeddingMessage = async (
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ 
                 question: message,
-                model: typeof model === "string" ? model : (model?.name_id || "google/gemini-2.5-flash-lite")
+                model: typeof model === "string" ? model : (model?.name_id || "google/gemini-2.5-flash-lite"),
+                user_id: userId,
+                document_id: documentId
             }),
         });
 
@@ -44,7 +48,7 @@ export const sendEmbeddingMessage = async (
         // 4. Aggiornamento UI (Messaggio Bot)
         setMessageHistory((prev) => [
             ...prev,
-            { role: 'bot', content: botContent, model: modelLabel },
+            { role: 'bot', content: botContent, model: modelLabel, suggestedQuestions: data.suggested_questions || [] },
         ]);
 
     } catch (error) {

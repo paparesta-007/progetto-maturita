@@ -28,7 +28,6 @@ export const sendNormalMessage = async (
     const { systemPrompt, personalInfo, tone, allowedCustomInstructions } = options;
 
     if (!message.trim()) return;
-
     setMessageHistory((prev) => [...prev, { role: 'user', content: message }]);
 
     const historyForBackend = messageHistory.map(msg => ({
@@ -40,7 +39,6 @@ export const sendNormalMessage = async (
         console.warn("Costo modello troppo elevato");
         return;
     }
-
     try {
         setLoading(true);
 
@@ -64,10 +62,11 @@ export const sendNormalMessage = async (
         const responseText = data.text;
         const responseUsage = data.usage || { total_tokens: 0 };
         const responseModel = model?.name || model?.name_id || "Unknown";
+        const suggestedQuestions = data.suggestedQuestions || [];
 
         setMessageHistory((prev) => [
             ...prev,
-            { role: 'bot', content: responseText, usage: responseUsage, model: responseModel },
+            { role: 'bot', content: responseText, usage: responseUsage, model: responseModel, suggestedQuestions },
         ]);
 
         const messagePayload = {
@@ -195,6 +194,36 @@ export const sendStreamedMessage = async (
                     return newHistory;
                 });
             }
+        }
+
+        // Fetch suggested questions after streaming
+        let finalSuggestedQuestions: string[] = [];
+        try {
+            const resSQ = await fetch("http://localhost:3000/api/getSuggestedQuestion", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ message: message, response: accumulatedText })
+            });
+            if (resSQ.ok) {
+                const sqData = await resSQ.json();
+                finalSuggestedQuestions = sqData.suggested_questions || [];
+                
+                if (finalSuggestedQuestions.length > 0) {
+                    setMessageHistory((prev) => {
+                        const newHistory = [...prev];
+                        const lastMsgIndex = newHistory.length - 1;
+                        if (newHistory[lastMsgIndex].role === 'bot') {
+                            newHistory[lastMsgIndex] = {
+                                ...newHistory[lastMsgIndex],
+                                suggestedQuestions: finalSuggestedQuestions
+                            };
+                        }
+                        return newHistory;
+                    });
+                }
+            }
+        } catch (e) {
+            console.error("Errore fetch suggested questions streaming:", e);
         }
 
         // Save the message after streaming is complete

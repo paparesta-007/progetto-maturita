@@ -6,7 +6,7 @@ import { sendNormalMessage, sendStreamedMessage, sendCanvasMessage, sendWebSearc
 import { useNavigate } from "react-router-dom";
 interface ChatContextType {
     sendMessage: (message: string, functionality: string) => void;
-    messageHistory: { role: 'user' | 'bot'; content: string; usage?: any, model?: string }[];
+    messageHistory: { role: 'user' | 'bot'; content: string; usage?: any, model?: string, suggestedQuestions?: string[] }[];
     loading: boolean;
     conversations: any[]; // Per tenere traccia delle conversazioni salvate
     loadConversation: (conversationId: string) => Promise<void>;
@@ -39,7 +39,7 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const { user ,systemPrompt, personalInfo, tone, allowedCustomInstructions} = useAuth();
     // const [inputValue, setInputValue] = useState("");
-    const [messageHistory, setMessageHistory] = useState<{ role: 'user' | 'bot'; content: string; usage?: any, model: string }[]>([]); // Per tenere traccia della cronologia dei messaggi
+    const [messageHistory, setMessageHistory] = useState<{ role: 'user' | 'bot'; content: string; usage?: any, model: string, suggestedQuestions?: string[] }[]>([]); // Per tenere traccia della cronologia dei messaggi
     const [loading, setLoading] = useState(false);
     const [conversations, setConversations] = useState<any[]>([]); // Per tenere traccia delle conversazioni salvate
     const [areConversationsLoaded, setAreConversationsLoaded] = useState(false); // Per sapere quando abbiamo finito di caricare le conversazioni
@@ -135,8 +135,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
                         role: 'bot' as const,
                         content: row.content,
                         usage: row.usage, // Assumiamo che usage sia una colonna nella tabella messages
-                        model: row.model // Assumiamo che model sia una colonna nella tabella messages
-                        
+                        model: row.model, // Assumiamo che model sia una colonna nella tabella messages
+                        suggestedQuestions: row.suggestedQuestions // Se salvato
                     });
                 }
 

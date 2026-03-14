@@ -75,7 +75,7 @@ const BotMessageStyles = () => (
     `}</style>
 );
 
-const BotMessage = ({ i, children, usage, model }: { i: number; children: React.ReactNode; usage?: any; model?: any }) => {
+const BotMessage = ({ i, children, usage, model, suggestedQuestions, onSuggestedClick }: { i: number; children: React.ReactNode; usage?: any; model?: any; suggestedQuestions?: string[]; onSuggestedClick?: (question: string) => void }) => {
     // Aggiungi un fallback sicuro per useAuth nel caso il contesto sia vuoto
     const auth = useAuth();
     const theme = auth?.theme || 'light';
@@ -309,6 +309,30 @@ const BotMessage = ({ i, children, usage, model }: { i: number; children: React.
                                 </Tooltip>
                             )}
                         </div>
+
+                        {/* ─── Suggested Questions ─── */}
+                        {suggestedQuestions && suggestedQuestions.length > 0 && onSuggestedClick && (
+                            <motion.div
+                                initial={{ opacity: 0, y: 8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.4, delay: 0.3, ease: [0.22, 1, 0.36, 1] }}
+                                className="mt-3 flex flex-wrap gap-2"
+                            >
+                                {suggestedQuestions.map((q, idx) => (
+                                    <button
+                                        key={idx}
+                                        onClick={() => onSuggestedClick(q)}
+                                        className={`text-xs px-3 py-1.5 rounded-full border transition-all duration-200 cursor-pointer text-left ${
+                                            isDark
+                                                ? "border-white/[0.08] text-neutral-400 hover:text-neutral-200 hover:border-white/[0.15] hover:bg-white/[0.04]"
+                                                : "border-black/[0.06] text-neutral-500 hover:text-neutral-700 hover:border-black/[0.12] hover:bg-black/[0.02]"
+                                        }`}
+                                    >
+                                        {q}
+                                    </button>
+                                ))}
+                            </motion.div>
+                        )}
                     </div>
                 </div>
             </motion.div>
