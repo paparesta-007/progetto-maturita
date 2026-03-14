@@ -270,19 +270,22 @@ app.post("/api/gemini/getTitleConversation", async function (req: express.Reques
 // FUNZIONE UTILITY PER DOMANDE SUGGERITE
 async function getSuggestedQuestion(question: string, answer: string): Promise<string[]> {
     try {
-        const { text: jsonText } = await generateText({
+        const { object } = await generateObject({
             model: openrouter("mistralai/ministral-3b-2512"),
-            system: "Sei un assistente AI. Restituisci ESATTAMENTE un array JSON valido contenente 4 stringhe. Non aggiungere testo descrittivo, non usare blocchi markdown. Solo l'array JSON.",
-            prompt: `Genera 4 domande logiche e pertinenti che l'utente potrebbe fare per approfondire l'argomento, basandoti su questo scambio:
-            
-            Domanda originale dell'utente: "${question}"
-            Risposta fornita: "${answer}"
-            
-            Output richiesto: ["Domanda 1?", "Domanda 2?", "Domanda 3?", "Domanda 4?"]`
+            // Il prompt di sistema può essere molto più semplice ora
+            system: "Sei un utile assistente AI. Genera domande di approfondimento nella stessa lingua dell'input.",
+            prompt: `Genera esattamente 4 domande logiche e pertinenti che l'utente potrebbe fare per approfondire l'argomento, basandoti su questo scambio:\n\nDomanda originale: "${question}"\nRisposta: "${answer}"`,
+            // Definiamo lo schema con Zod
+            schema: z.object({
+                questions: z.array(z.string())
+                    .length(4) // Forza Zod a validare che ci siano esattamente 4 elementi
+                    .describe("Un array contenente le 4 domande di approfondimento")
+            })
         });
 
-        const cleanJsonText = jsonText.replace(/```json/g, '').replace(/```/g, '').trim();
-        return JSON.parse(cleanJsonText);
+        // 'object' è già tipizzato e parsato correttamente
+        return object.questions;
+
     } catch (suggestionError) {
         console.error("Errore durante la generazione delle domande correlate:", suggestionError);
         return [];

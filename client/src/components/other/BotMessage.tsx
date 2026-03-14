@@ -80,17 +80,17 @@ const BotMessage = ({ i, children, usage, model, suggestedQuestions, onSuggested
     const auth = useAuth();
     const theme = auth?.theme || 'light';
     const stylePreferences = auth?.stylePreferences || {};
-    
+
     const isDark = theme === 'dark';
     const [copied, setCopied] = useState(false);
     const [feedbackGiven, setFeedbackGiven] = useState<'up' | 'down' | null>(null);
 
     // FIX: Logica sicura per recuperare il font
     // Controlliamo se style è un array (come nel tuo JSON) o un oggetto
-    const userStyle = Array.isArray(stylePreferences?.style) 
-        ? stylePreferences.style[0] 
+    const userStyle = Array.isArray(stylePreferences?.style)
+        ? stylePreferences.style[0]
         : stylePreferences?.style;
-        
+
     const fontFamily = userStyle?.fontFamily;
 
     const handleCopy = async () => {
@@ -125,9 +125,9 @@ const BotMessage = ({ i, children, usage, model, suggestedQuestions, onSuggested
         // Message Bubble
         bubble: `relative rounded-2xl rounded-tl-lg p-5 flex-1 renderChat transition-all duration-300 max-w-full md:max-w-[85%] lg:max-w-[90%] ${isDark
             ? "text-neutral-200 bg-white/[0.03] ring-1 ring-white/[0.04]"
-            : "text-neutral-700 bg-white ring-1 ring-black/[0.04] shadow-sm shadow-black/[0.02]"
+            : "text-neutral-700"
             } 
-            ${fontFamily === "domine" ? "f-domine" : fontFamily === "comic-neue" ? "f-comic" : fontFamily === "overlock" ? "f-overlock" : fontFamily==="poppins" ? "f-poppins" : ""}`, // FIX: Usa la variabile calcolata in modo sicuro
+            ${fontFamily === "domine" ? "f-domine" : fontFamily === "comic-neue" ? "f-comic" : fontFamily === "overlock" ? "f-overlock" : fontFamily === "poppins" ? "f-poppins" : ""}`, // FIX: Usa la variabile calcolata in modo sicuro
 
         // Action Bar
         actionBar: `flex items-center gap-1 mt-2 transition-all duration-300`,
@@ -322,11 +322,10 @@ const BotMessage = ({ i, children, usage, model, suggestedQuestions, onSuggested
                                     <button
                                         key={idx}
                                         onClick={() => onSuggestedClick(q)}
-                                        className={`text-xs px-3 py-1.5 rounded-full border transition-all duration-200 cursor-pointer text-left ${
-                                            isDark
+                                        className={`text-xs px-3 py-1.5 rounded-full border transition-all duration-200 cursor-pointer text-left ${isDark
                                                 ? "border-white/[0.08] text-neutral-400 hover:text-neutral-200 hover:border-white/[0.15] hover:bg-white/[0.04]"
                                                 : "border-black/[0.06] text-neutral-500 hover:text-neutral-700 hover:border-black/[0.12] hover:bg-black/[0.02]"
-                                        }`}
+                                            }`}
                                     >
                                         {q}
                                     </button>

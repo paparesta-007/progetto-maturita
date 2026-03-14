@@ -20,17 +20,14 @@ const BillingSettingPage: React.FC = () => {
         label: `text-sm font-medium ${isDark ? "text-neutral-200" : "text-neutral-700"}`,
         subLabel: `text-xs font-normal ${isDark ? "text-neutral-500" : "text-neutral-600"}`,
         divider: `border-t ${isDark ? "border-neutral-800" : "border-neutral-200"} my-4`,
-        buttonSecondary: `flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors border ${
-            isDark 
-                ? "text-neutral-300 border-neutral-700 hover:bg-neutral-800" 
+        buttonSecondary: `flex items-center gap-2 px-4 py-1.5 rounded-lg text-sm font-medium transition-colors border ${isDark
+                ? "text-neutral-300 border-neutral-700 hover:bg-neutral-800"
                 : "text-neutral-600 border-neutral-300 hover:bg-neutral-100"
-        }`,
-        footer: `p-4 border-t shrink-0 flex justify-end transition-colors ${
-            isDark ? "border-neutral-800 " : "border-neutral-200 bg-white"
-        }`,
-        saveButton: `flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all shadow-sm ${
-            isDark ? "bg-white text-neutral-900 hover:bg-neutral-200" : "bg-neutral-900 text-white hover:bg-neutral-800"
-        }`
+            }`,
+        footer: `p-4 border-t shrink-0 flex justify-end transition-colors ${isDark ? "border-neutral-800 " : "border-neutral-200 bg-white"
+            }`,
+        saveButton: `flex items-center gap-2 px-5 py-2 rounded-lg text-sm font-medium transition-all shadow-sm ${isDark ? "bg-white text-neutral-900 hover:bg-neutral-200" : "bg-neutral-900 text-white hover:bg-neutral-800"
+            }`
     };
 
     return (
@@ -55,7 +52,7 @@ const BillingSettingPage: React.FC = () => {
                 <section className="space-y-4">
                     <h2 className={styles.headerText}>Dati di Fatturazione</h2>
                     <hr className={styles.divider} />
-                    
+
                     {/* Metodo di Pagamento */}
                     <div className="flex flex-row justify-between items-center gap-3">
                         <label className={styles.label}>

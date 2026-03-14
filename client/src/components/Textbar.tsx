@@ -69,12 +69,12 @@ const Textbar = () => {
     const styles = {
         container: `w-full max-w-2xl border rounded-2xl p-2 flex flex-col gap-2 transition-all duration-300 ${isDark
             ? "bg-neutral-900 border-neutral-800 shadow-[0_0_20px_0_rgba(0,0,0,0.4)]"
-            : "bg-white border-neutral-200 shadow-[0_0_15px_0_rgba(0,0,0,0.15)]"
+            : "bg-white/80 border-neutral-300/80 shadow-[0_2px_24px_0_rgba(0,0,0,0.10)]"
             }`,
         input: ` flex-1 p-3 focus:outline-none bg-transparent resize-none
                 ${isDark
                 ? "text-white placeholder-neutral-500 bg-neutral-900"
-                : "text-neutral-900 placeholder-neutral-400 bg-neutral-100"}
+                : "text-neutral-900 placeholder-neutral-400 bg-[#f7f6f2]"}
                 w-full min-w-[200px]
                 py-2
                 max-h-[15rem] overflow-y-auto`,

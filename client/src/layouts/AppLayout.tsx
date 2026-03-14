@@ -30,9 +30,9 @@ const AppLayout = () => {
 
   // --- Palette dinamica ---
   const style = {
-    layoutContainer: `flex h-screen w-full relative transition-colors duration-300 ${isDark ? "bg-neutral-950 text-white" : "bg-white text-neutral-900"}`,
+    layoutContainer: `flex h-screen w-full relative transition-colors duration-300 ${isDark ? "bg-neutral-950 text-white" : "bg-[#f0eee6] text-neutral-900"}`,
     modalOverlay: "fixed inset-0 bg-black/60  z-40",
-    modalContent: `fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 rounded-xl shadow-2xl w-[95vw] max-w-[680px] h-[85vh] max-h-[540px] flex flex-col md:flex-row overflow-hidden border transition-colors duration-300 ${isDark ? "bg-neutral-900 border-neutral-800" : "bg-white border-neutral-200"
+    modalContent: `fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 rounded-xl shadow-2xl w-[95vw] max-w-[680px] h-[85vh] max-h-[540px] flex flex-col md:flex-row overflow-hidden border transition-colors duration-300 ${isDark ? "bg-neutral-900 border-neutral-800" : " border-neutral-200"
       }`,
     modalSidebar: `flex md:flex-col gap-1 md:w-[200px] md:min-w-[200px] border-b md:border-b-0 md:border-r p-3 overflow-x-auto md:overflow-visible transition-colors ${isDark ? "bg-neutral-900/50 border-neutral-800" : "bg-neutral-50 border-neutral-200"
       }`,
@@ -91,8 +91,7 @@ const AppLayout = () => {
 
           <main className="flex-1 min-w-0 overflow-hidden relative">
             <Outlet />
-          </main> 
-          <ToastNotification />
+          </main>
 
           {/* MODALE IMPOSTAZIONI */}
           <AnimatePresence>
@@ -152,9 +151,9 @@ const AppLayout = () => {
                       {settingPage === "generale" && <GeneralSettingPage />}
                       {settingPage === "istruzioni" && <InstructionsSettingPage />}
                       {settingPage === "fatturazione" && <BillingSettingPage />}
-                      {settingPage === "account" && <AccountPage/>}
-                      {settingPage==="shortcuts" && <ShortcutSetting/>}
-                      {settingPage === "preferences" && <PreferencesPage/>}
+                      {settingPage === "account" && <AccountPage />}
+                      {settingPage === "shortcuts" && <ShortcutSetting />}
+                      {settingPage === "preferences" && <PreferencesPage />}
                     </div>
 
                     {/* Tasto Chiudi */}

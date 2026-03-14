@@ -31,24 +31,21 @@ const GeneralSettings: React.FC = () => {
         label: `text-sm font-medium ${isDark ? "text-neutral-200" : "text-neutral-700"}`,
         description: `text-xs font-normal mt-0.5 ${isDark ? "text-neutral-500" : "text-neutral-600"}`,
         card: `rounded-xl p-4 border transition-colors ${isDark ? "bg-neutral-900/50 border-neutral-800" : "bg-neutral-50 border-neutral-100"}`,
-        input: `text-sm border rounded-lg px-2 py-1.5 outline-none transition-all ${
-            isDark 
-                ? "bg-neutral-900 border-neutral-700 text-white focus:ring-neutral-800" 
+        input: `text-sm border rounded-lg px-2 py-1.5 outline-none transition-all ${isDark
+                ? "bg-neutral-900 border-neutral-700 text-white focus:ring-neutral-800"
                 : "bg-white border-neutral-300 text-neutral-700 focus:ring-neutral-200"
-        }`,
+            }`,
         divider: `border-neutral-100 ${isDark ? "border-neutral-800" : "border-neutral-100"}`,
         integrationCard: `group flex items-center justify-between p-3 transition-colors ${isDark ? "hover:bg-neutral-900/50" : "hover:bg-neutral-50"}`,
-        footer: `p-4 border-t shrink-0 flex justify-end transition-colors ${
-            isDark ? "border-neutral-800" : "border-neutral-200 bg-white"
-        }`,
-        saveButton: `flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all shadow-sm ${
-            isDark ? "bg-white text-neutral-900 hover:bg-neutral-200" : "bg-neutral-900 text-white hover:bg-neutral-800"
-        }`
+        footer: `p-4 border-t shrink-0 flex justify-end transition-colors ${isDark ? "border-neutral-800" : "border-neutral-200 bg-white"
+            }`,
+        saveButton: `flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all shadow-sm ${isDark ? "bg-white text-neutral-900 hover:bg-neutral-200" : "bg-neutral-900 text-white hover:bg-neutral-800"
+            }`
     };
 
     return (
         <div className={styles.container}>
-            
+
             {/* HEADER */}
             <div className="px-6 pt-6 pb-2 shrink-0">
                 <h2 className={styles.title}>Impostazioni Avanzate</h2>
@@ -64,7 +61,7 @@ const GeneralSettings: React.FC = () => {
                         <CurrencyDollar size={18} className={isDark ? "text-neutral-500" : "text-neutral-600"} />
                         <h3 className={styles.sectionTitle}>Limiti e Costi</h3>
                     </div>
-                    
+
                     <div className={styles.card}>
                         <div className="flex flex-col gap-3">
                             <div className="flex justify-between items-start">
@@ -72,7 +69,7 @@ const GeneralSettings: React.FC = () => {
                                     Uso modelli costosi
                                     <p className={styles.description}>Consenti l'uso di modelli $2 / 1M token.</p>
                                 </label>
-                                <select 
+                                <select
                                     value={allowExpensive}
                                     onChange={(e) => setAllowExpensive(e.target.value)}
                                     className={styles.input}
@@ -89,10 +86,10 @@ const GeneralSettings: React.FC = () => {
                                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                                             <span className="text-neutral-500 text-sm">$</span>
                                         </div>
-                                        <input 
-                                            type="number" 
-                                            placeholder="2.00" 
-                                            className={`${styles.input} pl-7 w-[100px] text-right`} 
+                                        <input
+                                            type="number"
+                                            placeholder="2.00"
+                                            className={`${styles.input} pl-7 w-[100px] text-right`}
                                         />
                                     </div>
                                 </div>
@@ -148,7 +145,7 @@ const GeneralSettings: React.FC = () => {
                             <h3 className={styles.sectionTitle}>Integrazioni</h3>
                         </div>
                         <button className="text-xs font-medium text-blue-500 hover:text-blue-400 flex items-center gap-1">
-                            <Plus size={12} weight="bold"/> Aggiungi
+                            <Plus size={12} weight="bold" /> Aggiungi
                         </button>
                     </div>
 
@@ -166,19 +163,17 @@ const GeneralSettings: React.FC = () => {
                                         </p>
                                     </div>
                                 </div>
-                                
+
                                 {conn.connected ? (
-                                    <button className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${
-                                        isDark ? "text-red-400 bg-red-500/10 hover:bg-red-500/20" : "text-red-500 bg-red-50 hover:bg-red-100"
-                                    }`}>
+                                    <button className={`text-xs font-medium px-3 py-1.5 rounded-full transition-colors ${isDark ? "text-red-400 bg-red-500/10 hover:bg-red-500/20" : "text-red-500 bg-red-50 hover:bg-red-100"
+                                        }`}>
                                         Disconnetti
                                     </button>
                                 ) : (
-                                    <button className={`text-xs font-medium px-3 py-1.5 rounded-full shadow-sm transition-colors border ${
-                                        isDark 
-                                            ? "text-neutral-300 bg-neutral-800 border-neutral-700 hover:bg-neutral-700" 
+                                    <button className={`text-xs font-medium px-3 py-1.5 rounded-full shadow-sm transition-colors border ${isDark
+                                            ? "text-neutral-300 bg-neutral-800 border-neutral-700 hover:bg-neutral-700"
                                             : "text-neutral-600 bg-white border-neutral-200 hover:border-neutral-300"
-                                    }`}>
+                                        }`}>
                                         Collega
                                     </button>
                                 )}
@@ -202,17 +197,15 @@ const GeneralSettings: React.FC = () => {
 }
 
 const ToggleSwitch = ({ active, onClick, isDark }: { active: boolean, onClick: () => void, isDark: boolean }) => (
-    <button 
+    <button
         onClick={onClick}
-        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-            active 
-                ? (isDark ? 'bg-white focus:ring-neutral-400' : 'bg-neutral-900 focus:ring-neutral-400') 
+        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 ${active
+                ? (isDark ? 'bg-white focus:ring-neutral-400' : 'bg-neutral-900 focus:ring-neutral-400')
                 : (isDark ? 'bg-neutral-800 focus:ring-neutral-700' : 'bg-neutral-200 focus:ring-neutral-400')
-        } ${isDark ? "focus:ring-offset-neutral-950" : "focus:ring-offset-white"}`}
+            } ${isDark ? "focus:ring-offset-neutral-950" : "focus:ring-offset-white"}`}
     >
-        <span className={`inline-block h-4 w-4 transform rounded-full transition-transform ${
-            active ? 'translate-x-6' : 'translate-x-1'
-        } ${active && isDark ? 'bg-neutral-950' : 'bg-white'}`} />
+        <span className={`inline-block h-4 w-4 transform rounded-full transition-transform ${active ? 'translate-x-6' : 'translate-x-1'
+            } ${active && isDark ? 'bg-neutral-950' : 'bg-white'}`} />
     </button>
 );
 

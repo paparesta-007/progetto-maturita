@@ -50,14 +50,14 @@ const ChatContent = () => {
     // Stili CSS-in-JS (Tailwind)
     const styles = {
         // Aggiunto overflow-x-hidden per evitare scroll orizzontali indesiderati
-        wrapper: `flex flex-col h-screen w-full overflow-hidden relative transition-colors duration-300 ${isDark ? "bg-neutral-950" : "bg-white"}`,
+        wrapper: `flex flex-col h-screen w-full overflow-hidden relative transition-colors duration-300 ${isDark ? "bg-neutral-950" : ""}`,
         headerText: `flex justify-between items-center w-full text-md px-4 pt-4 font-medium mb-2 transition-colors ${isDark ? "text-neutral-300" : "text-neutral-700"}`,
 
         // Main è un flex container orizzontale
         main: `flex-1 flex overflow-hidden overflow-x-hidden relative w-full min-w-0`,
 
         // Footer: fisso in basso, ma gestito con width dinamiche
-        footer: `flex-shrink-0 w-full pt-0 pb-4 transition-colors duration-300 z-10 ${isDark ? "bg-neutral-950" : "bg-white"}`,
+        footer: `flex-shrink-0 w-full pt-0 pb-4 transition-colors duration-300 z-10 ${isDark ? "bg-neutral-950" : ""}`,
         disclaimer: `text-center text-[10px] mt-2 ${isDark ? "text-neutral-600" : "text-neutral-600"}`
     };
 
