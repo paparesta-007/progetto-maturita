@@ -7,6 +7,7 @@ export interface ChatOptions {
     tone?: string;
     allowedCustomInstructions?: string | boolean;
     isTemporary?: boolean;
+    reasoning?: string;
 }
 
 // ============================================================
@@ -25,7 +26,7 @@ export const sendNormalMessage = async (
     _navigate: NavigateFunction,
     options: ChatOptions
 ) => {
-    const { systemPrompt, personalInfo, tone, allowedCustomInstructions } = options;
+    const { systemPrompt, personalInfo, tone, allowedCustomInstructions, reasoning } = options;
 
     if (!message.trim()) return;
     setMessageHistory((prev) => [...prev, { role: 'user', content: message }]);
@@ -52,7 +53,8 @@ export const sendNormalMessage = async (
                 systemPromptUser: systemPrompt,
                 personalInfo,
                 tone,
-                allowedCustomInstructions
+                allowedCustomInstructions,
+                reasoning
             }),
         });
 
@@ -132,7 +134,7 @@ export const sendStreamedMessage = async (
 ) => {
     if (!message.trim()) return;
 
-    const { systemPrompt, personalInfo, tone, allowedCustomInstructions } = options;
+    const { systemPrompt, personalInfo, tone, allowedCustomInstructions, reasoning } = options;
 
     const userMsg = { role: 'user' as const, content: message };
     const modelLabel = model?.name ?? model?.name_id ?? "Unknown";
@@ -163,7 +165,8 @@ export const sendStreamedMessage = async (
                 systemPromptUser: systemPrompt,
                 personalInfo,
                 tone,
-                allowedCustomInstructions
+                allowedCustomInstructions,
+                reasoning
             }),
         });
 

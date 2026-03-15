@@ -19,7 +19,7 @@ import path from "path";
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 
 import multer from 'multer';
-
+import { OpenRouter } from '@openrouter/sdk';
 import { createClient } from "@supabase/supabase-js";
 import { embedMany } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
@@ -33,6 +33,9 @@ const app: express.Express = express();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+const openrouter = new OpenRouter({
+    apiKey: process.env.VITE_OPENROUTER_API_KEY,
+});
 
 // Configura la cartella static puntando a server/static
 app.use(express.static(path.join(__dirname, "static")));
@@ -45,8 +48,9 @@ console.log("Percorso cercato per .env:", envPath);
 
 // Update dotenv configuration to load .env.local if it exists
 dotenv.config({ path: path.resolve(__dirname, ".env.local") });
-const openrouter = createOpenRouter({
+const openRouter = createOpenRouter({
     apiKey: process.env.VITE_OPENROUTER_API_KEY,
+ 
 });
 
 const openrouterEmbeddings = createOpenAI({
@@ -191,13 +195,22 @@ app.post("/api/gemini/chat/stream", async function (req: express.Request, res: e
 });
 app.post("/api/completion/chat", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
     try {
-        const { message, history, modelName, systemPromptUser, personalInfo, tone, allowedCustomInstructions } = req.body;
+        const { message, history, modelName, systemPromptUser, personalInfo, tone, allowedCustomInstructions, reasoning } = req.body;
 
-        // Assicurati di usare un ID modello valido per OpenRouter
         const selectedModel = modelName ? modelName : "google/gemini-2.0-flash-001";
-
         const systemPrompt = getSystemPrompt({ selectedModel, systemPromptUser, personalInfo, tone, allowedCustomInstructions } as any);
+        
+        // Mappa i valori del client ai livelli di reasoning di OpenRouter
+        const reasoningEffortMap: Record<string, string> = {
+            fast: "low",
+            standard: "medium",
+            accurate: "high"
+        };
+        const reasoningEffort = reasoning ? reasoningEffortMap[reasoning] || "medium" : "medium";
+        
+        // Costruiamo i messaggi nello standard API: System prompt all'inizio
         const messages = [
+            { role: 'system', content: systemPrompt },
             ...history,
             { role: 'user', content: message }
         ];
@@ -205,40 +218,62 @@ app.post("/api/completion/chat", async function (req: express.Request, res: expr
         // 1. START Timer 
         const startTime = Date.now();
 
-        const { text, usage } = await generateText({
-            model: openrouter(selectedModel),
-            messages: messages,
-            system: systemPrompt,
+        // Chiamata diretta all'API di OpenRouter
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
             headers: {
-                "HTTP-Referer": "localhost:3000/completion",
+                "Authorization": `Bearer ${process.env.VITE_OPENROUTER_API_KEY}`,
+                "Content-Type": "application/json",
+                "HTTP-Referer": "http://localhost:3000/completion",
                 "X-Title": "NomeTuaApp"
-            }
+            },
+            body: JSON.stringify({
+                model: selectedModel,
+                messages: messages,
+                stream: false,
+                reasoning: { effort: reasoningEffort }
+            })
         });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`OpenRouter API Error: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        
+        // Estrazione testo e mapping dell'usage per mantenere compatibilità col frontend
+        const text = data.choices[0]?.message?.content || "";
+        const usage = {
+            promptTokens: data.usage?.prompt_tokens || 0,
+            outputTokens: data.usage?.completion_tokens || 0,
+            totalTokens: data.usage?.total_tokens || 0
+        };
 
         // 2. STOP Timer
         const endTime = Date.now();
 
         // 3. Calcoli Metriche
-        const latencyMs = endTime - startTime; // Tempo totale in millisecondi (Latenza)
-        const latencySec = latencyMs / 1000;   // Tempo totale in secondi per il calcolo del throughput
+        const latencyMs = endTime - startTime;
+        const latencySec = latencyMs / 1000;
 
-        // Calcolo Throughput: (Token Generati / Tempo Totale in secondi)
-        // Controllo latencySec > 0 per evitare divisioni per zero in casi limite (es. risposte istantanee in mock)
         const throughput = latencySec > 0 && usage.outputTokens
             ? (usage.outputTokens / latencySec)
             : 0;
+
         let suggestedQuestions = await getSuggestedQuestion(message, text);
-        console.log("suggestedQuestions", suggestedQuestions);  
+        
         console.log("******TEST COMPLETATO: METRICHE******");
         console.log("Usage:", usage);
         console.log(`Latenza: ${latencyMs} ms, Throughput: ${throughput.toFixed(2)} t/s`);
+        
         res.send({
             text,
             usage,
             suggestedQuestions,
             metrics: {
-                latencyMs: Math.round(latencyMs),             // Es: 1250 ms
-                throughput: parseFloat(throughput.toFixed(2)) // Es: 54.30 t/s
+                latencyMs: Math.round(latencyMs),
+                throughput: parseFloat(throughput.toFixed(2))
             }
         });
 
@@ -248,20 +283,55 @@ app.post("/api/completion/chat", async function (req: express.Request, res: expr
 });
 app.post("/api/gemini/getTitleConversation", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
     try {
-        const { message, systemPromptUser } = req.body;// Funzione che genera un prompt di sistema dettagliato e specifico per il modello selezionato. Definita in client/src/library/systemPrompt.ts
+        const { message } = req.body;
 
+        if (!message) {
+            return res.status(400).json({ error: "Messaggio mancante" });
+        }
 
-        const { text, usage } = await generateText({
-            model: openrouter("mistralai/mistral-nemo"),
-            prompt: `Genera un titolo breve e coinciso (massimo 8 parole) e descrittivo per una conversazione basata su questo messaggio iniziale: "${message}". Il titolo dovrebbe catturare l'essenza del messaggio in modo accattivante e informativo. 
-            EVITA ASSOLUTAMENTE USO MARKDOWN, SOLO PLAIN TEXT, e NON includere virgolette o simboli speciali. Il titolo deve essere adatto per essere visualizzato in una lista di conversazioni.`,
+        const prompt = `Genera un titolo breve e coinciso (massimo 8 parole) e descrittivo per una conversazione basata su questo messaggio iniziale: "${message}". Il titolo dovrebbe catturare l'essenza del messaggio in modo accattivante e informativo. 
+        EVITA ASSOLUTAMENTE USO MARKDOWN, SOLO PLAIN TEXT, e NON includere virgolette o simboli speciali. Il titolo deve essere adatto per essere visualizzato in una lista di conversazioni.`;
+
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
             headers: {
-                "HTTP-Referer": "localhost:3000/getTitleConversation",
+                "Authorization": `Bearer ${process.env.VITE_OPENROUTER_API_KEY}`,
+                "Content-Type": "application/json",
+                "HTTP-Referer": "http://localhost:3000/getTitleConversation",
                 "X-Title": "NomeTuaApp"
             },
+            body: JSON.stringify({
+                model: "mistralai/mistral-nemo",
+                messages: [
+                    { 
+                        role: "user", 
+                        content: prompt 
+                    }
+                ],
+                temperature: 0.5, // Leggermente più bassa per essere più deterministico nel titolo
+                max_tokens: 50    // Limitiamo i token perché il titolo deve essere breve
+            })
         });
 
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`OpenRouter Error: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        
+        // Estraiamo il testo e puliamo eventuali spazi bianchi o newline indesiderati
+        const text = (data.choices[0]?.message?.content || "Nuova Conversazione").trim();
+        
+        // Mappiamo l'usage per mantenere la compatibilità con il tuo frontend
+        const usage = {
+            promptTokens: data.usage?.prompt_tokens || 0,
+            outputTokens: data.usage?.completion_tokens || 0,
+            totalTokens: data.usage?.total_tokens || 0
+        };
+
         res.send({ text, usage });
+        
     } catch (error) {
         next(error);
     }
@@ -270,21 +340,69 @@ app.post("/api/gemini/getTitleConversation", async function (req: express.Reques
 // FUNZIONE UTILITY PER DOMANDE SUGGERITE
 async function getSuggestedQuestion(question: string, answer: string): Promise<string[]> {
     try {
-        const { object } = await generateObject({
-            model: openrouter("mistralai/ministral-3b-2512"),
-            // Il prompt di sistema può essere molto più semplice ora
-            system: "Sei un utile assistente AI. Genera domande di approfondimento nella stessa lingua dell'input.",
-            prompt: `Genera esattamente 4 domande logiche e pertinenti che l'utente potrebbe fare per approfondire l'argomento, basandoti su questo scambio:\n\nDomanda originale: "${question}"\nRisposta: "${answer}"`,
-            // Definiamo lo schema con Zod
-            schema: z.object({
-                questions: z.array(z.string())
-                    .length(4) // Forza Zod a validare che ci siano esattamente 4 elementi
-                    .describe("Un array contenente le 4 domande di approfondimento")
+        const prompt = `Genera esattamente 4 domande logiche e pertinenti che l'utente potrebbe fare per approfondire l'argomento, basandoti su questo scambio:
+        
+        Domanda originale: "${question}"
+        Risposta: "${answer}"
+
+        REQUISITO: Rispondi ESCLUSIVAMENTE con un oggetto JSON valido nel seguente formato:
+        {
+          "questions": ["domanda 1", "domanda 2", "domanda 3", "domanda 4"]
+        }`;
+
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${process.env.VITE_OPENROUTER_API_KEY}`,
+                "Content-Type": "application/json",
+                "HTTP-Referer": "http://localhost:3000/suggested",
+                "X-Title": "NomeTuaApp"
+            },
+            body: JSON.stringify({
+                model: "mistralai/ministral-3b-2512",
+                messages: [
+                    { 
+                        role: "system", 
+                        content: "Sei un utile assistente AI che risponde sempre in formato JSON. Genera domande di approfondimento nella stessa lingua dell'input." 
+                    },
+                    { 
+                        role: "user", 
+                        content: prompt 
+                    }
+                ],
+                response_format: { type: "json_object" }, // Forza l'output JSON
+                temperature: 0.7
             })
         });
 
-        // 'object' è già tipizzato e parsato correttamente
-        return object.questions;
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`OpenRouter Error: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        const content = data.choices[0]?.message?.content;
+
+        if (!content) return [];
+
+        // Parsiamo il contenuto JSON
+        const parsed = JSON.parse(content);
+        
+        // Validazione manuale (simile a quello che faceva Zod)
+        if (parsed.questions && Array.isArray(parsed.questions)) {
+            // Normalizziamo: il LLM a volte ritorna oggetti {domanda: "..."} invece di stringhe
+            const normalized = parsed.questions.slice(0, 4).map((q: any) => {
+                if (typeof q === 'string') return q;
+                if (typeof q === 'object' && q !== null) {
+                    // Prendi il primo valore stringa dall'oggetto (domanda, question, text, ecc.)
+                    return Object.values(q).find((v) => typeof v === 'string') || '';
+                }
+                return '';
+            }).filter((q: string) => q.length > 0);
+            return normalized;
+        }
+
+        return [];
 
     } catch (suggestionError) {
         console.error("Errore durante la generazione delle domande correlate:", suggestionError);
@@ -295,10 +413,17 @@ async function getSuggestedQuestion(question: string, answer: string): Promise<s
 
 app.post("/api/streamingOutput", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
     try {
-        const { message, history, modelName, systemPromptUser, personalInfo, tone, allowedCustomInstructions } = req.body;
+        const { message, history, modelName, systemPromptUser, personalInfo, tone, allowedCustomInstructions, reasoning } = req.body;
         const selectedModel = modelName ? modelName : "google/gemini-2.0-flash-001";
 
-        // Funzione per il delay
+        // Mappa i valori del client ai livelli di reasoning di OpenRouter
+        const reasoningEffortMap: Record<string, string> = {
+            fast: "low",
+            standard: "medium",
+            accurate: "high"
+        };
+        const reasoningEffort = reasoning ? reasoningEffortMap[reasoning] || "medium" : "medium";
+
         const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
         console.log("Custom User Instruction:", systemPromptUser);
 
@@ -311,46 +436,91 @@ app.post("/api/streamingOutput", async function (req: express.Request, res: expr
         } as any);
 
         const messages = [
+            { role: 'system', content: systemPrompt },
             ...history,
             { role: 'user', content: message }
         ];
 
-        const result = streamText({
-            model: openrouter(selectedModel),
-            messages: messages,
-            system: systemPrompt,
-            onFinish: ({ usage, text }) => {
-                console.log("Generazione LLM completata. Usage:", usage);
-            },
+        // 1. Chiamata API Streaming
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
             headers: {
-                "HTTP-Referer": "localhost:3000/streamingOutput",
+                "Authorization": `Bearer ${process.env.VITE_OPENROUTER_API_KEY}`,
+                "Content-Type": "application/json",
+                "HTTP-Referer": "http://localhost:3000/streamingOutput",
                 "X-Title": "NomeTuaApp"
-            }
+            },
+            body: JSON.stringify({
+                model: selectedModel,
+                messages: messages,
+                stream: true,
+                reasoning: { effort: reasoningEffort }
+            })
         });
 
-        // 2. Imposta gli header della risposta
+        if (!response.ok || !response.body) {
+            const errorText = await response.text();
+            throw new Error(`OpenRouter Streaming Error: ${response.status} - ${errorText}`);
+        }
+
+        // 2. Imposta gli header della risposta per il client express
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
         res.setHeader('Transfer-Encoding', 'chunked');
         res.setHeader('X-Accel-Buffering', 'no');
+        res.flushHeaders();
 
-        // 3. Gestione manuale dello stream con Delay
-        // Invece di result.pipeTextStreamToResponse(res), facciamo un ciclo for await:
+        // 3. Lettura e parsing manuale del flusso SSE
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+
         try {
-            for await (const textPart of result.textStream) {
-                res.write(textPart);
-                // Aggiungi il ritardo di 5ms (o più se necessario)
-                await delay(11);
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                // Decodifica i byte in stringa e li aggiunge al buffer
+                buffer += decoder.decode(value, { stream: true });
+                
+                // I chunk SSE sono separati da newline. Dividiamo il buffer.
+                const lines = buffer.split('\n');
+                
+                // L'ultima riga potrebbe essere incompleta, la teniamo nel buffer per il prossimo ciclo
+                buffer = lines.pop() || "";
+
+                for (const line of lines) {
+                    const trimmedLine = line.trim();
+                    if (trimmedLine.startsWith("data: ")) {
+                        const dataStr = trimmedLine.slice(6);
+                        
+                        // OpenRouter invia "[DONE]" quando lo stream è completato
+                        if (dataStr === "[DONE]") continue;
+
+                        try {
+                            const parsed = JSON.parse(dataStr);
+                            const textPart = parsed.choices[0]?.delta?.content;
+                            
+                            if (textPart) {
+                                res.write(textPart);
+                                await delay(11); // Mantengo il tuo delay personalizzato
+                            }
+                        } catch (parseError) {
+                            console.warn("⚠️ Errore nel parsing del chunk JSON:", parseError);
+                        }
+                    }
+                }
             }
         } catch (streamError) {
-            console.error("Errore durante lo streaming:", streamError);
+            console.error("Errore durante lo streaming nativo:", streamError);
         } finally {
-            // Chiudi la risposta alla fine del ciclo
             res.end();
         }
 
         // 4. Gestione disconnessione client
         res.on('close', () => {
             console.log("Client disconnesso dalla stream.");
+            // NOTA: Se si disconnette, idealmente dovresti fare reader.cancel() per fermare OpenRouter, ma non blocca l'app
+            reader.cancel().catch(() => {});
         });
 
     } catch (error) {

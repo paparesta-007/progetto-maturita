@@ -116,6 +116,7 @@ const PreferencesPage: React.FC = () => {
                                     onChange={(value) => setSelectedTheme(value)}
                                     options={[
                                         { value: "light", label: "Chiaro (Light)" },
+                                        { value: "light-beige", label: "Chiaro (Beige)" },
                                         { value: "dark", label: "Scuro (Dark)" },
                                         { value: "system", label: "Sistema" }
                                     ]}

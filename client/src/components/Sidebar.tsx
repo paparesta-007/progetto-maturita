@@ -131,7 +131,7 @@ const Sidebar = ({
 
     // ─── Premium Style System ───
     const style = {
-        sidebar: `sidebar-premium ${isMinimized ? 'w-[72px]' : 'w-[280px]'} h-screen flex flex-col font-sans text-sm transition-all duration-500 ease-in-out relative ${isDark ? "bg-[#0a0a0a]" : "bg-[#f0eee6]"}`,
+        sidebar: `sidebar-premium ${isMinimized ? 'w-[72px]' : 'w-[280px]'} h-screen flex flex-col font-sans text-sm transition-all duration-500 ease-in-out relative ${isDark ? "bg-[#0a0a0a]" : ""}`,
 
         textPrimary: isDark ? "text-neutral-100" : "text-neutral-900",
         textSecondary: isDark ? "text-neutral-500" : "text-neutral-600",

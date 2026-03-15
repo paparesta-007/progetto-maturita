@@ -164,7 +164,10 @@
     text-align: left;
     font-weight: 700;
 }
-
+.renderChat a{
+    color: var(--color-primary);
+    text-decoration: underline;
+}
 .renderChat td {
     padding: 12px 16px;
     border-bottom: 1px solid var(--code-border);

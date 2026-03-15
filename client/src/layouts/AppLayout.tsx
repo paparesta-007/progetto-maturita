@@ -146,7 +146,7 @@ const AppLayout = () => {
                   </div>
 
                   {/* Contenuto dinamico delle pagine di impostazione */}
-                  <div className="flex flex-col flex-1 relative overflow-y-auto">
+                  <div className={`flex flex-col flex-1 relative overflow-y-auto ${isDark ? "bg-neutral-900" : "bg-neutral-50"}`}>
                     <div className="p-3 md:p-4 h-full">
                       {settingPage === "generale" && <GeneralSettingPage />}
                       {settingPage === "istruzioni" && <InstructionsSettingPage />}

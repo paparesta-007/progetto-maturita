@@ -9,11 +9,9 @@ export default {
     theme: {
         extend: {
             colors: {
-                beige: {
-                    DEFAULT: '#f0eee6',
-                    light: '#fcfbf9',
-                    dark: '#e3dnc2',
-                    accent: '#cabfa5'
+                'primary-beige': {
+                    DEFAULT: '#f0eee6', // Genera le classi base: bg-primary-beige, text-primary-beige...
+                    dark: '#e3dacc'     // Genera le classi scure: bg-primary-beige-dark, text-primary-beige-dark...
                 }
             }
         },

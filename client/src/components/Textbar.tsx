@@ -22,7 +22,11 @@ const FUNCTIONALITIES: SelectOption<string>[] = [
     { label: "Crea immagini", value: "", description: "coming soon" },
 
 ];
-
+const REASONING: SelectOption<string>[] = [
+    { label: "Veloce", value: "fast", description: "" },
+    { label: "Standard", value: "standard", description: "" },
+    { label: "Accurato", value: "accurate", description: "" },
+];
 
 const Textbar = () => {
     const path = window.location.pathname;
@@ -64,6 +68,7 @@ const Textbar = () => {
     const menuRef = useRef<HTMLDivElement | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     const [functionality, setFunctionality] = useState<string>("default");
+    const [reasoning, setReasoning] = useState<string>("standard");
 
     // Stili dinamici per la barra
     const styles = {
@@ -133,8 +138,7 @@ const Textbar = () => {
         }
     };
     const handleSendMessage = () => {
-
-        sendMessage(inputValue, functionality);
+        sendMessage(inputValue, functionality, reasoning);
         resetTextarea();
         setFiles([]);
     }
@@ -208,6 +212,7 @@ const Textbar = () => {
                 </div>
 
                 <div className="flex items-center gap-4">
+                    <SelectPopup options={REASONING} value={reasoning} onChange={(value) => setReasoning(value)} />
                     <Tooltip
                         background={isDark ? "dark" : "light"}
                         position="right"
