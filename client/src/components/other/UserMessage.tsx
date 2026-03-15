@@ -9,7 +9,7 @@ const UserMessage = ({ i, htmlContent, tokens = 0 }: { i: number; htmlContent: s
     const { user, theme } = useAuth() || { user: { id: null }, theme: 'light' };
     const [userDetails, setUserDetails] = useState<{ full_name: string | null; avatar_url: string | null } | null>(null);
     const [copied, setCopied] = useState(false);
-    
+
     const isDark = theme === 'dark';
 
     useEffect(() => {
@@ -38,37 +38,32 @@ const UserMessage = ({ i, htmlContent, tokens = 0 }: { i: number; htmlContent: s
     // ─── Premium Style Tokens ───
     const s = {
         wrapper: `relative group w-full flex flex-row-reverse gap-3.5 items-start justify-start my-2`,
-        
+
         // Avatar
         avatar: `relative flex-shrink-0`,
-        avatarInner: `w-8 h-8 rounded-xl flex items-center justify-center overflow-hidden transition-all duration-300 ${
-            isDark 
-                ? "bg-neutral-800 text-neutral-200 ring-1 ring-white/[0.04]" 
+        avatarInner: `w-8 h-8 rounded-xl flex items-center justify-center overflow-hidden transition-all duration-300 ${isDark
+                ? "bg-neutral-800 text-neutral-200 ring-1 ring-white/[0.04]"
                 : "bg-neutral-200 text-neutral-600 ring-1 ring-black/[0.03]"
-        }`,
-        avatarGlow: `absolute inset-0 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${
-            isDark ? "bg-indigo-500/20" : "bg-indigo-500/10"
-        }`,
+            }`,
+        avatarGlow: `absolute inset-0 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${isDark ? "bg-indigo-500/20" : "bg-indigo-500/10"
+            }`,
 
         // Message Bubble
-        bubble: `relative max-w-full md:max-w-[85%] lg:max-w-[90%] rounded-2xl rounded-tr-sm p-4 text-sm leading-relaxed transition-all duration-300 ${
-            isDark
+        bubble: `relative max-w-full md:max-w-[85%] lg:max-w-[90%] rounded-2xl rounded-tr-sm p-4 text-sm leading-relaxed transition-all duration-300 ${isDark
                 ? "text-neutral-100 bg-neutral-800/50 ring-1 ring-white/[0.06]"
-                : "text-neutral-800 bg-neutral-50 ring-1 ring-black/[0.04] shadow-sm shadow-black/[0.02]"
-        }`,
+                : "text-black bg-[#e3dacc]"
+            }`,
 
         // Action Bar
         actionBar: `flex items-center gap-2 mt-1.5 mr-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300`,
-        actionBtn: `p-1.5 rounded-lg transition-all duration-200 cursor-pointer ${
-            isDark
+        actionBtn: `p-1.5 rounded-lg transition-all duration-200 cursor-pointer ${isDark
                 ? "text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.06]"
                 : "text-neutral-600 hover:text-neutral-600 hover:bg-black/[0.04]"
-        }`,
-        
+            }`,
+
         // Token Badge
-        tokenBadge: `text-[10px] font-medium px-1.5 py-0.5 rounded ml-2 select-none ${
-            isDark ? "text-neutral-600 bg-white/[0.02]" : "text-neutral-600 bg-black/[0.02]"
-        }`
+        tokenBadge: `text-[10px] font-medium px-1.5 py-0.5 rounded ml-2 select-none ${isDark ? "text-neutral-600 bg-white/[0.02]" : "text-neutral-600 bg-black/[0.02]"
+            }`
     };
 
     return (
@@ -84,15 +79,15 @@ const UserMessage = ({ i, htmlContent, tokens = 0 }: { i: number; htmlContent: s
                 <div className={s.avatarGlow} />
                 <div className={s.avatarInner}>
                     {userDetails?.avatar_url ? (
-                        <img 
-                            src={userDetails.avatar_url} 
-                            alt="User" 
-                            className="w-full h-full object-cover" 
+                        <img
+                            src={userDetails.avatar_url}
+                            alt="User"
+                            className="w-full h-full object-cover"
                         />
                     ) : (
                         <span className="text-xs font-bold">
-                            {userDetails?.full_name 
-                                ? userDetails.full_name.charAt(0).toUpperCase() 
+                            {userDetails?.full_name
+                                ? userDetails.full_name.charAt(0).toUpperCase()
                                 : <User size={14} weight="bold" />
                             }
                         </span>
@@ -102,13 +97,13 @@ const UserMessage = ({ i, htmlContent, tokens = 0 }: { i: number; htmlContent: s
 
             {/* ─── Content Column ─── */}
             <div className="flex flex-col items-end min-w-0">
-                
+
                 {/* Message Bubble */}
-                <div 
+                <div
                     className={s.bubble}
                     // Apply a specific class for typography handling if you use the global CSS from BotMessage
                     // or rely on Tailwind's prose/text utilities.
-                    dangerouslySetInnerHTML={{ __html: htmlContent }} 
+                    dangerouslySetInnerHTML={{ __html: htmlContent }}
                 />
 
                 {/* Action Bar (Copy, Edit, Tokens) */}

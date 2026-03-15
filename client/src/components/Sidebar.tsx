@@ -131,21 +131,21 @@ const Sidebar = ({
 
     // ─── Premium Style System ───
     const style = {
-        sidebar: `sidebar-premium ${isMinimized ? 'w-[72px]' : 'w-[280px]'} h-screen flex flex-col font-sans text-sm transition-all duration-500 ease-in-out relative ${isDark ? "bg-[#0a0a0a]" : "bg-[#fafafa]"}`,
+        sidebar: `sidebar-premium ${isMinimized ? 'w-[72px]' : 'w-[280px]'} h-screen flex flex-col font-sans text-sm transition-all duration-500 ease-in-out relative ${isDark ? "bg-[#0a0a0a]" : ""}`,
 
         textPrimary: isDark ? "text-neutral-100" : "text-neutral-900",
         textSecondary: isDark ? "text-neutral-500" : "text-neutral-600",
         textMuted: isDark ? "text-neutral-600" : "text-neutral-300",
 
-        iconBase: isDark ? "text-neutral-500 group-hover:text-neutral-300" : "text-neutral-600 group-hover:text-neutral-700",
+        iconBase: isDark ? "text-neutral-500 group-hover:text-neutral-300" : "text-neutral-600 group-hover:text-neutral-700 ",
         iconActive: isDark ? "text-white" : "text-neutral-900",
 
         itemHover: isDark ? "hover:bg-white/[0.04]" : "hover:bg-black/[0.03]",
         itemActive: isDark ? "bg-white/[0.06] text-white font-medium" : "bg-black/[0.04] text-neutral-900 font-medium",
 
-        newChatBtn: `w-full group relative flex items-center justify-between px-4 py-2.5 rounded-xl transition-all duration-300 ${isDark
+        newChatBtn: `w-full group relative flex items-center justify-between px-2 py-2.5 rounded-xl transition-all duration-300 ${isDark
             ? "bg-white/[0.04] hover:bg-white/[0.07] text-white border border-white/[0.06] hover:border-white/[0.1]"
-            : "bg-white hover:bg-white text-neutral-900 border border-neutral-200/80 hover:border-neutral-300 hover:shadow-sm"
+            : " text-neutral-900 "
             }`,
 
         shortcutBadge: `text-[11px] px-1.5 py-0.5 rounded-md font-mono transition-colors ${isDark
@@ -357,19 +357,16 @@ const Sidebar = ({
 
                     {/* ─── Search Bar (Premium Touch) ─── */}
                     {!isMinimized && (
-                        <button className={`w-full flex items-center gap-2.5 px-3.5 py-2 rounded-xl mb-3 transition-all duration-300 ${isDark
-                            ? "bg-white/[0.03] hover:bg-white/[0.06] text-neutral-600 border border-white/[0.04]"
-                            : "bg-neutral-100/60 hover:bg-neutral-100 text-neutral-600 border border-transparent"
-                            }`}>
-                            <Search size={14} className="opacity-50" />
-                            <span className="text-[13px] flex-1 text-left">Cerca…</span>
-                            <kbd className={style.shortcutBadge}>⌘K</kbd>
+                        <button className={`nav-item-glow relative f-poppins w-full flex items-center gap-3 px-3 py-2.5 mb-1 rounded-xl transition-all duration-300 group ${style.textSecondary} ${style.itemHover}`}>
+                            <Search size={17} strokeWidth={1.5} className={`transition-colors duration-200 ${style.iconBase}`} />
+                            <span className="text-[13px] flex-1 font-medium text-left">Cerca…</span>
+                            <span className={style.shortcutBadge}>⌘K</span>
                         </button>
                     )}
 
                     {/* ─── New Chat / Upload Button ─── */}
                     <button
-                        className={style.newChatBtn}
+                        className={`nav-item-glow relative f-poppins w-full flex items-center ${isMinimized ? 'justify-center' : 'justify-between'} px-3 py-2.5 rounded-xl transition-all duration-300 group ${style.textSecondary} ${style.itemHover}`}
                         onClick={() => {
                             if (isDocumentsPage) {
                                 console.log("Apri modal upload");
@@ -380,11 +377,9 @@ const Sidebar = ({
                             }
                         }}
                     >
-                        <div className={`flex items-center ${isMinimized ? 'justify-center' : 'gap-2.5'} font-medium`}>
-                            <div className={`w-5 h-5 rounded-md flex items-center justify-center transition-colors ${isDark ? "bg-white/[0.08]" : "bg-neutral-100"}`}>
-                                <Plus size={13} strokeWidth={2.5} />
-                            </div>
-                            {!isMinimized && <span className="text-[13px]">{isDocumentsPage ? "Carica File" : "Nuova Chat"}</span>}
+                        <div className={`flex items-center ${!isMinimized ? 'gap-3' : ''}`}>
+                            <Plus size={17} strokeWidth={1.5} className={`transition-colors duration-200 ${style.iconBase} `} />
+                            {!isMinimized && <span className="text-[13px] font-medium">{isDocumentsPage ? "Carica File" : "Nuova Chat"}</span>}
                         </div>
                         {!isDocumentsPage && !isMinimized && (
                             <span className={style.shortcutBadge}>⌘I</span>
@@ -401,7 +396,7 @@ const Sidebar = ({
                                 key={item.path}
                                 to={item.path}
                                 className={({ isActive }) =>
-                                    `nav-item-glow relative flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 group ${isActive || location.pathname.startsWith(item.path)
+                                    `nav-item-glow relative f-poppins flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-300 group ${isActive || location.pathname.startsWith(item.path)
                                         ? style.textPrimary + " font-medium"
                                         : style.textSecondary + " " + style.itemHover
                                     }`
@@ -479,14 +474,14 @@ const Sidebar = ({
                                                 }}
                                                 to={`/app/documents/${doc.document_id}`}
                                                 className={({ isActive }) =>
-                                                    `flex-1 flex items-center px-3 py-2 rounded-xl text-[13px] truncate transition-all duration-200 ${isActive
-                                                        ? (isDark ? "bg-white/[0.06] text-white font-medium ring-1 ring-white/[0.04]" : "bg-black/[0.04] text-neutral-900 font-medium ring-1 ring-black/[0.02]")
+                                                    `flex-1 flex items-center f-poppins px-3 py-2 rounded-xl text-[13px] truncate transition-all duration-200 ${isActive
+                                                        ? (isDark ? "bg-white/[0.08] text-white font-medium ring-1 ring-white/[0.04]" : "bg-black/[0.04] text-neutral-900 font-medium ring-1 ring-black/[0.02]")
                                                         : style.textSecondary
                                                     }`
                                                 }
                                             >
-                                                <div className={`w-7 h-7 rounded-lg flex items-center justify-center mr-2.5 flex-shrink-0 ${isDark ? "bg-white/[0.04]" : "bg-neutral-100/80"}`}>
-                                                    <File size={13} className="opacity-50" />
+                                                <div className={`flex items-center justify-center mr-2 flex-shrink-0 `}>
+                                                    <File size={15} className="opacity-50" />
                                                 </div>
                                                 <span className="truncate pr-8">{doc.title}</span>
                                             </NavLink>
@@ -513,7 +508,7 @@ const Sidebar = ({
                                     ))
                                 ) : (
                                     <div className={`flex flex-col items-center justify-center py-12 px-4 text-center ${style.textMuted}`}>
-                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${isDark ? "bg-white/[0.04]" : "bg-neutral-100"}`}>
+                                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-3 ${isDark ? "bg-white/[0.06]" : "bg-neutral-100"}`}>
                                             <FileText size={18} className="opacity-40" />
                                         </div>
                                         <p className="text-xs font-medium mb-1">Nessun documento</p>
@@ -534,14 +529,14 @@ const Sidebar = ({
                                             <NavLink
                                                 to={`/app/chat/${conv.id}`}
                                                 className={({ isActive }) =>
-                                                    `flex-1 flex items-center px-3 py-2 rounded-xl text-[13px] truncate transition-all duration-200 ${isActive
+                                                    `flex-1 flex items-center f-poppins px-3 py-2 rounded-xl text-[13px] truncate transition-all duration-200 ${isActive
                                                         ? (isDark ? "bg-white/[0.06] text-white font-medium ring-1 ring-white/[0.04]" : "bg-black/[0.04] text-neutral-900 font-medium ring-1 ring-black/[0.02]")
                                                         : style.textSecondary
                                                     }`
                                                 }
                                             >
-                                                <div className={`w-7 h-7 rounded-lg flex items-center justify-center mr-2.5 flex-shrink-0 ${isDark ? "bg-white/[0.04]" : "bg-neutral-100/80"}`}>
-                                                    <ClockCounterClockwiseIcon size={13} className="opacity-50" />
+                                                <div className={`mr-2 rounded-lg flex items-center justify-center`}>
+                                                    <ClockCounterClockwiseIcon size={15} className="opacity-50" />
                                                 </div>
                                                 <span className="truncate pr-8">{conv.title || "Chat senza titolo"}</span>
                                             </NavLink>
@@ -662,7 +657,7 @@ const Sidebar = ({
                                     alt="Profile"
                                     className={`w-8 h-8 rounded-lg object-cover transition-all duration-300 ${isDark ? "ring-1 ring-white/[0.08]" : "ring-1 ring-black/[0.06]"}`}
                                 />
-                                <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 bg-emerald-500 ${isDark ? "border-[#0a0a0a]" : "border-[#fafafa]"}`} />
+                                <div className={`absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full border-2 bg-emerald-500 ${isDark ? "border-[#0a0a0a]" : "border-[#f0eee6]"}`} />
                             </div>
 
                             {!isMinimized && (

@@ -236,7 +236,7 @@ const PromptStarter = () => {
         grid: "grid grid-cols-1 md:grid-cols-2 gap-4 w-full",
         card: `flex flex-col text-left p-4 border rounded-xl transition-all group ${isDark
             ? "bg-neutral-900/40 border-neutral-800 hover:bg-neutral-800 hover:border-neutral-700"
-            : "bg-white border-neutral-200 hover:bg-neutral-50 shadow-sm hover:shadow-md"
+            : "bg-[#e3dacc] border-neutral-400 hover:brightness-105 shadow-sm hover:shadow-md"
             }`,
         cardTitle: `font-semibold transition-colors ${isDark ? "text-neutral-200" : "text-neutral-900"}`,
         cardDesc: `text-sm transition-colors ${isDark ? "text-neutral-500" : "text-neutral-500"}`,
@@ -276,7 +276,7 @@ const PromptStarter = () => {
                             key={index}
                             className={styles.card}
                         >
-                            <div className={styles.iconWrapper} style={{ color: item.color }}>
+                            <div className={styles.iconWrapper}>
                                 {item.icon}
                             </div>
                             <h3 className={styles.cardTitle}>{item.title}</h3>
