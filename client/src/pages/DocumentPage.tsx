@@ -74,9 +74,14 @@ const DocumentPage = () => {
                                         return (
                                             <BotMessage key={index} i={index} usage={msg.usage} model={msg.model}
                                                 suggestedQuestions={msg.suggestedQuestions}
+                                                logs={msg.logs}
+                                                isComplete={msg.isComplete}
                                                 onSuggestedClick={(q) => sendMessage(q, "ask-pdf")}
                                             >
-                                                <MarkdownRender text={msg.content} />
+                                                {msg.content === "Elaborazione in corso..." || msg.content === "Avvio della richiesta..." 
+                                                    ? <p className="text-neutral-500 italic text-sm">{msg.content}</p> 
+                                                    : <MarkdownRender text={msg.content} />
+                                                }
                                             </BotMessage>
                                         );
                                     }

@@ -44,7 +44,6 @@ const CalendarPage = () => {
             if (!providerToken) return;
 
             try {
-                setIsLivePreview(true);
                 const timeMin = currentWeekStart.toISOString();
                 const timeMax = new Date(currentWeekStart.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
                 const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`;
