@@ -41,7 +41,7 @@ const ChatContent = () => {
         setMessageHistory,
         sendMessage,
     } = useChat();
-
+    
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
     // --- LOGICA TEMA ---
@@ -72,6 +72,7 @@ const ChatContent = () => {
     }, [messageHistory, loading]);
 
     useEffect(() => {
+        setIsLivePreview(false); // Disattiva Live Preview quando entri nella chat
         if (!conversationId) {
             setMessageHistory([]);
             setCurrentConversationId(null);

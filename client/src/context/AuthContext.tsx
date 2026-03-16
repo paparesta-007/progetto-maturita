@@ -23,8 +23,8 @@ interface AuthContextType {
     setPersonalInfo: React.Dispatch<React.SetStateAction<{ name: string; job: string; hobbies: string }>>;
     theme: string;
     setTheme: React.Dispatch<React.SetStateAction<string>>;
-    stylePreferences:any;
-    setStylePreferences:React.Dispatch<React.SetStateAction<any>>;
+    stylePreferences: any;
+    setStylePreferences: React.Dispatch<React.SetStateAction<any>>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -40,12 +40,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [experimental, setExperimental] = useState(false);
     const [systemPrompt, setSystemPrompt] = useState("");
     const [personalInfo, setPersonalInfo] = useState({ name: "", job: "", hobbies: "" });
-    const [stylePreferences,setStylePreferences]=useState({})
+    const [stylePreferences, setStylePreferences] = useState({})
     // 1. EFFETTO PER L'AUTENTICAZIONE
     useEffect(() => {
         const initAuth = async () => {
             const { data: { session } } = await supabase.auth.getSession();
             setSession(session);
+            const googleAccessToken = session?.provider_token;
+            const googleRefreshToken = session?.provider_refresh_token;
+            console.log("Access Token Google:", googleAccessToken);
+            console.log("Refresh Token Google:", googleRefreshToken);
             setUser(session?.user ?? null);
             setLoading(false);
         };
@@ -103,10 +107,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     }, [user?.id]); // <--- FONDAMENTALE: Riesegui quando l'ID utente cambia
 
     return (
-        <AuthContext.Provider value={{ 
-            user, session, loading, tone, allowedCustomInstructions, 
-            experimental, systemPrompt, personalInfo, 
-            setTone, setAllowedCustomInstructions, setSystemPrompt, setPersonalInfo, theme, setTheme,stylePreferences,setStylePreferences
+        <AuthContext.Provider value={{
+            user, session, loading, tone, allowedCustomInstructions,
+            experimental, systemPrompt, personalInfo,
+            setTone, setAllowedCustomInstructions, setSystemPrompt, setPersonalInfo, theme, setTheme, stylePreferences, setStylePreferences
         }}>
             {/* Mostriamo i children solo quando il check iniziale della sessione è finito.
                Se vuoi che i dati siano pronti prima di mostrare l'app, 

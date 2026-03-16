@@ -9,10 +9,12 @@ import UserMessage from "../components/other/UserMessage";
 import BotMessage from "../components/other/BotMessage";
 import MarkdownRender from "../library/markdownRender";
 import BotLoading from "../components/other/BotLoading";
+import { useApp } from "../context/AppContext";
 
 const DocumentPage = () => {
     const { documentId } = useParams();
     const { user, theme } = useAuth();
+    const { setIsLivePreview } = useApp();
     const isDark = theme === 'dark';
     const { currentStep, currentDocument, setCurrentDocument, messageHistory, loading, setMessageHistory, sendMessage } = useDocument();
     const styles = {
@@ -23,6 +25,7 @@ const DocumentPage = () => {
         disclaimer: `text-center text-[10px] mt-2 ${isDark ? "text-neutral-600" : "text-neutral-600"}`
     };
     useEffect(() => {
+        setIsLivePreview(false);
         const fetchDocument = async () => {
             // Se abbiamo già i dati e l'ID coincide, non fare nulla
             if (currentDocument && currentDocument[0]?.document_id === documentId) {

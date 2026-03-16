@@ -30,7 +30,7 @@ const AppLayout = () => {
 
   // --- Palette dinamica ---
   const style = {
-    layoutContainer: `flex h-screen w-full relative transition-colors duration-300 ${isDark ? "bg-neutral-950 text-white" : "bg-[#f0eee6] text-neutral-900"}`,
+    layoutContainer: `flex h-screen w-full relative transition-colors duration-300 ${isDark ? "bg-neutral-950 text-white" : "bg-white text-neutral-900"}`, //bg-[#f0eee6]
     modalOverlay: "fixed inset-0 bg-black/60  z-40",
     modalContent: `fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 rounded-xl shadow-2xl w-[95vw] max-w-[680px] h-[85vh] max-h-[540px] flex flex-col md:flex-row overflow-hidden border transition-colors duration-300 ${isDark ? "bg-neutral-900 border-neutral-800" : " border-neutral-200"
       }`,
