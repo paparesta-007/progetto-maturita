@@ -8,7 +8,9 @@ export const sendEmbeddingMessage = async (
     setLoading: React.Dispatch<React.SetStateAction<boolean>>,
     model: any,
     userId: string,
-    documentId: string
+    documentId: string,
+    functionality: string,
+    reasoning: string
 ) => {
     if (!message.trim()) return;
 
@@ -26,7 +28,8 @@ export const sendEmbeddingMessage = async (
                 question: message,
                 model: typeof model === "string" ? model : (model?.name_id || "google/gemini-2.5-flash-lite"),
                 user_id: userId,
-                document_id: documentId
+                document_id: documentId,
+                reasoning: reasoning
             }),
         });
 

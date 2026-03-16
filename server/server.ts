@@ -985,17 +985,33 @@ app.delete("/api/conversations/delete", async (req: express.Request, res: expres
 });
 app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response) => {
     try {
-        const { question, model, user_id, document_id } = req.body;
+        const { question, model, user_id, document_id,reasoning } = req.body;
+        const reasoningEffortMap: Record<string, string> = {
+            fast: "none",
+            standard: "medium",
+            accurate: "high"
+        };
+        const reasoningEffort = reasoning ? reasoningEffortMap[reasoning] || "medium" : "medium";
+        // Inizializziamo i timer
+        const startTime = Date.now();
+        let stepTime = startTime;
 
-        console.log("🔍 Domanda ricevuta:", question, document_id, user_id);
+        console.log(`\n📥 [Fase 1/8] Nuova richiesta /ask-pdf ricevuta.`);
+        console.log(`🔍 Dettagli: Domanda="${question}", Documento=${document_id}, Utente=${user_id}`);
 
         // 1. Genera l'embedding della domanda
+        console.log("🧠 [Fase 2/8] Generazione dell'embedding per la domanda in corso...");
         const { embedding } = await embed({
             model: openrouterEmbeddings.embedding("openai/text-embedding-3-small"),
             value: `Ricerca nel documento: ${question}`,
         });
+        
+        let now = Date.now();
+        console.log(`✅ [Fase 2/8] Embedding generato con successo. (+${now - stepTime}ms)`);
+        stepTime = now;
 
         // 2. Chiama la funzione RPC su Supabase
+        console.log("🔎 [Fase 3/8] Ricerca dei chunk semantici su Supabase in corso...");
         const { data: chunks, error } = await supabase
             .rpc('match_documents', {
                 query_embedding: embedding,
@@ -1006,20 +1022,34 @@ app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response
             });
 
         if (error) {
-            console.error("Errore ricerca Supabase:", error);
+            console.error("❌ [Errore Fase 3] Errore ricerca Supabase:", error);
             throw new Error("Errore durante la ricerca nel DB");
         }
+        
+        now = Date.now();
+        console.log(`✅ [Fase 3/8] Ricerca completata. Trovati ${chunks?.length || 0} chunk pertinenti. (+${now - stepTime}ms)`);
+        stepTime = now;
 
         if (!chunks || chunks.length === 0) {
-            return res.json({ answer: "Mi dispiace, non ho trovato informazioni pertinenti nei documenti caricati." });
+            console.log("⚠️ [Attenzione] Nessun chunk trovato. Interrompo e rispondo al client.");
+            return res.json({ 
+                answer: "Mi dispiace, non ho trovato informazioni pertinenti nei documenti caricati.",
+                sources: [],
+                suggested_questions: []
+            });
         }
 
+        console.log("📄 [Fase 4/8] Costruzione del contesto dai chunk estratti...");
         const contextText = chunks
             .map((chunk: any) => {
                 const section = chunk.metadata?.sectionHeading ? `[Sezione: ${chunk.metadata.sectionHeading}]` : '';
                 return `--- FONTE: ${chunk.metadata.source} ${section} ---\n${chunk.content}`;
             })
             .join("\n\n");
+            
+        now = Date.now();
+        console.log(`✅ [Fase 4/8] Contesto creato (Lunghezza: ${contextText.length} caratteri). (+${now - stepTime}ms)`);
+        stepTime = now;
 
         const systemPrompt = `
         Sei un esperto Analista di Documenti. Il tuo compito è rispondere alle domande dell'utente basandoti ESCLUSIVAMENTE sul CONTESTO fornito qui sotto.
@@ -1034,30 +1064,71 @@ app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response
         ${contextText}
         `;
 
-        const currentModel = model || "google/gemini-2.5-flash-lite";
+        const selectedModel = model || "google/gemini-2.5-flash-lite";
 
-        // 3. Genera la RISPOSTA PRINCIPALE con Gemini
-        const { text, usage } = await generateText({
-            model: openrouter(currentModel),
-            system: systemPrompt,
-            prompt: question,
+        // 3. Genera la RISPOSTA PRINCIPALE chiamando OpenRouter nativamente
+        console.log(`🤖 [Fase 5/8] Chiamata a OpenRouter (Modello: ${selectedModel}) per la risposta principale... ${reasoningEffort}`);
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${process.env.VITE_OPENROUTER_API_KEY}`,
+                "Content-Type": "application/json",
+                "HTTP-Referer": "http://localhost:3000/ask-pdf",
+                "X-Title": "NomeTuaApp"
+            },
+            body: JSON.stringify({
+                model: selectedModel,
+                messages: [
+                    { role: 'system', content: systemPrompt },
+                    { role: 'user', content: question }
+                ],
+                stream: false,
+                reasoning: { effort: reasoningEffort }
+            })
         });
+
+        if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`❌ [Errore Fase 5] OpenRouter API Error: ${response.status} - ${errorText}`);
+            throw new Error(`OpenRouter API Error: ${response.status} - ${errorText}`);
+        }
+
+        const data = await response.json();
+        const text = data.choices[0]?.message?.content || "";
+        
+        now = Date.now();
+        console.log(`✅ [Fase 6/8] Risposta principale ricevuta da OpenRouter. (+${now - stepTime}ms)`);
+        stepTime = now;
 
         // =========================================================================
         // 4. NUOVA SEZIONE: Genera le 4 domande correlate basate sulla risposta
         // =========================================================================
-        let suggestedQuestions = await getSuggestedQuestion(question, text);
+        // console.log("❓ [Fase 7/8] Generazione delle domande suggerite di follow-up...");
+        // let suggestedQuestions = await getSuggestedQuestion(question, text);
+        
+        // now = Date.now();
+        // console.log(`✅ [Fase 7/8] Generate ${suggestedQuestions.length} domande suggerite. (+${now - stepTime}ms)`);
+        // stepTime = now;
         // =========================================================================
 
-        // 5. Rispondi al client con Risposta + Fonti + Domande Suggerite
+        console.log("🧹 [Fase 8/8] Pulizia dei duplicati nelle fonti e invio della risposta finale al client...");
+        // Rimuoviamo i duplicati dalle fonti (caso in cui più chunk vengano dallo stesso PDF)
+        const uniqueSources = Array.from(new Set(chunks.map((c: any) => c.metadata.source)));
+
+        // 5. Rispondi al client con Risposta + Fonti (pulite) + Domande Suggerite
         res.json({
             answer: text,
-            sources: chunks.map((c: any) => c.metadata.source),
-            suggested_questions: suggestedQuestions
+            sources: uniqueSources,
+            // suggested_questions: suggestedQuestions
         });
+        
+        now = Date.now();
+        console.log(`🎉 [Successo] Risposta inviata al client correttamente! (+${now - stepTime}ms)`);
+        console.log(`⏱️  [METRICHE] Tempo Totale /ask-pdf: ${now - startTime}ms\n`);
 
     } catch (error: any) {
-        console.error("Errore /ask-pdf:", error);
+        console.error("\n❌ [ERRORE CRITICO] Errore non gestito in /ask-pdf:");
+        console.error(error);
         res.status(500).json({ error: error.message });
     }
 });

@@ -28,8 +28,8 @@ export interface DocumentContextType {
     setDocumentList: React.Dispatch<React.SetStateAction<any[]>>;
     fetchUserDocuments: (userId: string, force?: boolean) => Promise<void>;
 
-    // --- NUOVE PROPRIETÀ AGGIUNTE (Chat & Model) ---
-    sendMessage: (message: string, functionality: string) => Promise<void>; // Funzione sendMessage
+    // --- NUOVE PROPRIETÀ AGGIUNTE (Chat & Model) ---    // --- NUOVE PROPRIETÀ AGGIUNTE (Chat & Model) ---
+    sendMessage: (message: string, functionality: string, reasoning: string) => Promise<void>;
     messageHistory: { role: 'user' | 'bot'; content: string; usage?: any; model?: string; suggestedQuestions?: string[] }[];
     setMessageHistory: React.Dispatch<React.SetStateAction<{ role: 'user' | 'bot'; content: string; usage?: any; model?: string; suggestedQuestions?: string[] }[]>>;
     loading: boolean;
@@ -97,8 +97,7 @@ export const DocumentProvider = ({ children }: { children: React.ReactNode }) =>
     }, [documentList]);
 
     // --- NUOVA FUNZIONE SENDMESSAGE (Placeholder) ---
-    const sendMessage = useCallback(async (message: string) => {
-        // Chiamiamo la versione "volatile" che non salva su DB
+        const sendMessage = useCallback(async (message: string, functionality: string, reasoning: string) => {
         console.log("modello del ask-pdf", model, currentDocument?.[0]?.document_id)
         await sendEmbeddingMessage(
             message,
@@ -106,7 +105,9 @@ export const DocumentProvider = ({ children }: { children: React.ReactNode }) =>
             setLoading,
             model,
             user?.id || "",
-            currentDocument?.[0]?.document_id || currentDocument?.document_id || ""
+            currentDocument?.[0]?.document_id || currentDocument?.document_id || "",
+            functionality,
+            reasoning
         );
     }, [model, user?.id, currentDocument]);
     const value: DocumentContextType = {
