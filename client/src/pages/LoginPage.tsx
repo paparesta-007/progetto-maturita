@@ -133,6 +133,7 @@ const LoginPage = () => {
             provider: "google",
             options: {
                 redirectTo: `${window.location.origin}/app/chat`,
+                scopes: 'https://www.googleapis.com/auth/calendar.events',
             },
          
         });

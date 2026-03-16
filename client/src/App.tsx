@@ -10,9 +10,9 @@ import ChatPage from './pages/ChatPage';
 import CompleteProfile from './pages/CompleteProfilePage';
 import DocumentPage from './layouts/DocumentLayout';
 import DocumentLayout from './layouts/DocumentLayout';
+import CalendarPage from './pages/CalendarPage/CalendarPage';
+import { CalendarProvider } from './context/CalendarContext';
 
-
-const Calendar = () => <div><h1>Calendar</h1></div>;
 
 function App() {
   return (
@@ -36,7 +36,7 @@ function App() {
               <Route path='documents' element={<DocumentLayout />} />
               <Route path='documents/:documentId' element={<DocumentPage />} />
               <Route path='chat' element={<ChatPage />} />
-              <Route path='calendar' element={<Calendar />} />
+              <Route path='calendar' element={<CalendarProvider><CalendarPage /></CalendarProvider>} />
             </Route>
 
           </Route>
