@@ -984,8 +984,17 @@ app.delete("/api/conversations/delete", async (req: express.Request, res: expres
     }
 });
 app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response) => {
+    // Abilita lo streaming
+    res.setHeader("Content-Type", "application/x-ndjson");
+    res.setHeader("Transfer-Encoding", "chunked");
+
+    const sendLog = (msg: string) => {
+        console.log(msg);
+        res.write(JSON.stringify({ type: "log", content: msg }) + "\n");
+    };
+
     try {
-        const { question, model, user_id, document_id,reasoning } = req.body;
+        const { question, model, user_id, document_id, reasoning } = req.body;
         const reasoningEffortMap: Record<string, string> = {
             fast: "none",
             standard: "medium",
@@ -996,22 +1005,22 @@ app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response
         const startTime = Date.now();
         let stepTime = startTime;
 
-        console.log(`\n📥 [Fase 1/8] Nuova richiesta /ask-pdf ricevuta.`);
-        console.log(`🔍 Dettagli: Domanda="${question}", Documento=${document_id}, Utente=${user_id}`);
+        sendLog(`\n📥 [Fase 1/8] Nuova richiesta /ask-pdf ricevuta.`);
+        sendLog(`🔍 Dettagli: Domanda="${question}", Documento=${document_id}, Utente=${user_id}`);
 
         // 1. Genera l'embedding della domanda
-        console.log("🧠 [Fase 2/8] Generazione dell'embedding per la domanda in corso...");
+        sendLog("🧠 [Fase 2/8] Generazione dell'embedding per la domanda in corso...");
         const { embedding } = await embed({
             model: openrouterEmbeddings.embedding("openai/text-embedding-3-small"),
             value: `Ricerca nel documento: ${question}`,
         });
         
         let now = Date.now();
-        console.log(`✅ [Fase 2/8] Embedding generato con successo. (+${now - stepTime}ms)`);
+        sendLog(`✅ [Fase 2/8] Embedding generato con successo. (+${now - stepTime}ms)`);
         stepTime = now;
 
         // 2. Chiama la funzione RPC su Supabase
-        console.log("🔎 [Fase 3/8] Ricerca dei chunk semantici su Supabase in corso...");
+        sendLog("🔎 [Fase 3/8] Ricerca dei chunk semantici su Supabase in corso...");
         const { data: chunks, error } = await supabase
             .rpc('match_documents', {
                 query_embedding: embedding,
@@ -1027,19 +1036,21 @@ app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response
         }
         
         now = Date.now();
-        console.log(`✅ [Fase 3/8] Ricerca completata. Trovati ${chunks?.length || 0} chunk pertinenti. (+${now - stepTime}ms)`);
+        sendLog(`✅ [Fase 3/8] Ricerca completata. Trovati ${chunks?.length || 0} chunk pertinenti. (+${now - stepTime}ms)`);
         stepTime = now;
 
         if (!chunks || chunks.length === 0) {
-            console.log("⚠️ [Attenzione] Nessun chunk trovato. Interrompo e rispondo al client.");
-            return res.json({ 
+            sendLog("⚠️ [Attenzione] Nessun chunk trovato. Interrompo e rispondo al client.");
+            res.write(JSON.stringify({ 
+                type: "result",
                 answer: "Mi dispiace, non ho trovato informazioni pertinenti nei documenti caricati.",
                 sources: [],
                 suggested_questions: []
-            });
+            }) + "\n");
+            return res.end();
         }
 
-        console.log("📄 [Fase 4/8] Costruzione del contesto dai chunk estratti...");
+        sendLog("📄 [Fase 4/8] Costruzione del contesto dai chunk estratti...");
         const contextText = chunks
             .map((chunk: any) => {
                 const section = chunk.metadata?.sectionHeading ? `[Sezione: ${chunk.metadata.sectionHeading}]` : '';
@@ -1048,7 +1059,7 @@ app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response
             .join("\n\n");
             
         now = Date.now();
-        console.log(`✅ [Fase 4/8] Contesto creato (Lunghezza: ${contextText.length} caratteri). (+${now - stepTime}ms)`);
+        sendLog(`✅ [Fase 4/8] Contesto creato (Lunghezza: ${contextText.length} caratteri). (+${now - stepTime}ms)`);
         stepTime = now;
 
         const systemPrompt = `
@@ -1067,7 +1078,7 @@ app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response
         const selectedModel = model || "google/gemini-2.5-flash-lite";
 
         // 3. Genera la RISPOSTA PRINCIPALE chiamando OpenRouter nativamente
-        console.log(`🤖 [Fase 5/8] Chiamata a OpenRouter (Modello: ${selectedModel}) per la risposta principale... ${reasoningEffort}`);
+        sendLog(`🤖 [Fase 5/8] Chiamata a OpenRouter (Modello: ${selectedModel}) per la risposta principale... ${reasoningEffort}`);
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
             method: "POST",
             headers: {
@@ -1097,39 +1108,31 @@ app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response
         const text = data.choices[0]?.message?.content || "";
         
         now = Date.now();
-        console.log(`✅ [Fase 6/8] Risposta principale ricevuta da OpenRouter. (+${now - stepTime}ms)`);
+        sendLog(`✅ [Fase 6/8] Risposta principale ricevuta da OpenRouter. (+${now - stepTime}ms)`);
         stepTime = now;
 
-        // =========================================================================
-        // 4. NUOVA SEZIONE: Genera le 4 domande correlate basate sulla risposta
-        // =========================================================================
-        // console.log("❓ [Fase 7/8] Generazione delle domande suggerite di follow-up...");
-        // let suggestedQuestions = await getSuggestedQuestion(question, text);
-        
-        // now = Date.now();
-        // console.log(`✅ [Fase 7/8] Generate ${suggestedQuestions.length} domande suggerite. (+${now - stepTime}ms)`);
-        // stepTime = now;
-        // =========================================================================
-
-        console.log("🧹 [Fase 8/8] Pulizia dei duplicati nelle fonti e invio della risposta finale al client...");
+        sendLog("🧹 [Fase 8/8] Pulizia dei duplicati nelle fonti e invio della risposta finale al client...");
         // Rimuoviamo i duplicati dalle fonti (caso in cui più chunk vengano dallo stesso PDF)
         const uniqueSources = Array.from(new Set(chunks.map((c: any) => c.metadata.source)));
 
         // 5. Rispondi al client con Risposta + Fonti (pulite) + Domande Suggerite
-        res.json({
+        res.write(JSON.stringify({
+            type: "result",
             answer: text,
             sources: uniqueSources,
             // suggested_questions: suggestedQuestions
-        });
+        }) + "\n");
         
         now = Date.now();
-        console.log(`🎉 [Successo] Risposta inviata al client correttamente! (+${now - stepTime}ms)`);
-        console.log(`⏱️  [METRICHE] Tempo Totale /ask-pdf: ${now - startTime}ms\n`);
+        sendLog(`🎉 [Successo] Risposta inviata al client correttamente! (+${now - stepTime}ms)`);
+        sendLog(`⏱️  [METRICHE] Tempo Totale /ask-pdf: ${now - startTime}ms\n`);
+        res.end();
 
     } catch (error: any) {
         console.error("\n❌ [ERRORE CRITICO] Errore non gestito in /ask-pdf:");
         console.error(error);
-        res.status(500).json({ error: error.message });
+        res.write(JSON.stringify({ type: "error", error: error.message }) + "\n");
+        res.end();
     }
 });
 

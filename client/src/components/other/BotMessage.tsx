@@ -3,7 +3,90 @@ import Tooltip from "./Tooltip";
 import { useAuth } from "../../context/AuthContext";
 import { SpeakerHighIcon, CopyIcon, CheckIcon } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
-import { BrainCircuit, Sparkles, ThumbsUp, ThumbsDown, RotateCcw } from "lucide-react";
+import { BrainCircuit, Sparkles, ThumbsUp, ThumbsDown, RotateCcw, ChevronDown, ChevronRight, Activity } from "lucide-react";
+
+/* ─── Premium Bot Logs Component ─── */
+const BotLogsTimeline = ({ logs, isDark, isComplete }: { logs: string[], isDark: boolean, isComplete?: boolean }) => {
+    const [isOpen, setIsOpen] = useState(!isComplete);
+    
+    // Riapri automaticamente se ci sono nuovi log e non è completo
+    useEffect(() => {
+        if (!isComplete) setIsOpen(true);
+    }, [logs.length, isComplete]);
+
+    if (!logs || logs.length === 0) return null;
+
+    const filteredLogs = logs.filter(l => l.trim() !== "");
+
+    return (
+        <div className={`mb-4 w-full rounded-xl overflow-hidden border transition-colors duration-300 ${isDark ? 'bg-black/20 border-white/5' : 'bg-white/50 border-black/5'}`}>
+            <button 
+                onClick={() => setIsOpen(!isOpen)}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium cursor-pointer transition-colors ${isDark ? 'text-neutral-400 hover:text-neutral-200 hover:bg-white/5' : 'text-neutral-500 hover:text-neutral-700 hover:bg-black/5'}`}
+            >
+                {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                <Activity size={14} className={!isComplete ? "animate-pulse text-blue-500" : ""} />
+                <span>{isComplete ? "Processo completato" : "Elaborazione in corso..."}</span>
+                <span className="ml-auto text-[10px] opacity-60">{filteredLogs.length} passaggi</span>
+            </button>
+            
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="border-t border-inherit overflow-hidden"
+                    >
+                        <div className="p-4 pl-6 relative">
+                            <div className={`absolute left-[19px] top-6 bottom-4 w-[2px] rounded-full ${isDark ? 'bg-neutral-800' : 'bg-neutral-200'}`} />
+                            
+                            <div className="flex flex-col gap-4">
+                                {filteredLogs.map((log, index) => {
+                                    const emojiMatch = log.match(/^([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/);
+                                    let icon = <div className={`w-2 h-2 rounded-full ${isDark ? 'bg-neutral-600' : 'bg-neutral-400'}`} />;
+                                    let cleanedLog = log.trim();
+                                    
+                                    if (emojiMatch) {
+                                        icon = <span className="text-[12px]">{emojiMatch[0]}</span>;
+                                        cleanedLog = log.slice(emojiMatch[0].length).trim();
+                                    }
+                                    
+                                    // Highlight metrics
+                                    const isMetric = cleanedLog.includes("[METRICHE]");
+                                    const isError = cleanedLog.includes("ERRORE");
+                                    const isSuccess = cleanedLog.includes("[Successo]");
+
+                                    return (
+                                        <motion.div 
+                                            key={index}
+                                            initial={{ opacity: 0, x: -10 }}
+                                            animate={{ opacity: 1, x: 0 }}
+                                            transition={{ delay: 0.05 }}
+                                            className="relative flex items-start text-xs group"
+                                        >
+                                            <div className={`absolute -left-[20.5px] my-0.5 top-0 w-6 h-6 rounded-full flex items-center justify-center ring-4 ${isDark ? 'bg-[#1e1e1e] ring-[#1e1e1e]' : 'bg-neutral-50 ring-neutral-50'}`}>
+                                                {icon}
+                                            </div>
+                                            <div className={`flex-1 pl-2 ${
+                                                isError ? 'text-red-400 font-medium' : 
+                                                isSuccess ? (isDark ? 'text-emerald-400' : 'text-emerald-600') : 
+                                                isMetric ? (isDark ? 'text-neutral-300 font-mono text-[10px]' : 'text-neutral-600 font-mono text-[10px]') : 
+                                                (isDark ? 'text-neutral-400' : 'text-neutral-500')
+                                            }`}>
+                                                {cleanedLog}
+                                            </div>
+                                        </motion.div>
+                                    );
+                                })}
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
 
 /* ─── Premium Bot Message Styles ─── */
 const BotMessageStyles = () => (
@@ -75,7 +158,7 @@ const BotMessageStyles = () => (
     `}</style>
 );
 
-const BotMessage = ({ i, children, usage, model, suggestedQuestions, onSuggestedClick }: { i: number; children: React.ReactNode; usage?: any; model?: any; suggestedQuestions?: string[]; onSuggestedClick?: (question: string) => void }) => {
+const BotMessage = ({ i, children, usage, model, suggestedQuestions, logs, isComplete, onSuggestedClick }: { i: number; children: React.ReactNode; usage?: any; model?: any; suggestedQuestions?: string[]; logs?: string[]; isComplete?: boolean; onSuggestedClick?: (question: string) => void }) => {
     // Aggiungi un fallback sicuro per useAuth nel caso il contesto sia vuoto
     const auth = useAuth();
     const theme = auth?.theme || 'light';
@@ -189,6 +272,10 @@ const BotMessage = ({ i, children, usage, model, suggestedQuestions, onSuggested
 
                         {/* ─── Message Bubble ─── */}
                         <div id={`bot-msg-${i}`} className={s.bubble}>
+                            {logs && logs.length > 0 && (
+                                <BotLogsTimeline logs={logs} isDark={isDark} isComplete={isComplete} />
+                            )}
+                            
                             {children}
                         </div>
 

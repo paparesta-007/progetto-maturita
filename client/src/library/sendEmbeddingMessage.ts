@@ -16,10 +16,24 @@ export const sendEmbeddingMessage = async (
 
     // 1. Aggiornamento UI Immediato (Messaggio Utente)
     setMessageHistory((prev) => [...prev, { role: 'user', content: message }]);
+    
+    // Creiamo subito il messaggio del bot con un ID per aggiornarlo via via
+    const botMessageId = Date.now().toString() + Math.random().toString();
+    setMessageHistory((prev) => [
+        ...prev, 
+        { 
+            id: botMessageId,
+            role: 'bot', 
+            content: "Avvio della richiesta...", 
+            model: model?.name || "RAG Assistant",
+            logs: []
+        }
+    ]);
+    
     setLoading(true);
 
     try {
-        // 2. Chiamata al Backend (Endpoint RAG)
+        // 2. Chiamata al Backend in streaming (Endpoint RAG)
         console.log("modello del ask-pdf", model)
         const response = await fetch("http://localhost:3000/api/chat/ask-pdf", {
             method: "POST",
@@ -34,34 +48,84 @@ export const sendEmbeddingMessage = async (
         });
 
         if (!response.ok) throw new Error(`Errore API: ${response.statusText}`);
+        if (!response.body) throw new Error("Risposta vuota dal server");
 
-        const data = await response.json();
-        
-        // 3. Formattazione risposta con le fonti (se presenti)
-        let botContent = data.answer;
-        
-        if (data.sources && Array.isArray(data.sources) && data.sources.length > 0) {
-            // Rimuovi duplicati dalle fonti per pulizia
-            const uniqueSources = [...new Set(data.sources)];
-            botContent += `\n\n**Fonti:**\n` + uniqueSources.map((s: any) => `- ${s}`).join("\n");
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            
+            // Processiamo la roba riga per riga per l'ndjson
+            let eolIndex;
+            while ((eolIndex = buffer.indexOf('\n')) >= 0) {
+                const line = buffer.slice(0, eolIndex).trim();
+                buffer = buffer.slice(eolIndex + 1);
+                
+                if (!line) continue;
+                
+                try {
+                    const data = JSON.parse(line);
+                    
+                    if (data.type === "log") {
+                        // Aggiorniamo il listato log e il placeholder del messaggio
+                        setMessageHistory((prev) => 
+                            prev.map(msg => 
+                                msg.id === botMessageId
+                                    ? { 
+                                        ...msg, 
+                                        content: msg.isComplete ? msg.content : "Elaborazione in corso...", 
+                                        logs: [...(msg.logs || []), data.content] 
+                                      } 
+                                    : msg
+                            )
+                        );
+                    } else if (data.type === "result") {
+                        // 3. Formattazione finale della risposta con le fonti (se presenti)
+                        let botContent = data.answer;
+                        
+                        if (data.sources && Array.isArray(data.sources) && data.sources.length > 0) {
+                            const uniqueSources = [...new Set(data.sources)];
+                            botContent += `\n\n**Fonti:**\n` + uniqueSources.map((s: any) => `- ${s}`).join("\n");
+                        }
+
+                        // Aggiornamento finale del messaggio (aggiungendo fonti e le domande se supportate)
+                        setMessageHistory((prev) => 
+                            prev.map(msg => 
+                                msg.id === botMessageId 
+                                    ? { 
+                                        ...msg, 
+                                        content: botContent, 
+                                        suggestedQuestions: data.suggested_questions || [],
+                                        isComplete: true
+                                      } 
+                                    : msg
+                            )
+                        );
+                    } else if (data.type === "error") {
+                        throw new Error(data.error);
+                    }
+                } catch (e) {
+                    console.error("Errore parsing JSON stream:", e, "line:", line);
+                }
+            }
         }
-
-        const modelLabel = model?.name || "RAG Assistant";
-
-        // 4. Aggiornamento UI (Messaggio Bot)
-        setMessageHistory((prev) => [
-            ...prev,
-            { role: 'bot', content: botContent, model: modelLabel, suggestedQuestions: data.suggested_questions || [] },
-        ]);
 
     } catch (error) {
         console.error("Errore sendEmbeddingMessage:", error);
         
         // Feedback visivo in caso di errore
-        setMessageHistory((prev) => [
-            ...prev,
-            { role: 'bot', content: "⚠️ Errore durante la comunicazione con il server RAG." },
-        ]);
+        setMessageHistory((prev) => 
+            prev.map(msg => 
+                msg.id === botMessageId 
+                    ? { ...msg, content: "⚠️ Errore durante la comunicazione con il server RAG." } 
+                    : msg
+            )
+        );
     } finally {
         setLoading(false);
     }
