@@ -38,6 +38,7 @@ const CalendarPage = () => {
     }, [currentWeekStart]);
 
     useEffect(() => {
+        // setIsLivePreview(true)
         async function getCalendarEvents() {
             const providerToken = session?.provider_token;
             if (!providerToken) return;

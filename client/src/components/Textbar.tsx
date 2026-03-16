@@ -68,7 +68,7 @@ const Textbar = () => {
     const menuRef = useRef<HTMLDivElement | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     const [functionality, setFunctionality] = useState<string>("default");
-    const [reasoning, setReasoning] = useState<string>("standard");
+    const [reasoning, setReasoning] = useState<string>("fast");
 
     // Stili dinamici per la barra
     const styles = {
