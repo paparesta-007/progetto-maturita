@@ -337,6 +337,22 @@ app.post("/api/gemini/getTitleConversation", async function (req: express.Reques
     }
 });
 
+app.post("/api/getSuggestedQuestion", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
+    try {
+        const { message, response } = req.body;
+
+        if (!message || !response) {
+            return res.status(400).json({ error: "message and response are required" });
+        }
+
+        const suggested_questions = await getSuggestedQuestion(message, response);
+        res.send({ suggested_questions });
+        
+    } catch (error) {
+        next(error);
+    }
+});
+
 // FUNZIONE UTILITY PER DOMANDE SUGGERITE
 async function getSuggestedQuestion(question: string, answer: string): Promise<string[]> {
     try {
@@ -371,7 +387,8 @@ async function getSuggestedQuestion(question: string, answer: string): Promise<s
                     }
                 ],
                 response_format: { type: "json_object" }, // Forza l'output JSON
-                temperature: 0.7
+                temperature: 0.5,
+                reasoning: { effort: "none" }
             })
         });
 
@@ -454,7 +471,7 @@ app.post("/api/streamingOutput", async function (req: express.Request, res: expr
                 model: selectedModel,
                 messages: messages,
                 stream: true,
-                reasoning: { effort: reasoningEffort }
+                reasoning: { effort: reasoningEffort,max_tokens: 2000 }
             })
         });
 

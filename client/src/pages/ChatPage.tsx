@@ -35,6 +35,7 @@ const ChatContent = () => {
         userOwnsConversation,
         loading,
         areConversationsLoaded,
+        currentConversationId,
         setCurrentConversationId,
         currentConversationName,
         setCurrentConversationName,
@@ -73,14 +74,23 @@ const ChatContent = () => {
 
     useEffect(() => {
         setIsLivePreview(false); // Disattiva Live Preview quando entri nella chat
+        
         if (!conversationId) {
-            setMessageHistory([]);
-            setCurrentConversationId(null);
-            setCurrentConversationName(null);
+            // Solo se non siamo più sincronizzati con la URL (es. tasto indietro da una chat esistente)
+            if (currentConversationId) {
+                setMessageHistory([]);
+                setCurrentConversationId(null);
+                setCurrentConversationName(null);
+            }
             return;
         }
+        
         if (!areConversationsLoaded) return;
         
+        // Evita di ricaricare i messaggi dal server se stiamo già visualizzando questa conversazione
+        // (necessario quando navighiamo a un chat appena creata dalla schermata home del chat)
+        if (currentConversationId === conversationId) return;
+
         const isOwner = userOwnsConversation(conversationId);
         if (isOwner) {
             loadConversation(conversationId);
@@ -88,7 +98,8 @@ const ChatContent = () => {
         } else {
             navigate('/app');
         }
-    }, [conversationId, areConversationsLoaded, user?.id, setMessageHistory, setCurrentConversationId, setCurrentConversationName, loadConversation, userOwnsConversation, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [conversationId, areConversationsLoaded, user?.id, navigate]);
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
