@@ -65,10 +65,11 @@ export const sendNormalMessage = async (
         const responseUsage = data.usage || { total_tokens: 0 };
         const responseModel = model?.name || model?.name_id || "Unknown";
         const suggestedQuestions = data.suggestedQuestions || [];
+        const reasoningContent = data.reasoning || null;
 
         setMessageHistory((prev) => [
             ...prev,
-            { role: 'bot', content: responseText, usage: responseUsage, model: responseModel, suggestedQuestions },
+            { role: 'bot', content: responseText, usage: responseUsage, model: responseModel, suggestedQuestions, reasoning: reasoningContent },
         ]);
 
         const messagePayload = {
@@ -177,14 +178,37 @@ export const sendStreamedMessage = async (
         const decoder = new TextDecoder();
         let done = false;
         let accumulatedText = "";
+        let accumulatedReasoning = "";
+        let ndjsonBuffer = "";
 
         while (!done) {
             const { value, done: doneReading } = await reader.read();
             done = doneReading;
 
             if (value) {
-                const chunkValue = decoder.decode(value, { stream: true });
-                accumulatedText += chunkValue;
+                ndjsonBuffer += decoder.decode(value, { stream: true });
+                
+                // Parsing NDJSON: processa riga per riga
+                let eolIndex;
+                while ((eolIndex = ndjsonBuffer.indexOf('\n')) >= 0) {
+                    const line = ndjsonBuffer.slice(0, eolIndex).trim();
+                    ndjsonBuffer = ndjsonBuffer.slice(eolIndex + 1);
+                    
+                    if (!line) continue;
+                    
+                    try {
+                        const data = JSON.parse(line);
+                        
+                        if (data.type === "reasoning" && data.content) {
+                            accumulatedReasoning += data.content;
+                        } else if (data.type === "text" && data.content) {
+                            accumulatedText += data.content;
+                        }
+                    } catch (parseErr) {
+                        // Debug: logga perché il parsing fallisce
+                        console.error("NDJSON parse error:", parseErr, "Line:", line.substring(0, 100));
+                    }
+                }
 
                 setMessageHistory((prev) => {
                     const newHistory = [...prev];
@@ -192,7 +216,8 @@ export const sendStreamedMessage = async (
                     if (newHistory[lastMsgIndex].role === 'bot') {
                         newHistory[lastMsgIndex] = {
                             ...newHistory[lastMsgIndex],
-                            content: accumulatedText
+                            content: accumulatedText,
+                            ...(accumulatedReasoning ? { reasoning: accumulatedReasoning } : {})
                         };
                     }
                     return newHistory;

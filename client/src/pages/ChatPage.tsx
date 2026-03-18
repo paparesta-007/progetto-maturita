@@ -177,7 +177,7 @@ const ChatContent = () => {
                                 {messageHistory.map((msg, index) => (
                                     msg.role === 'user' ?
                                         <UserMessage key={index} i={index} htmlContent={msg.content} /> :
-                                        <BotMessage key={index} i={index} usage={msg.usage} model={msg.model} suggestedQuestions={msg.suggestedQuestions} logs={msg.logs} isComplete={msg.isComplete} onSuggestedClick={(q) => sendMessage(q, "normal")}>
+                                        <BotMessage key={index} i={index} usage={msg.usage} model={msg.model} suggestedQuestions={msg.suggestedQuestions} logs={msg.logs} isComplete={msg.isComplete} reasoning={msg.reasoning} onSuggestedClick={(q) => sendMessage(q, "normal", "fast")}>
                                             {msg.content === "Elaborazione in corso..." || msg.content === "Avvio della richiesta..." 
                                                     ? <p className="text-neutral-500 italic text-sm">{msg.content}</p> 
                                                     : <MarkdownRender text={msg.content} />
