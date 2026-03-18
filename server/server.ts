@@ -244,6 +244,7 @@ app.post("/api/completion/chat", async function (req: express.Request, res: expr
         
         // Estrazione testo e mapping dell'usage per mantenere compatibilità col frontend
         const text = data.choices[0]?.message?.content || "";
+        const reasoningContent = data.choices[0]?.message?.reasoning || null;
         const usage = {
             promptTokens: data.usage?.prompt_tokens || 0,
             outputTokens: data.usage?.completion_tokens || 0,
@@ -266,11 +267,13 @@ app.post("/api/completion/chat", async function (req: express.Request, res: expr
         console.log("******TEST COMPLETATO: METRICHE******");
         console.log("Usage:", usage);
         console.log(`Latenza: ${latencyMs} ms, Throughput: ${throughput.toFixed(2)} t/s`);
+        if (reasoningContent) console.log(`Reasoning presente: ${reasoningContent.length} caratteri`);
         
         res.send({
             text,
             usage,
             suggestedQuestions,
+            reasoning: reasoningContent,
             metrics: {
                 latencyMs: Math.round(latencyMs),
                 throughput: parseFloat(throughput.toFixed(2))
@@ -471,7 +474,7 @@ app.post("/api/streamingOutput", async function (req: express.Request, res: expr
                 model: selectedModel,
                 messages: messages,
                 stream: true,
-                reasoning: { effort: reasoningEffort,max_tokens: 2000 }
+                reasoning: { effort: reasoningEffort,}
             })
         });
 
@@ -480,13 +483,13 @@ app.post("/api/streamingOutput", async function (req: express.Request, res: expr
             throw new Error(`OpenRouter Streaming Error: ${response.status} - ${errorText}`);
         }
 
-        // 2. Imposta gli header della risposta per il client express
+        // 2. Imposta gli header della risposta per streaming (NDJSON dentro text/plain per compatibilità browser)
         res.setHeader('Content-Type', 'text/plain; charset=utf-8');
         res.setHeader('Transfer-Encoding', 'chunked');
         res.setHeader('X-Accel-Buffering', 'no');
         res.flushHeaders();
 
-        // 3. Lettura e parsing manuale del flusso SSE
+        // 3. Lettura e parsing manuale del flusso SSE → NDJSON per il client
         const reader = response.body.getReader();
         const decoder = new TextDecoder("utf-8");
         let buffer = "";
@@ -496,30 +499,30 @@ app.post("/api/streamingOutput", async function (req: express.Request, res: expr
                 const { done, value } = await reader.read();
                 if (done) break;
 
-                // Decodifica i byte in stringa e li aggiunge al buffer
                 buffer += decoder.decode(value, { stream: true });
-                
-                // I chunk SSE sono separati da newline. Dividiamo il buffer.
                 const lines = buffer.split('\n');
-                
-                // L'ultima riga potrebbe essere incompleta, la teniamo nel buffer per il prossimo ciclo
                 buffer = lines.pop() || "";
 
                 for (const line of lines) {
                     const trimmedLine = line.trim();
                     if (trimmedLine.startsWith("data: ")) {
                         const dataStr = trimmedLine.slice(6);
-                        
-                        // OpenRouter invia "[DONE]" quando lo stream è completato
                         if (dataStr === "[DONE]") continue;
 
                         try {
                             const parsed = JSON.parse(dataStr);
+                            const reasoningPart = parsed.choices[0]?.delta?.reasoning;
                             const textPart = parsed.choices[0]?.delta?.content;
                             
+                            // Invia reasoning chunk in tempo reale
+                            if (reasoningPart) {
+                                res.write(JSON.stringify({ type: "reasoning", content: reasoningPart }) + "\n");
+                            }
+                            
+                            // Invia text chunk in tempo reale
                             if (textPart) {
-                                res.write(textPart);
-                                await delay(11); // Mantengo il tuo delay personalizzato
+                                res.write(JSON.stringify({ type: "text", content: textPart }) + "\n");
+                                await delay(11);
                             }
                         } catch (parseError) {
                             console.warn("⚠️ Errore nel parsing del chunk JSON:", parseError);

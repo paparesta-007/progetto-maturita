@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Tooltip from "./Tooltip";
 import { useAuth } from "../../context/AuthContext";
 import { SpeakerHighIcon, CopyIcon, CheckIcon } from "@phosphor-icons/react";
@@ -88,6 +88,65 @@ const BotLogsTimeline = ({ logs, isDark, isComplete }: { logs: string[], isDark:
     );
 };
 
+/* ─── Reasoning Roadmap Component ─── */
+const ReasoningTimeline = ({ reasoning, isDark, isStreaming }: { reasoning: string, isDark: boolean, isStreaming?: boolean }) => {
+    const [isOpen, setIsOpen] = useState(true);
+    const contentRef = useRef<HTMLDivElement>(null);
+
+    // Auto-scroll verso il basso quando arriva nuovo reasoning
+    useEffect(() => {
+        if (isOpen && contentRef.current) {
+            contentRef.current.scrollTop = contentRef.current.scrollHeight;
+        }
+    }, [reasoning, isOpen]);
+
+    if (!reasoning || reasoning.trim().length === 0) return null;
+
+    return (
+        <div className={`mb-4 w-full rounded-xl overflow-hidden border transition-colors duration-300 ${
+            isDark 
+                ? 'bg-purple-950/20 border-purple-500/10' 
+                : 'bg-purple-50/50 border-purple-200/40'
+        }`}>
+            <button 
+                onClick={() => setIsOpen(!isOpen)}
+                className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium cursor-pointer transition-colors ${
+                    isDark 
+                        ? 'text-purple-300/70 hover:text-purple-200 hover:bg-purple-500/5' 
+                        : 'text-purple-600/70 hover:text-purple-700 hover:bg-purple-500/5'
+                }`}
+            >
+                {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+                <BrainCircuit size={14} className={`${isStreaming ? 'animate-pulse' : ''} ${isDark ? 'text-purple-400' : 'text-purple-500'}`} />
+                <span>{isStreaming ? "Ragionamento in corso..." : "Ragionamento del modello"}</span>
+            </button>
+            
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div 
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: "auto", opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        className="border-t border-inherit overflow-hidden"
+                    >
+                        <div 
+                            ref={contentRef}
+                            className={`p-4 max-h-[300px] overflow-y-auto custom-scrollbar text-xs leading-relaxed whitespace-pre-wrap ${
+                                isDark ? 'text-purple-200/50' : 'text-purple-700/50'
+                            }`}
+                        >
+                            {reasoning}
+                            {isStreaming && (
+                                <span className="inline-block w-1.5 h-3.5 ml-0.5 bg-purple-400/60 animate-pulse rounded-sm" />
+                            )}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
 /* ─── Premium Bot Message Styles ─── */
 const BotMessageStyles = () => (
     <style>{`
@@ -158,7 +217,7 @@ const BotMessageStyles = () => (
     `}</style>
 );
 
-const BotMessage = ({ i, children, usage, model, suggestedQuestions, logs, isComplete, onSuggestedClick }: { i: number; children: React.ReactNode; usage?: any; model?: any; suggestedQuestions?: string[]; logs?: string[]; isComplete?: boolean; onSuggestedClick?: (question: string) => void }) => {
+const BotMessage = ({ i, children, usage, model, suggestedQuestions, logs, isComplete, reasoning, onSuggestedClick }: { i: number; children: React.ReactNode; usage?: any; model?: any; suggestedQuestions?: string[]; logs?: string[]; isComplete?: boolean; reasoning?: string | null; onSuggestedClick?: (question: string) => void }) => {
     // Aggiungi un fallback sicuro per useAuth nel caso il contesto sia vuoto
     const auth = useAuth();
     const theme = auth?.theme || 'light';
@@ -272,6 +331,9 @@ const BotMessage = ({ i, children, usage, model, suggestedQuestions, logs, isCom
 
                         {/* ─── Message Bubble ─── */}
                         <div id={`bot-msg-${i}`} className={s.bubble}>
+                            {reasoning && (
+                                <ReasoningTimeline reasoning={reasoning} isDark={isDark} isStreaming={!children || children === ''} />
+                            )}
                             {logs && logs.length > 0 && (
                                 <BotLogsTimeline logs={logs} isDark={isDark} isComplete={isComplete} />
                             )}
