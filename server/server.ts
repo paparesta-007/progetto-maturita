@@ -371,7 +371,8 @@ async function getSuggestedQuestion(question: string, answer: string): Promise<s
                     }
                 ],
                 response_format: { type: "json_object" }, // Forza l'output JSON
-                temperature: 0.7
+                temperature: 0.5,
+                reasoning: { effort: "none" }
             })
         });
 

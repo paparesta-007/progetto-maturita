@@ -104,6 +104,7 @@ export const sendNormalMessage = async (
                 const newConvId = newConvData[0].id;
                 await createMessage(messagePayload, newConvId, model);
                 setCurrentConversationId(newConvId);
+                _navigate(`/app/chat/${newConvId}`);
                 await fetchConversations();
             }
         }
@@ -263,6 +264,7 @@ export const sendStreamedMessage = async (
                 const newConvId = newConvData[0].id;
                 await createMessage(messagePayload, newConvId, model);
                 setCurrentConversationId(newConvId);
+                _navigate(`/app/chat/${newConvId}`);
                 await fetchConversations();
             }
         }

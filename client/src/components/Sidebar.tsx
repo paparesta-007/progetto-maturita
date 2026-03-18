@@ -372,8 +372,9 @@ const Sidebar = ({
                                 console.log("Apri modal upload");
                             } else {
                                 setMessageHistory([]);
-                                navigate('/app/chat/');
                                 setCurrentConversationId(null);
+                                setCurrentConversationName(null);
+                                navigate('/app/chat/');
                             }
                         }}
                     >
