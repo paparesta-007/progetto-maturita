@@ -179,6 +179,7 @@ export const sendStreamedMessage = async (
         let done = false;
         let accumulatedText = "";
         let accumulatedReasoning = "";
+        let accumulatedUsage: any = {};
         let ndjsonBuffer = "";
 
         while (!done) {
@@ -203,6 +204,8 @@ export const sendStreamedMessage = async (
                             accumulatedReasoning += data.content;
                         } else if (data.type === "text" && data.content) {
                             accumulatedText += data.content;
+                        } else if (data.type === "usage" && data.content) {
+                            accumulatedUsage = data.content;
                         }
                     } catch (parseErr) {
                         // Debug: logga perché il parsing fallisce
@@ -217,7 +220,8 @@ export const sendStreamedMessage = async (
                         newHistory[lastMsgIndex] = {
                             ...newHistory[lastMsgIndex],
                             content: accumulatedText,
-                            ...(accumulatedReasoning ? { reasoning: accumulatedReasoning } : {})
+                            ...(accumulatedReasoning ? { reasoning: accumulatedReasoning } : {}),
+                            ...(Object.keys(accumulatedUsage).length > 0 ? { usage: accumulatedUsage } : {})
                         };
                     }
                     return newHistory;
@@ -259,7 +263,7 @@ export const sendStreamedMessage = async (
         const messagePayload = {
             sender: message,
             content: accumulatedText,
-            usage: { total_tokens: 0 },
+            usage: Object.keys(accumulatedUsage).length > 0 ? accumulatedUsage : { total_tokens: 0 },
             model: model
         };
 

@@ -23,7 +23,6 @@ import { OpenRouter } from '@openrouter/sdk';
 import { createClient } from "@supabase/supabase-js";
 import { embedMany } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
-import { ur } from "zod/v4/locales";
 
 const upload = multer({ storage: multer.memoryStorage() });
 import { PDFParse } from "pdf-parse";
@@ -202,7 +201,7 @@ app.post("/api/completion/chat", async function (req: express.Request, res: expr
         
         // Mappa i valori del client ai livelli di reasoning di OpenRouter
         const reasoningEffortMap: Record<string, string> = {
-            fast: "low",
+            fast: "minimal",
             standard: "medium",
             accurate: "high"
         };
@@ -382,7 +381,7 @@ async function getSuggestedQuestion(question: string, answer: string): Promise<s
                 messages: [
                     { 
                         role: "system", 
-                        content: "Sei un utile assistente AI che risponde sempre in formato JSON. Genera domande di approfondimento nella stessa lingua dell'input." 
+                        content: "Sei un utile assistente AI che risponde sempre in formato JSON. Genera domande brevi dirette e chiare di approfondimento nella stessa lingua dell'input." 
                     },
                     { 
                         role: "user", 
@@ -437,8 +436,9 @@ app.post("/api/streamingOutput", async function (req: express.Request, res: expr
         const selectedModel = modelName ? modelName : "google/gemini-2.0-flash-001";
 
         // Mappa i valori del client ai livelli di reasoning di OpenRouter
+        console.log("Received reasoning level from client:", reasoning);
         const reasoningEffortMap: Record<string, string> = {
-            fast: "low",
+            fast: "minimal",
             standard: "medium",
             accurate: "high"
         };
@@ -474,6 +474,7 @@ app.post("/api/streamingOutput", async function (req: express.Request, res: expr
                 model: selectedModel,
                 messages: messages,
                 stream: true,
+                stream_options: { include_usage: true },
                 reasoning: { effort: reasoningEffort,}
             })
         });
@@ -511,8 +512,9 @@ app.post("/api/streamingOutput", async function (req: express.Request, res: expr
 
                         try {
                             const parsed = JSON.parse(dataStr);
-                            const reasoningPart = parsed.choices[0]?.delta?.reasoning;
-                            const textPart = parsed.choices[0]?.delta?.content;
+                            const reasoningPart = parsed.choices?.[0]?.delta?.reasoning;
+                            const textPart = parsed.choices?.[0]?.delta?.content;
+                            const usagePart = parsed.usage;
                             
                             // Invia reasoning chunk in tempo reale
                             if (reasoningPart) {
@@ -523,6 +525,12 @@ app.post("/api/streamingOutput", async function (req: express.Request, res: expr
                             if (textPart) {
                                 res.write(JSON.stringify({ type: "text", content: textPart }) + "\n");
                                 await delay(11);
+                            }
+
+                            // Invia usage chunk
+                            if (usagePart && Object.keys(usagePart).length > 0) {
+                                res.write(JSON.stringify({ type: "usage", content: usagePart }) + "\n");
+                                console.log("OpenRouter Stream Usage:", usagePart);
                             }
                         } catch (parseError) {
                             console.warn("⚠️ Errore nel parsing del chunk JSON:", parseError);
