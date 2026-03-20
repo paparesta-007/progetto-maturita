@@ -137,10 +137,26 @@ const Textbar = () => {
             textareaRef.current.style.height = "auto";
         }
     };
-    const handleSendMessage = () => {
-        sendMessage(inputValue, functionality, reasoning);
-        resetTextarea();
-        setFiles([]);
+    const handleSendMessage = async () => {
+        try {
+            const filePromises = files.map(file => {
+                return new Promise<{ type: string, url: string }>((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.readAsDataURL(file.originalFile);
+                    reader.onload = () => resolve({ 
+                        type: file.originalFile.type.startsWith('image/') ? 'image_url' : 'file_url', 
+                        url: reader.result as string 
+                    });
+                    reader.onerror = error => reject(error);
+                });
+            });
+            const attachedFiles = await Promise.all(filePromises);
+            sendMessage(inputValue, functionality, reasoning, attachedFiles);
+            resetTextarea();
+            setFiles([]);
+        } catch (error) {
+            console.error("Errore conversione file:", error);
+        }
     }
     return (
         <div className={styles.container} ref={menuRef}>

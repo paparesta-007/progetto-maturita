@@ -8,6 +8,7 @@ export interface ChatOptions {
     allowedCustomInstructions?: string | boolean;
     isTemporary?: boolean;
     reasoning?: string;
+    attachedFiles?: any[];
 }
 
 // ============================================================
@@ -54,11 +55,19 @@ export const sendNormalMessage = async (
                 personalInfo,
                 tone,
                 allowedCustomInstructions,
-                reasoning
+                reasoning,
+                attachedFiles: options.attachedFiles
             }),
         });
 
-        if (!response.ok) throw new Error(`Errore API Chat: ${response.statusText}`);
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            const errorMsg = errData?.error?.message?.toLowerCase() || JSON.stringify(errData).toLowerCase();
+            if (errorMsg.includes("image") || errorMsg.includes("vision") || errorMsg.includes("support")) {
+                throw new Error("Il modello selezionato non supporta l'analisi di immagini.");
+            }
+            throw new Error(`Errore API Chat: ${errData?.error?.message || response.statusText}`);
+        }
 
         const data = await response.json();
         const responseText = data.text;
@@ -110,9 +119,16 @@ export const sendNormalMessage = async (
             }
         }
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Errore sendNormalMessage:", error);
-        setMessageHistory((prev) => [...prev, { role: 'bot', content: "Si è verificato un errore durante la richiesta.", model: "System" }]);
+        
+        let displayError = error.message || "Si è verificato un errore durante la richiesta.";
+        const lowerError = displayError.toLowerCase();
+        if (lowerError.includes("image") || lowerError.includes("vision") || lowerError.includes("support")) {
+            displayError = "Il modello selezionato non supporta l'analisi di immagini.";
+        }
+
+        setMessageHistory((prev) => [...prev, { role: 'bot', content: `⚠️ Errore: ${displayError}`, model: "System" }]);
     } finally {
         setLoading(false);
     }
@@ -168,11 +184,19 @@ export const sendStreamedMessage = async (
                 personalInfo,
                 tone,
                 allowedCustomInstructions,
-                reasoning
+                reasoning,
+                attachedFiles: options.attachedFiles
             }),
         });
 
-        if (!response.ok || !response.body) throw new Error(response.statusText);
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            const errorMsg = errData?.error?.message?.toLowerCase() || JSON.stringify(errData).toLowerCase();
+            if (errorMsg.includes("image") || errorMsg.includes("vision") || errorMsg.includes("support")) {
+                throw new Error("Il modello selezionato non supporta l'analisi di immagini.");
+            }
+            throw new Error(errData?.error?.message || response.statusText);
+        }
 
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
@@ -206,8 +230,13 @@ export const sendStreamedMessage = async (
                             accumulatedText += data.content;
                         } else if (data.type === "usage" && data.content) {
                             accumulatedUsage = data.content;
+                        } else if (data.type === "error") {
+                            throw new Error(data.error);
                         }
-                    } catch (parseErr) {
+                    } catch (parseErr: any) {
+                        if (parseErr.message && !parseErr.message.includes("JSON")) {
+                            throw parseErr; // Rilancia errori applicativi (ex. data.type === 'error')
+                        }
                         // Debug: logga perché il parsing fallisce
                         console.error("NDJSON parse error:", parseErr, "Line:", line.substring(0, 100));
                     }
@@ -298,8 +327,16 @@ export const sendStreamedMessage = async (
             }
         }
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Errore durante lo streaming:", error);
+        
+        let displayError = error.message || "Si è verificato un problema.";
+        const lowerError = displayError.toLowerCase();
+        if (lowerError.includes("image") || lowerError.includes("vision") || lowerError.includes("support")) {
+            displayError = "Il modello selezionato non supporta l'analisi di immagini.";
+        }
+
+        setMessageHistory((prev) => [...prev, { role: 'bot', content: `⚠️ Errore: ${displayError}`, model: "System" }]);
     } finally {
         setLoading(false);
     }

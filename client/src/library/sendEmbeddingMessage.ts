@@ -10,7 +10,8 @@ export const sendEmbeddingMessage = async (
     userId: string,
     documentId: string,
     functionality: string,
-    reasoning: string
+    reasoning: string,
+    attachedFiles?: any[]
 ) => {
     if (!message.trim()) return;
 
@@ -43,11 +44,19 @@ export const sendEmbeddingMessage = async (
                 model: typeof model === "string" ? model : (model?.name_id || "google/gemini-2.5-flash-lite"),
                 user_id: userId,
                 document_id: documentId,
-                reasoning: reasoning
+                reasoning: reasoning,
+                attachedFiles: attachedFiles
             }),
         });
 
-        if (!response.ok) throw new Error(`Errore API: ${response.statusText}`);
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            const errorMsg = errData?.error?.message?.toLowerCase() || JSON.stringify(errData).toLowerCase();
+            if (errorMsg.includes("image") || errorMsg.includes("vision") || errorMsg.includes("support")) {
+                throw new Error("Il modello selezionato non supporta l'analisi di immagini.");
+            }
+            throw new Error(`Errore API: ${errData?.error?.message || response.statusText}`);
+        }
         if (!response.body) throw new Error("Risposta vuota dal server");
 
         const reader = response.body.getReader();
@@ -115,14 +124,20 @@ export const sendEmbeddingMessage = async (
             }
         }
 
-    } catch (error) {
+    } catch (error: any) {
         console.error("Errore sendEmbeddingMessage:", error);
+        
+        let displayError = error.message || "Errore durante la comunicazione con il server RAG.";
+        const lowerError = displayError.toLowerCase();
+        if (lowerError.includes("image") || lowerError.includes("vision") || lowerError.includes("support")) {
+            displayError = "Il modello selezionato non supporta l'analisi di immagini.";
+        }
         
         // Feedback visivo in caso di errore
         setMessageHistory((prev) => 
             prev.map(msg => 
                 msg.id === botMessageId 
-                    ? { ...msg, content: "⚠️ Errore durante la comunicazione con il server RAG." } 
+                    ? { ...msg, content: `⚠️ Errore: ${displayError}` } 
                     : msg
             )
         );
