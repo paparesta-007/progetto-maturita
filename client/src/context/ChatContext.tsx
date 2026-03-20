@@ -5,7 +5,7 @@ import getMessages from "../services/supabase/Conversation/getMessages";
 import { sendNormalMessage, sendStreamedMessage, sendCanvasMessage, sendWebSearchMessage, type ChatOptions } from "../library/sendMessage";
 import { useNavigate } from "react-router-dom";
 interface ChatContextType {
-    sendMessage: (message: string, functionality: string,reasoning:string) => void;
+    sendMessage: (message: string, functionality: string, reasoning: string, files?: any[]) => void;
     messageHistory: { role: 'user' | 'bot'; content: string; usage?: any, model?: string, suggestedQuestions?: string[], reasoning?: string | null, logs?: string[], isComplete?: boolean }[];
     loading: boolean;
     conversations: any[]; // Per tenere traccia delle conversazioni salvate
@@ -65,14 +65,15 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }, [user?.id]);
 
-    const sendMessage = useCallback(async (message: string, functionality: string, reasoning: string) => {
+    const sendMessage = useCallback(async (message: string, functionality: string, reasoning: string, files?: any[]) => {
         const chatOptions: ChatOptions = {
             systemPrompt,
             personalInfo,
             tone,
             allowedCustomInstructions,
             isTemporary: isTemporaryConversation,
-            reasoning
+            reasoning,
+            attachedFiles: files
         };
 
         try {

@@ -207,11 +207,24 @@ app.post("/api/completion/chat", async function (req: express.Request, res: expr
         };
         const reasoningEffort = reasoning ? reasoningEffortMap[reasoning] || "medium" : "medium";
         
+        let userContent: any = message;
+        if (req.body.attachedFiles && req.body.attachedFiles.length > 0) {
+            userContent = [{ type: "text", text: message || "Immagine in allegato" }];
+            req.body.attachedFiles.forEach((f: any) => {
+                if (f.type === "image_url") {
+                    userContent.push({
+                        type: "image_url",
+                        image_url: { url: f.url }
+                    });
+                }
+            });
+        }
+
         // Costruiamo i messaggi nello standard API: System prompt all'inizio
         const messages = [
             { role: 'system', content: systemPrompt },
             ...history,
-            { role: 'user', content: message }
+            { role: 'user', content: userContent }
         ];
 
         // 1. START Timer 
@@ -455,10 +468,23 @@ app.post("/api/streamingOutput", async function (req: express.Request, res: expr
             allowedCustomInstructions
         } as any);
 
+        let userContent: any = message;
+        if (req.body.attachedFiles && req.body.attachedFiles.length > 0) {
+            userContent = [{ type: "text", text: message || "Immagine in allegato" }];
+            req.body.attachedFiles.forEach((f: any) => {
+                if (f.type === "image_url") {
+                    userContent.push({
+                        type: "image_url",
+                        image_url: { url: f.url }
+                    });
+                }
+            });
+        }
+
         const messages = [
             { role: 'system', content: systemPrompt },
             ...history,
-            { role: 'user', content: message }
+            { role: 'user', content: userContent }
         ];
 
         // 1. Chiamata API Streaming
@@ -1105,6 +1131,19 @@ app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response
 
         const selectedModel = model || "google/gemini-2.5-flash-lite";
 
+        let userContent: any = question;
+        if (req.body.attachedFiles && req.body.attachedFiles.length > 0) {
+            userContent = [{ type: "text", text: question || "Immagine in allegato" }];
+            req.body.attachedFiles.forEach((f: any) => {
+                if (f.type === "image_url") {
+                    userContent.push({
+                        type: "image_url",
+                        image_url: { url: f.url }
+                    });
+                }
+            });
+        }
+
         // 3. Genera la RISPOSTA PRINCIPALE chiamando OpenRouter nativamente
         sendLog(`🤖 [Fase 5/8] Chiamata a OpenRouter (Modello: ${selectedModel}) per la risposta principale... ${reasoningEffort}`);
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -1119,7 +1158,7 @@ app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response
                 model: selectedModel,
                 messages: [
                     { role: 'system', content: systemPrompt },
-                    { role: 'user', content: question }
+                    { role: 'user', content: userContent }
                 ],
                 stream: false,
                 reasoning: { effort: reasoningEffort }

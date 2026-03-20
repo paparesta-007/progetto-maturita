@@ -29,7 +29,7 @@ export interface DocumentContextType {
     fetchUserDocuments: (userId: string, force?: boolean) => Promise<void>;
 
     // --- NUOVE PROPRIETÀ AGGIUNTE (Chat & Model) ---    // --- NUOVE PROPRIETÀ AGGIUNTE (Chat & Model) ---
-    sendMessage: (message: string, functionality: string, reasoning: string) => Promise<void>;
+    sendMessage: (message: string, functionality: string, reasoning: string, files?: any[]) => Promise<void>;
     messageHistory: { role: 'user' | 'bot'; content: string; usage?: any; model?: string; suggestedQuestions?: string[] }[];
     setMessageHistory: React.Dispatch<React.SetStateAction<{ role: 'user' | 'bot'; content: string; usage?: any; model?: string; suggestedQuestions?: string[] }[]>>;
     loading: boolean;
@@ -97,7 +97,7 @@ export const DocumentProvider = ({ children }: { children: React.ReactNode }) =>
     }, [documentList]);
 
     // --- NUOVA FUNZIONE SENDMESSAGE (Placeholder) ---
-        const sendMessage = useCallback(async (message: string, functionality: string, reasoning: string) => {
+    const sendMessage = useCallback(async (message: string, functionality: string, reasoning: string, files?: any[]) => {
         console.log("modello del ask-pdf", model, currentDocument?.[0]?.document_id)
         await sendEmbeddingMessage(
             message,
@@ -107,7 +107,8 @@ export const DocumentProvider = ({ children }: { children: React.ReactNode }) =>
             user?.id || "",
             currentDocument?.[0]?.document_id || currentDocument?.document_id || "",
             functionality,
-            reasoning
+            reasoning,
+            files
         );
     }, [model, user?.id, currentDocument]);
     const value: DocumentContextType = {
