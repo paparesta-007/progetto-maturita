@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import DocumentWizard from "./DocumentWizard/DocumentWizard";
 import { useDocument } from "../context/DocumentContext";
 import { useParams } from "react-router-dom";
@@ -17,6 +17,11 @@ const DocumentPage = () => {
     const { setIsLivePreview } = useApp();
     const isDark = theme === 'dark';
     const { currentStep, currentDocument, setCurrentDocument, messageHistory, loading, setMessageHistory, sendMessage } = useDocument();
+    
+    const messagesEndRef = useRef<HTMLDivElement | null>(null);
+    const chatContainerRef = useRef<HTMLDivElement | null>(null);
+    const isUserScrolledUp = useRef(false);
+
     const styles = {
         wrapper: `flex flex-col h-screen overflow-hidden relative transition-colors duration-300 ${isDark ? "bg-neutral-950" : "bg-white"}`,
         headerText: `text-md px-4 pt-4 font-medium mb-2 ${isDark ? "text-neutral-300" : "text-neutral-700"}`,
@@ -24,6 +29,33 @@ const DocumentPage = () => {
         footer: `flex-shrink-0 w-full pt-0 px-4 pb-4 transition-colors duration-300 ${isDark ? "bg-neutral-950" : "bg-white"}`,
         disclaimer: `text-center text-[10px] mt-2 ${isDark ? "text-neutral-600" : "text-neutral-600"}`
     };
+
+    const scrollToBottom = (force = false) => {
+        if (force) {
+            isUserScrolledUp.current = false;
+        }
+        if (messagesEndRef.current && !isUserScrolledUp.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: force ? "auto" : "smooth" });
+        }
+    };
+
+    const handleScroll = () => {
+        if (!chatContainerRef.current) return;
+        const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+        const distanceToBottom = scrollHeight - scrollTop - clientHeight;
+        isUserScrolledUp.current = distanceToBottom > 100;
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messageHistory, loading]);
+
+    useEffect(() => {
+        if (documentId) {
+            setTimeout(() => scrollToBottom(true), 100);
+        }
+    }, [documentId]);
+
     useEffect(() => {
         setIsLivePreview(false);
         const fetchDocument = async () => {
@@ -62,7 +94,11 @@ const DocumentPage = () => {
             <h2 className={styles.headerText}>
                 {currentDocument ? `Modifica Documento: ${currentDocument[0].metadata.title}` : "Nuovo Documento"}
             </h2>
-            <div className={styles.main}>
+            <div 
+                className={styles.main}
+                ref={chatContainerRef}
+                onScroll={handleScroll}
+            >
                 {messageHistory.length !== 0 ? (
                     <main className={styles.main}>
                         <div className="max-w-3xl mx-auto">
@@ -87,6 +123,7 @@ const DocumentPage = () => {
                                     }
                                 })}
                                 {loading && <BotLoading />}
+                                <div ref={messagesEndRef} />
                             </div>
                         </div>
                     </main>

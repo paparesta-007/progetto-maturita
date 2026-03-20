@@ -44,6 +44,10 @@ const ChatContent = () => {
     } = useChat();
     
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
+    const chatContainerRef = useRef<HTMLDivElement | null>(null);
+    
+    // Riferimento per sapere se eravamo in fondo l'ultima volta
+    const isUserScrolledUp = useRef(false);
 
     // --- LOGICA TEMA ---
     const isDark = theme === 'dark';
@@ -62,15 +66,36 @@ const ChatContent = () => {
         disclaimer: `text-center text-[10px] mt-2 ${isDark ? "text-neutral-600" : "text-neutral-600"}`
     };
 
-    const scrollToBottom = () => {
-        if (messagesEndRef.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    const scrollToBottom = (force = false) => {
+        if (force) {
+            isUserScrolledUp.current = false;
+        }
+
+        if (messagesEndRef.current && !isUserScrolledUp.current) {
+            messagesEndRef.current.scrollIntoView({ behavior: force ? "auto" : "smooth" });
         }
     };
 
+    const handleScroll = () => {
+        if (!chatContainerRef.current) return;
+        const { scrollTop, scrollHeight, clientHeight } = chatContainerRef.current;
+        // consider user scrolled up if they are more than 100px from the bottom
+        const distanceToBottom = scrollHeight - scrollTop - clientHeight;
+        isUserScrolledUp.current = distanceToBottom > 100;
+    };
+
+    // Scrolla sempre quando c'è un nuovo item nella history se non abbiamo scrollato su
     useEffect(() => {
         scrollToBottom();
     }, [messageHistory, loading]);
+
+    // Quando si cambia conversazione o la si apre per la prima volta, si forza lo scroll
+    useEffect(() => {
+        if (currentConversationId || conversationId) {
+            // Un piccolo delay per assicurarsi che il DOM sia renderizzato
+            setTimeout(() => scrollToBottom(true), 100);
+        }
+    }, [currentConversationId, conversationId]);
 
     useEffect(() => {
         setIsLivePreview(false); // Disattiva Live Preview quando entri nella chat
@@ -171,7 +196,11 @@ const ChatContent = () => {
                 <div className={chatColumnClass}>
                     {/* Container scrollabile per i messaggi */}
                     {/* min-w-0 previene che i figli flex espandano il genitore oltre la larghezza */}
-                    <div className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-4 min-w-0">
+                    <div 
+                        className="flex-1 overflow-y-auto overflow-x-hidden custom-scrollbar p-4 min-w-0"
+                        ref={chatContainerRef}
+                        onScroll={handleScroll}
+                    >
                         {messageHistory.length !== 0 ? (
                             <div className={`space-y-6 ${chatContentClass}`}>
                                 {messageHistory.map((msg, index) => (
