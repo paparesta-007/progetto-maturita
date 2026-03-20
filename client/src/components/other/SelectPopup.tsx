@@ -80,13 +80,22 @@ function SelectPopup<T = any>({
                 ref={triggerRef}
                 type="button"
                 onClick={toggleOpen}
-                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-sm transition-colors select-none ${
+                className={`flex items-center gap-1.5 px-2 py-1 rounded-lg text-sm transition-colors select-none ${
                     isDark
                         ? "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200"
                         : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800"
                 }`}
             >
-                <span>{renderLabel ? renderLabel(selectedOption) : (selectedOption?.label ?? placeholder)}</span>
+                <div className="flex items-center gap-1.5">
+                    {renderLabel ? (
+                        renderLabel(selectedOption)
+                    ) : (
+                        <>
+                            {selectedOption?.icon && <span className="opacity-70 flex-shrink-0">{selectedOption.icon}</span>}
+                            <span>{selectedOption?.label ?? placeholder}</span>
+                        </>
+                    )}
+                </div>
                 <motion.span animate={{ rotate: open ? 180 : 0 }} transition={{ duration: 0.2 }}>
                     <CaretDownIcon size={12} />
                 </motion.span>

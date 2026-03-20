@@ -74,15 +74,26 @@ const CalendarPage = () => {
         setCurrentWeekStart(d);
     };
 
-    const getEventsForDayAndHour = (day: Date, hour: number) => {
-        return events.filter(event => {
-            const startStr = event.start.dateTime || event.start.date;
-            const startDate = new Date(startStr);
-            return startDate.getDate() === day.getDate() &&
-                startDate.getMonth() === day.getMonth() &&
-                startDate.getFullYear() === day.getFullYear() &&
-                startDate.getHours() === hour;
-        });
+    const ROW_HEIGHT = 40; // h-10 = 40px
+
+    const getEventsStartingAt = (day: Date, hour: number) => {
+        return events
+            .filter(event => {
+                const startStr = event.start.dateTime || event.start.date;
+                const startDate = new Date(startStr);
+                return startDate.getDate() === day.getDate() &&
+                    startDate.getMonth() === day.getMonth() &&
+                    startDate.getFullYear() === day.getFullYear() &&
+                    startDate.getHours() === hour;
+            })
+            .map(event => {
+                const start = new Date(event.start.dateTime || event.start.date);
+                const end = new Date(event.end.dateTime || event.end.date);
+                const durationMs = end.getTime() - start.getTime();
+                const durationHours = Math.max(durationMs / (1000 * 60 * 60), 0.5); // min 30min
+                const startMinuteOffset = start.getMinutes() / 60; // fraction of hour
+                return { ...event, durationHours, startMinuteOffset };
+            });
     };
 
     return (
@@ -94,9 +105,9 @@ const CalendarPage = () => {
                     {currentWeekStart.toLocaleDateString("it-IT", { month: 'long', year: 'numeric' }).toUpperCase()}
                 </h1>
                 <div className="flex gap-2">
-                    <button onClick={handlePrev} className={`px-4 py-2 border rounded-md transition ${borderColor} hover:bg-neutral-100 dark:hover:bg-neutral-800`}>Prev</button>
-                    <button onClick={() => setCurrentWeekStart(getStartOfWeek(new Date()))} className={`px-4 py-2 border rounded-md transition ${borderColor} hover:bg-neutral-100 dark:hover:bg-neutral-800`}>Oggi</button>
-                    <button onClick={handleNext} className={`px-4 py-2 border rounded-md transition ${borderColor} hover:bg-neutral-100 dark:hover:bg-neutral-800`}>Next</button>
+                    <button onClick={handlePrev} className={`px-4 py-2 border rounded-md transition ${borderColor} ${isDark ? "dark:hover:bg-neutral-800" : "hover:bg-neutral-100"}`}>Prev</button>
+                    <button onClick={() => setCurrentWeekStart(getStartOfWeek(new Date()))} className={`px-4 py-2 border rounded-md transition ${borderColor} ${isDark ? "dark:hover:bg-neutral-800" : "hover:bg-neutral-100"}`}>Oggi</button>
+                    <button onClick={handleNext} className={`px-4 py-2 border rounded-md transition ${borderColor} ${isDark ? "dark:hover:bg-neutral-800" : "hover:bg-neutral-100"}`}>Next</button>
                 </div>
             </div>
 
@@ -123,17 +134,33 @@ const CalendarPage = () => {
 
                             {/* Celle Giornaliere */}
                             {weekDays.map((day, i) => {
-                                const dayEvents = getEventsForDayAndHour(day, hour);
+                                const dayEvents = getEventsStartingAt(day, hour);
                                 return (
                                     <div key={`${hour}-${i}`} className={`border-r border-b relative h-10 group hover:bg-neutral-500/10 ${borderColor}`}>
-                                        {dayEvents.map(event => (
-                                            <div
-                                                key={event.id}
-                                                className="absolute inset-x-1 p-1 text-[10px] leading-tight rounded bg-blue-600/20 border border-blue-500 text-blue-600 dark:text-blue-200 overflow-hidden z-10"
-                                            >
-                                                {event.summary}
-                                            </div>
-                                        ))}
+                                        {dayEvents.map(event => {
+                                            const topPx = event.startMinuteOffset * ROW_HEIGHT;
+                                            const heightPx = event.durationHours * ROW_HEIGHT - 2; // -2 for gap
+                                            return (
+                                                <div
+                                                    key={event.id}
+                                                    style={{ top: `${topPx}px`, height: `${heightPx}px` }}
+                                                    className={`absolute inset-x-1 p-1.5 text-[10px] leading-tight rounded-md overflow-hidden z-10 border transition-colors ${
+                                                        isDark
+                                                            ? "bg-blue-500/20 border-blue-500/40 text-blue-200"
+                                                            : "bg-blue-500 border-blue-600 text-white"
+                                                    }`}
+                                                >
+                                                    <span className="font-semibold block truncate">{event.summary}</span>
+                                                    {event.durationHours >= 1 && (
+                                                        <span className={`block mt-0.5 ${isDark ? "text-blue-300/70" : "text-blue-100"}`}>
+                                                            {new Date(event.start.dateTime).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
+                                                            {" – "}
+                                                            {new Date(event.end.dateTime).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 );
                             })}

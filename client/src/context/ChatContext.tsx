@@ -43,7 +43,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const [loading, setLoading] = useState(false);
     const [conversations, setConversations] = useState<any[]>([]); // Per tenere traccia delle conversazioni salvate
     const [areConversationsLoaded, setAreConversationsLoaded] = useState(false); // Per sapere quando abbiamo finito di caricare le conversazioni
-    const [model, setModel] = useState<any>({ name: "OpenAI: openai/gpt-oss-120b:nitro", provider: "OpenAI", name_id: "openai/gpt-oss-120b:nitro", cost_per_input_token: 0.039, cost_per_output_token: 0.19 });
+    const [model, setModel] = useState<any>({ name: "StepFun: Step 3.5 Flash (free)", provider: "Stepfun", name_id: "stepfun/step-3.5-flash:free", cost_per_input_token: 0.0, cost_per_output_token: 0 });
     const [isStreamTextEnabled, setIsStreamTextEnabled] = useState(true);
     const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
     const [currentConversationName, setCurrentConversationName] = useState<string | null>(null);
