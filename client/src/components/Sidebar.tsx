@@ -17,7 +17,7 @@ import {
     Search,
     Keyboard
 } from 'lucide-react';
-import { ClockCounterClockwiseIcon, DotsThreeIcon, PencilLineIcon, ShareNetworkIcon, SidebarSimpleIcon, TrashIcon } from "@phosphor-icons/react";
+import { ClockCounterClockwiseIcon, DotsThreeIcon, PencilLineIcon, ShareNetworkIcon, SidebarSimpleIcon, SquaresFourIcon, TrashIcon } from "@phosphor-icons/react";
 import supabase from "../library/supabaseclient";
 import selectUserDetails from "../services/supabase/User/SelectuserDetails";
 import { useChat } from "../context/ChatContext";
@@ -241,6 +241,7 @@ const Sidebar = ({
         { path: "/app/chat", label: "Chatbot AI", icon: <MessageSquare size={17} /> },
         { path: "/app/documents", label: "Knowledge Base", icon: <FileText size={17} /> },
         { path: "/app/calendar", label: "Agenda", icon: <Calendar size={17} /> },
+        { path: "/app/artifacts", label: "Artefatti", icon: <SquaresFourIcon size={17} /> }
     ];
 
     // --- Handlers ---

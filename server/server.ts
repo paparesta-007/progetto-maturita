@@ -390,7 +390,7 @@ async function getSuggestedQuestion(question: string, answer: string): Promise<s
                 "X-Title": "NomeTuaApp"
             },
             body: JSON.stringify({
-                model: "mistralai/ministral-3b-2512",
+                model: "mistralai/mistral-nemo",
                 messages: [
                     { 
                         role: "system", 
@@ -1050,7 +1050,7 @@ app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response
     try {
         const { question, model, user_id, document_id, reasoning } = req.body;
         const reasoningEffortMap: Record<string, string> = {
-            fast: "none",
+            fast: "minimal",
             standard: "medium",
             accurate: "high"
         };

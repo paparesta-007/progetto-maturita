@@ -1,4 +1,4 @@
-import { Paperclip, PaperPlaneTilt, XIcon, GlobeIcon, StopIcon } from "@phosphor-icons/react";
+import { Paperclip, PaperPlaneTilt, XIcon, GlobeIcon, StopIcon, LightningIcon, GaugeIcon, BrainIcon } from "@phosphor-icons/react";
 import React, { useState, useEffect, useRef } from "react";
 import Tooltip from "./other/Tooltip";
 import { useChat } from "../context/ChatContext";
@@ -23,9 +23,9 @@ const FUNCTIONALITIES: SelectOption<string>[] = [
 
 ];
 const REASONING: SelectOption<string>[] = [
-    { label: "Veloce", value: "fast", description: "" },
-    { label: "Standard", value: "standard", description: "" },
-    { label: "Accurato", value: "accurate", description: "" },
+    { label: "Veloce", value: "fast", icon: <LightningIcon size={16} />, description: "Risposte rapide" },
+    { label: "Standard", value: "standard", icon: <GaugeIcon size={16} />, description: "Bilanciato" },
+    { label: "Accurato", value: "accurate", icon: <BrainIcon size={16} />, description: "Più preciso" },
 ];
 
 const Textbar = () => {
@@ -143,9 +143,9 @@ const Textbar = () => {
                 return new Promise<{ type: string, url: string }>((resolve, reject) => {
                     const reader = new FileReader();
                     reader.readAsDataURL(file.originalFile);
-                    reader.onload = () => resolve({ 
-                        type: file.originalFile.type.startsWith('image/') ? 'image_url' : 'file_url', 
-                        url: reader.result as string 
+                    reader.onload = () => resolve({
+                        type: file.originalFile.type.startsWith('image/') ? 'image_url' : 'file_url',
+                        url: reader.result as string
                     });
                     reader.onerror = error => reject(error);
                 });
