@@ -23,7 +23,7 @@ import { OpenRouter } from '@openrouter/sdk';
 import { createClient } from "@supabase/supabase-js";
 import { embedMany } from "ai";
 import { createOpenAI } from "@ai-sdk/openai";
-
+import { normalizeText, splitTextIntoChunks, validateChunks } from "./utils/textProcessing";
 const upload = multer({ storage: multer.memoryStorage() });
 import { PDFParse } from "pdf-parse";
 const port: number = 3000;
@@ -49,7 +49,7 @@ console.log("Percorso cercato per .env:", envPath);
 dotenv.config({ path: path.resolve(__dirname, ".env.local") });
 const openRouter = createOpenRouter({
     apiKey: process.env.VITE_OPENROUTER_API_KEY,
- 
+
 });
 
 const openrouterEmbeddings = createOpenAI({
@@ -198,7 +198,7 @@ app.post("/api/completion/chat", async function (req: express.Request, res: expr
 
         const selectedModel = modelName ? modelName : "google/gemini-2.0-flash-001";
         const systemPrompt = getSystemPrompt({ selectedModel, systemPromptUser, personalInfo, tone, allowedCustomInstructions } as any);
-        
+
         // Mappa i valori del client ai livelli di reasoning di OpenRouter
         const reasoningEffortMap: Record<string, string> = {
             fast: "minimal",
@@ -206,7 +206,7 @@ app.post("/api/completion/chat", async function (req: express.Request, res: expr
             accurate: "high"
         };
         const reasoningEffort = reasoning ? reasoningEffortMap[reasoning] || "medium" : "medium";
-        
+
         let userContent: any = message;
         if (req.body.attachedFiles && req.body.attachedFiles.length > 0) {
             userContent = [{ type: "text", text: message || "Immagine in allegato" }];
@@ -253,7 +253,7 @@ app.post("/api/completion/chat", async function (req: express.Request, res: expr
         }
 
         const data = await response.json();
-        
+
         // Estrazione testo e mapping dell'usage per mantenere compatibilità col frontend
         const text = data.choices[0]?.message?.content || "";
         const reasoningContent = data.choices[0]?.message?.reasoning || null;
@@ -275,12 +275,12 @@ app.post("/api/completion/chat", async function (req: express.Request, res: expr
             : 0;
 
         let suggestedQuestions = await getSuggestedQuestion(message, text);
-        
+
         console.log("******TEST COMPLETATO: METRICHE******");
         console.log("Usage:", usage);
         console.log(`Latenza: ${latencyMs} ms, Throughput: ${throughput.toFixed(2)} t/s`);
         if (reasoningContent) console.log(`Reasoning presente: ${reasoningContent.length} caratteri`);
-        
+
         res.send({
             text,
             usage,
@@ -316,15 +316,16 @@ app.post("/api/gemini/getTitleConversation", async function (req: express.Reques
                 "X-Title": "NomeTuaApp"
             },
             body: JSON.stringify({
-                model: "mistralai/mistral-nemo",
+                model: "openai/gpt-oss-20b:nitro",
                 messages: [
-                    { 
-                        role: "user", 
-                        content: prompt 
+                    {
+                        role: "user",
+                        content: prompt
                     }
                 ],
                 temperature: 0.5, // Leggermente più bassa per essere più deterministico nel titolo
-                max_tokens: 50    // Limitiamo i token perché il titolo deve essere breve
+                max_tokens: 50,    // Limitiamo i token perché il titolo deve essere breve
+                reasoning: { effort: "minimal" }
             })
         });
 
@@ -334,10 +335,10 @@ app.post("/api/gemini/getTitleConversation", async function (req: express.Reques
         }
 
         const data = await response.json();
-        
+
         // Estraiamo il testo e puliamo eventuali spazi bianchi o newline indesiderati
         const text = (data.choices[0]?.message?.content || "Nuova Conversazione").trim();
-        
+
         // Mappiamo l'usage per mantenere la compatibilità con il tuo frontend
         const usage = {
             promptTokens: data.usage?.prompt_tokens || 0,
@@ -346,7 +347,7 @@ app.post("/api/gemini/getTitleConversation", async function (req: express.Reques
         };
 
         res.send({ text, usage });
-        
+
     } catch (error) {
         next(error);
     }
@@ -362,7 +363,7 @@ app.post("/api/getSuggestedQuestion", async function (req: express.Request, res:
 
         const suggested_questions = await getSuggestedQuestion(message, response);
         res.send({ suggested_questions });
-        
+
     } catch (error) {
         next(error);
     }
@@ -390,20 +391,20 @@ async function getSuggestedQuestion(question: string, answer: string): Promise<s
                 "X-Title": "NomeTuaApp"
             },
             body: JSON.stringify({
-                model: "mistralai/mistral-nemo",
+                model: "openai/gpt-oss-20b:nitro",
                 messages: [
-                    { 
-                        role: "system", 
-                        content: "Sei un utile assistente AI che risponde sempre in formato JSON. Genera domande brevi dirette e chiare di approfondimento nella stessa lingua dell'input." 
+                    {
+                        role: "system",
+                        content: "Sei un utile assistente AI che risponde sempre in formato JSON. Genera domande brevi dirette e chiare di approfondimento nella stessa lingua dell'input."
                     },
-                    { 
-                        role: "user", 
-                        content: prompt 
+                    {
+                        role: "user",
+                        content: prompt
                     }
                 ],
                 response_format: { type: "json_object" }, // Forza l'output JSON
                 temperature: 0.5,
-                reasoning: { effort: "none" }
+                reasoning: { effort: "minimal" }
             })
         });
 
@@ -419,7 +420,7 @@ async function getSuggestedQuestion(question: string, answer: string): Promise<s
 
         // Parsiamo il contenuto JSON
         const parsed = JSON.parse(content);
-        
+
         // Validazione manuale (simile a quello che faceva Zod)
         if (parsed.questions && Array.isArray(parsed.questions)) {
             // Normalizziamo: il LLM a volte ritorna oggetti {domanda: "..."} invece di stringhe
@@ -501,7 +502,7 @@ app.post("/api/streamingOutput", async function (req: express.Request, res: expr
                 messages: messages,
                 stream: true,
                 stream_options: { include_usage: true },
-                reasoning: { effort: reasoningEffort,}
+                reasoning: { effort: reasoningEffort, }
             })
         });
 
@@ -541,12 +542,12 @@ app.post("/api/streamingOutput", async function (req: express.Request, res: expr
                             const reasoningPart = parsed.choices?.[0]?.delta?.reasoning;
                             const textPart = parsed.choices?.[0]?.delta?.content;
                             const usagePart = parsed.usage;
-                            
+
                             // Invia reasoning chunk in tempo reale
                             if (reasoningPart) {
                                 res.write(JSON.stringify({ type: "reasoning", content: reasoningPart }) + "\n");
                             }
-                            
+
                             // Invia text chunk in tempo reale
                             if (textPart) {
                                 res.write(JSON.stringify({ type: "text", content: textPart }) + "\n");
@@ -574,7 +575,7 @@ app.post("/api/streamingOutput", async function (req: express.Request, res: expr
         res.on('close', () => {
             console.log("Client disconnesso dalla stream.");
             // NOTA: Se si disconnette, idealmente dovresti fare reader.cancel() per fermare OpenRouter, ma non blocca l'app
-            reader.cancel().catch(() => {});
+            reader.cancel().catch(() => { });
         });
 
     } catch (error) {
@@ -583,211 +584,7 @@ app.post("/api/streamingOutput", async function (req: express.Request, res: expr
 });
 
 // ─── HELPER: Normalizza il testo estratto dal PDF prima del chunking ───
-function normalizeText(text: string): string {
-    return text
-        .normalize('NFC')
-        .replace(/\0/g, '')
-        // eslint-disable-next-line no-control-regex
-        .replace(/[\x01-\x08\x0B\x0C\x0E-\x1F\x7F]/g, '')
-        .replace(/[\t ]{2,}/g, ' ')
-        .replace(/\n{4,}/g, '\n\n\n')
-        .trim();
-}
 
-// ─── HELPER: Rileva heading/titoli di sezione nel testo ───
-function detectHeadings(text: string): Array<{ position: number; heading: string }> {
-    const headings: Array<{ position: number; heading: string }> = [];
-    const lines = text.split('\n');
-    let charPos = 0;
-
-    for (const line of lines) {
-        const trimmed = line.trim();
-        // Rileva heading: linee corte (<120 char), non vuote,
-        // che sono TUTTE MAIUSCOLE, oppure iniziano con numeri tipo "1.", "1.2", "Capitolo"
-        // oppure sono seguite da una riga vuota (tipico dei titoli in PDF)
-        const isHeading =
-            trimmed.length > 0 &&
-            trimmed.length < 120 &&
-            (
-                trimmed === trimmed.toUpperCase() && trimmed.length > 3 ||   // TUTTO MAIUSCOLO
-                /^(\d+\.)+\s/.test(trimmed) ||                                // 1. 1.2. 3.1.4.
-                /^(capitolo|cap\.|sezione|sez\.|parte|appendice)\s/i.test(trimmed) // Parole chiave italiane
-            );
-
-        if (isHeading) {
-            headings.push({ position: charPos, heading: trimmed });
-        }
-        charPos += line.length + 1; // +1 per il \n
-    }
-    return headings;
-}
-
-// ─── HELPER: Trova l'heading più vicino che precede una posizione ───
-function getNearestHeading(position: number, headings: Array<{ position: number; heading: string }>): string | null {
-    let nearest: string | null = null;
-    for (const h of headings) {
-        if (h.position <= position) {
-            nearest = h.heading;
-        } else {
-            break; // Headings sono ordinati per posizione
-        }
-    }
-    return nearest;
-}
-
-// ─── HELPER: Splitta un blocco di testo in frasi ───
-function splitIntoSentences(text: string): string[] {
-    // Regex che splitta dopo . ! ? ; seguiti da spazio o fine stringa
-    // Evita split su abbreviazioni comuni (es. "dott.", "pag.", "fig.", "es.", "ecc.")
-    const sentences = text.split(/(?<=[.!?;])\s+(?=[A-Z\d"«(])/g);
-    return sentences.filter(s => s.trim().length > 0);
-}
-
-// ─── CHUNKING ENGINE: Recursive Paragraph → Sentence → Word splitting ───
-function splitTextIntoChunks(
-    text: string,
-    chunkSize: number = 1500,
-    overlap: number = 300,
-    options: {
-        respectSentences?: boolean;
-        respectParagraphs?: boolean;
-        minChunkSize?: number;
-    } = {}
-): Array<{ content: string; metadata: { startChar: number; endChar: number; order: number; length: number; sectionHeading: string | null } }> {
-
-    const { minChunkSize = 100 } = options;
-
-    // 1️⃣ Normalizza line endings
-    const cleanedText = text
-        .replace(/\r\n/g, '\n')
-        .replace(/\n{3,}/g, '\n\n');
-
-    // 2️⃣ Rileva gli heading del documento
-    const headings = detectHeadings(cleanedText);
-
-    // 3️⃣ Livello 1: splitta per paragrafi (doppio newline)
-    const paragraphs: Array<{ text: string; startChar: number }> = [];
-    let pos = 0;
-    for (const para of cleanedText.split(/\n\n+/)) {
-        const trimmed = para.trim();
-        if (trimmed.length > 0) {
-            paragraphs.push({ text: trimmed, startChar: pos });
-        }
-        pos += para.length + 2; // +2 per \n\n
-    }
-
-    // 4️⃣ Assembla i chunk combinando paragrafi fino a raggiungere chunkSize
-    const chunks: Array<{ content: string; metadata: any }> = [];
-    let currentContent = '';
-    let currentStartChar = paragraphs.length > 0 ? paragraphs[0].startChar : 0;
-    let chunkOrder = 0;
-
-    function pushChunk(content: string, startChar: number, endChar: number) {
-        const trimmed = content.trim();
-        if (trimmed.length >= minChunkSize) {
-            chunks.push({
-                content: trimmed,
-                metadata: {
-                    startChar,
-                    endChar,
-                    order: chunkOrder++,
-                    length: trimmed.length,
-                    sectionHeading: getNearestHeading(startChar, headings)
-                }
-            });
-        }
-    }
-
-    // Funzione per spezzare un blocco troppo grande in sotto-frasi
-    function splitLargeBlock(blockText: string, blockStart: number) {
-        const sentences = splitIntoSentences(blockText);
-
-        let sentenceBuffer = '';
-        let bufferStart = blockStart;
-
-        for (const sentence of sentences) {
-            if (sentenceBuffer.length + sentence.length + 1 > chunkSize && sentenceBuffer.length > 0) {
-                // Salva il buffer corrente come chunk
-                pushChunk(sentenceBuffer, bufferStart, bufferStart + sentenceBuffer.length);
-                // Overlap: mantieni le ultime N chars
-                const overlapText = sentenceBuffer.slice(-overlap);
-                bufferStart = bufferStart + sentenceBuffer.length - overlapText.length;
-                sentenceBuffer = overlapText;
-            }
-            sentenceBuffer += (sentenceBuffer.length > 0 ? ' ' : '') + sentence;
-        }
-
-        // Flush buffer rimanente
-        if (sentenceBuffer.trim().length > 0) {
-            pushChunk(sentenceBuffer, bufferStart, bufferStart + sentenceBuffer.length);
-        }
-    }
-
-    for (let i = 0; i < paragraphs.length; i++) {
-        const para = paragraphs[i];
-
-        // Se il singolo paragrafo è già più grande di chunkSize, spezzalo per frasi
-        if (para.text.length > chunkSize) {
-            // Prima salva ciò che abbiamo accumulato
-            if (currentContent.length > 0) {
-                pushChunk(currentContent, currentStartChar, currentStartChar + currentContent.length);
-                currentContent = '';
-            }
-            // Splitta il paragrafo grande
-            splitLargeBlock(para.text, para.startChar);
-            currentStartChar = para.startChar + para.text.length;
-            continue;
-        }
-
-        // Se aggiungere questo paragrafo supera chunkSize, salva il chunk corrente
-        if (currentContent.length + para.text.length + 2 > chunkSize && currentContent.length > 0) {
-            pushChunk(currentContent, currentStartChar, currentStartChar + currentContent.length);
-
-            // Overlap: prendi le ultime N chars del chunk salvato
-            const overlapText = currentContent.slice(-overlap);
-            currentContent = overlapText + '\n\n' + para.text;
-            currentStartChar = currentStartChar + currentContent.length - overlapText.length - para.text.length - 2;
-        } else {
-            // Aggiungi il paragrafo al chunk corrente
-            if (currentContent.length > 0) {
-                currentContent += '\n\n' + para.text;
-            } else {
-                currentContent = para.text;
-                currentStartChar = para.startChar;
-            }
-        }
-    }
-
-    // Flush dell'ultimo chunk
-    if (currentContent.trim().length > 0) {
-        pushChunk(currentContent, currentStartChar, currentStartChar + currentContent.length);
-    }
-
-    return chunks;
-}
-
-// ─── HELPER: Validazione dei chunk ───
-function validateChunks(chunks: Array<any>): { isValid: boolean; gaps: number[]; overlaps: number[] } {
-    const gaps: number[] = [];
-    const overlaps: number[] = [];
-
-    for (let i = 0; i < chunks.length - 1; i++) {
-        const currentEnd = chunks[i].metadata.endChar;
-        const nextStart = chunks[i + 1].metadata.startChar;
-
-        if (nextStart > currentEnd) {
-            gaps.push(nextStart - currentEnd);
-        } else if (nextStart < currentEnd) {
-            overlaps.push(currentEnd - nextStart);
-        }
-    }
-
-    return {
-        isValid: gaps.length === 0,
-        gaps,
-        overlaps
-    };
-}
 // ROUTE: Ingestione Documenti (PDF -> Vector DB)
 app.post("/api/documents/ingest", upload.single("file"), async (req: express.Request, res: express.Response) => {
     // NOTA: Ho rimosso 'next' per gestire la risposta direttamente qui ed evitare timeout
@@ -941,7 +738,7 @@ app.post("/api/conversations/create", async (req: express.Request, res: express.
 // Crea un nuovo messaggio in una conversazione
 app.post("/api/conversations/messages/create", async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     try {
-        const { conversation_id, sender, content, usage, model } = req.body;
+        const { conversation_id, sender, content, usage, model, reasoning_text } = req.body;
         if (!conversation_id) throw new Error("conversation_id mancante");
 
         const { data, error } = await supabase
@@ -953,6 +750,7 @@ app.post("/api/conversations/messages/create", async (req: express.Request, res:
                 content: content,
                 usage: usage,
                 model: model,
+                reasoning_text: reasoning_text,
             });
 
         if (error) {
@@ -1068,7 +866,7 @@ app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response
             model: openrouterEmbeddings.embedding("openai/text-embedding-3-small"),
             value: `Ricerca nel documento: ${question}`,
         });
-        
+
         let now = Date.now();
         sendLog(`✅ [Fase 2/8] Embedding generato con successo. (+${now - stepTime}ms)`);
         stepTime = now;
@@ -1088,14 +886,14 @@ app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response
             console.error("❌ [Errore Fase 3] Errore ricerca Supabase:", error);
             throw new Error("Errore durante la ricerca nel DB");
         }
-        
+
         now = Date.now();
         sendLog(`✅ [Fase 3/8] Ricerca completata. Trovati ${chunks?.length || 0} chunk pertinenti. (+${now - stepTime}ms)`);
         stepTime = now;
 
         if (!chunks || chunks.length === 0) {
             sendLog("⚠️ [Attenzione] Nessun chunk trovato. Interrompo e rispondo al client.");
-            res.write(JSON.stringify({ 
+            res.write(JSON.stringify({
                 type: "result",
                 answer: "Mi dispiace, non ho trovato informazioni pertinenti nei documenti caricati.",
                 sources: [],
@@ -1111,7 +909,7 @@ app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response
                 return `--- FONTE: ${chunk.metadata.source} ${section} ---\n${chunk.content}`;
             })
             .join("\n\n");
-            
+
         now = Date.now();
         sendLog(`✅ [Fase 4/8] Contesto creato (Lunghezza: ${contextText.length} caratteri). (+${now - stepTime}ms)`);
         stepTime = now;
@@ -1173,7 +971,7 @@ app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response
 
         const data = await response.json();
         const text = data.choices[0]?.message?.content || "";
-        
+
         now = Date.now();
         sendLog(`✅ [Fase 6/8] Risposta principale ricevuta da OpenRouter. (+${now - stepTime}ms)`);
         stepTime = now;
@@ -1189,7 +987,7 @@ app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response
             sources: uniqueSources,
             // suggested_questions: suggestedQuestions
         }) + "\n");
-        
+
         now = Date.now();
         sendLog(`🎉 [Successo] Risposta inviata al client correttamente! (+${now - stepTime}ms)`);
         sendLog(`⏱️  [METRICHE] Tempo Totale /ask-pdf: ${now - startTime}ms\n`);

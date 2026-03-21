@@ -43,7 +43,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const [loading, setLoading] = useState(false);
     const [conversations, setConversations] = useState<any[]>([]); // Per tenere traccia delle conversazioni salvate
     const [areConversationsLoaded, setAreConversationsLoaded] = useState(false); // Per sapere quando abbiamo finito di caricare le conversazioni
-    const [model, setModel] = useState<any>({ name: "StepFun: Step 3.5 Flash (free)", provider: "Stepfun", name_id: "stepfun/step-3.5-flash:free", cost_per_input_token: 0.0, cost_per_output_token: 0 });
+    const [model, setModel] = useState<any>({ name: "OpenAI: gpt-oss-20b", provider: "OpenAI", name_id: "openai/gpt-oss-20b", cost_per_input_token: 0.03, cost_per_output_token: 0.11 });
     const [isStreamTextEnabled, setIsStreamTextEnabled] = useState(true);
     const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
     const [currentConversationName, setCurrentConversationName] = useState<string | null>(null);
@@ -138,7 +138,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
                         content: row.content,
                         usage: row.usage, // Assumiamo che usage sia una colonna nella tabella messages
                         model: row.model, // Assumiamo che model sia una colonna nella tabella messages
-                        suggestedQuestions: row.suggestedQuestions // Se salvato
+                        suggestedQuestions: row.suggestedQuestions, // Se salvato
+                        reasoning: row.reasoning_text === "none" ? null : row.reasoning_text
                     });
                 }
 
@@ -146,6 +147,45 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
             });
 
             setMessageHistory(parsedMessages);
+            
+            // Nuova logica: Carica le domande suggerite per l'ultimo scambio se non ci sono già
+            if (parsedMessages.length >= 2) {
+                const latestBotMsg = parsedMessages[parsedMessages.length - 1];
+                if (latestBotMsg.role === 'bot' && (!latestBotMsg.suggestedQuestions || latestBotMsg.suggestedQuestions.length === 0)) {
+                    const lastExchange = {
+                        message: parsedMessages[parsedMessages.length - 2].content,
+                        response: latestBotMsg.content
+                    };
+
+                    try {
+                        const resSQ = await fetch("http://localhost:3000/api/getSuggestedQuestion", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify(lastExchange)
+                        });
+                        
+                        if (resSQ.ok) {
+                            const sqData = await resSQ.json();
+                            const suggestedQuestions = sqData.suggested_questions || [];
+                            
+                            setMessageHistory((prev) => {
+                                const newHistory = [...prev];
+                                const lastIndex = newHistory.length - 1;
+                                if (lastIndex >= 0 && newHistory[lastIndex].role === 'bot' && (!newHistory[lastIndex].suggestedQuestions || newHistory[lastIndex].suggestedQuestions.length === 0)) {
+                                    newHistory[lastIndex] = {
+                                        ...newHistory[lastIndex],
+                                        suggestedQuestions: suggestedQuestions
+                                    };
+                                }
+                                return newHistory;
+                            });
+                        }
+                    } catch (e) {
+                        console.error("Errore fetch suggested questions loading:", e);
+                    }
+                }
+            }
+            
 
         } catch (error) {
             console.error("Errore durante il caricamento dei messaggi:", error);

@@ -13,6 +13,7 @@ const createMessage = async (response: any, conversation_id: any, model: any) =>
                 content: content,
                 usage: usage,
                 model: model.name_id,
+                reasoning_text: response.reasoning || "none",
             }),
         });
 

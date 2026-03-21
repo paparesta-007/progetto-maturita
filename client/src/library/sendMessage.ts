@@ -85,7 +85,8 @@ export const sendNormalMessage = async (
             sender: message,
             content: responseText,
             usage: responseUsage,
-            model: model
+            model: model,
+            reasoning: reasoningContent
         };
 
         if (options.isTemporary) {
@@ -293,7 +294,8 @@ export const sendStreamedMessage = async (
             sender: message,
             content: accumulatedText,
             usage: Object.keys(accumulatedUsage).length > 0 ? accumulatedUsage : { total_tokens: 0 },
-            model: model
+            model: model,
+            reasoning: accumulatedReasoning
         };
 
         if (options.isTemporary) {
