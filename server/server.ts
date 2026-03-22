@@ -968,6 +968,29 @@ app.delete("/api/conversations/delete", async (req: express.Request, res: expres
         next(error);
     }
 });
+
+app.patch("/api/conversations/update-title", async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    try {
+        const { user_id, conversation_id, new_title } = req.body;
+        if (!user_id || !conversation_id || !new_title) throw new Error("user_id, conversation_id e new_title richiesti");
+
+        const { data, error } = await supabase
+            .from("conversations")
+            .update({ title: new_title })
+            .eq("id", conversation_id)
+            .eq("user_id", user_id);
+
+        if (error) {
+            console.error("Errore aggiornamento titolo conversazione:", error);
+            return res.status(500).json({ error: error.message });
+        }
+
+        res.json({ success: true, data });
+    } catch (error) {
+        next(error);
+    }
+});
+
 app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response) => {
     // Abilita lo streaming
     res.setHeader("Content-Type", "application/x-ndjson");

@@ -88,8 +88,9 @@ document.addEventListener("DOMContentLoaded", function () {
             document.getElementById('generateStream').disabled = false;
         }
     });
-
-
+    document.getElementById("viewLogs").addEventListener("click", async () => {
+        window.location.href = "/logs";
+    })
     function showAdvancedUsage(usage, totalTime) {
         if (usage && totalTime) {
             console.log("Usage data:", usage);

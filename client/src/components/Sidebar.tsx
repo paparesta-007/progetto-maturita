@@ -25,6 +25,7 @@ import deleteConversation from "../services/supabase/Conversation/deleteConversa
 import { useApp } from "../context/AppContext";
 import { useDocument } from "../context/DocumentContext";
 import deleteCurrentDocument from "../services/supabase/documents/deleteCurrentDocument";
+import updateConversationTitle from "../services/supabase/Conversation/updateConversationTitle";
 
 /* ─── Premium Sidebar Styles ─── */
 const SidebarStyles = () => (
@@ -125,6 +126,10 @@ const Sidebar = ({
     const convMenuRef = useRef<HTMLUListElement>(null);
     const [docMenuOpen, setDocMenuOpen] = useState<string | null>(null);
     const { setIsSettingOpen } = useApp();
+
+    const [isRenamePopupOpen, setIsRenamePopupOpen] = useState(false);
+    const [renameConversationId, setRenameConversationId] = useState<string | null>(null);
+    const [renameTitle, setRenameTitle] = useState("");
 
     const isDocumentsPage = location.pathname.includes('/app/documents');
     const isDark = theme === 'dark';
@@ -280,7 +285,10 @@ const Sidebar = ({
             alert("Impossibile eliminare il documento");
         }
     }
-
+    const handleRename = async (conversationId: string, newTitle: string) => {
+        await updateConversationTitle(conversationId, newTitle, user?.id || "");
+        fetchConversations();
+    }
     // --- Premium Context Menu Component ---
     const ContextMenu = ({
         isOpen,
@@ -323,6 +331,58 @@ const Sidebar = ({
     // --- RENDER ---
     return (
         <>
+            <AnimatePresence>
+                {isRenamePopupOpen && (
+                    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/50 backdrop-blur-sm">
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            className={`p-6 rounded-2xl w-[90%] max-w-sm shadow-2xl ${isDark ? "bg-[#141414] border border-white/[0.08]" : "bg-white border border-neutral-200"}`}
+                        >
+                            <h2 className="text-lg font-semibold mb-4 text-center">Rinomina questa chat</h2>
+                            <input
+                                type="text"
+                                value={renameTitle}
+                                onChange={(e) => setRenameTitle(e.target.value)}
+                                className={`w-full px-4 py-2 rounded-xl mb-6 outline-none transition-all ${
+                                    isDark 
+                                        ? "bg-white/[0.06] text-white border border-white/[0.08] focus:border-white/[0.2]" 
+                                        : "bg-neutral-50 text-neutral-900 border border-neutral-200 focus:border-neutral-400"
+                                }`}
+                                placeholder="Nuovo titolo..."
+                                autoFocus
+                            />
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    onClick={() => {
+                                        setIsRenamePopupOpen(false);
+                                        setRenameConversationId(null);
+                                    }}
+                                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                                        isDark ? "hover:bg-white/[0.06] text-neutral-300" : "hover:bg-neutral-100 text-neutral-600"
+                                    }`}
+                                >
+                                    Annulla
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        handleRename(renameConversationId!, renameTitle);
+                                        setIsRenamePopupOpen(false);
+                                        setRenameConversationId(null);
+                                    }}
+                                    className={`px-4 py-2 rounded-xl text-sm font-medium transition-all ${
+                                        isDark ? "bg-white text-black hover:bg-neutral-200" : "bg-black text-white hover:bg-neutral-800"
+                                    }`}
+                                >
+                                    Modifica
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
             <SidebarStyles />
             <nav className={style.sidebar} style={cssVars}>
 
@@ -557,7 +617,12 @@ const Sidebar = ({
                                             <ContextMenu
                                                 isOpen={convMenuOpen === conv.id}
                                                 onShare={() => console.log("Condividi:", conv.id)}
-                                                onRename={() => console.log("Rinomina:", conv.id)}
+                                                onRename={() => {
+                                                    setRenameConversationId(conv.id);
+                                                    setRenameTitle(conv.title || "Chat senza titolo");
+                                                    setIsRenamePopupOpen(true);
+                                                    setConvMenuOpen(null);
+                                                }}
                                                 onDelete={() => handleDeleteConversation(conv.id)}
                                             />
                                         </motion.div>
