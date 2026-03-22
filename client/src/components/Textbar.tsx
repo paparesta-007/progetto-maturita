@@ -90,8 +90,11 @@ const Textbar = () => {
             }`
     };
 
+
+    //
     const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
+            
             e.preventDefault();
             if (inputValue.trim()) {
                 // Chiama la funzione corretta in base al contesto
@@ -102,6 +105,7 @@ const Textbar = () => {
 
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+       
         const selectedFiles = event.target.files;
         if (selectedFiles) {
             const newFiles = Array.from(selectedFiles).map(file => ({
