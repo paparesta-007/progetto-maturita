@@ -408,8 +408,6 @@ app.post("/api/completion/chat", async function (req: express.Request, res: expr
             ? (usage.outputTokens / latencySec)
             : 0;
 
-        let suggestedQuestions = await getSuggestedQuestion(message, text);
-
         console.log("******TEST COMPLETATO: METRICHE******");
         console.log("Usage:", usage);
         console.log(`Latenza: ${latencyMs} ms, Throughput: ${throughput.toFixed(2)} t/s`);
@@ -418,7 +416,7 @@ app.post("/api/completion/chat", async function (req: express.Request, res: expr
         res.send({
             text,
             usage,
-            suggestedQuestions,
+            suggestedQuestions: [], // Saranno caricate dal client separatamente per non bloccare il salvataggio
             reasoning: reasoningContent,
             metrics: {
                 latencyMs: Math.round(latencyMs),
@@ -450,7 +448,7 @@ app.post("/api/gemini/getTitleConversation", async function (req: express.Reques
                 "X-Title": "NomeTuaApp"
             },
             body: JSON.stringify({
-                model: "mistralai/mistral-nemeeeo",
+                model: "mistralai/mistral-nemo",
                 messages: [
                     {
                         role: "user",
@@ -525,7 +523,7 @@ async function getSuggestedQuestion(question: string, answer: string): Promise<s
                 "X-Title": "NomeTuaApp"
             },
             body: JSON.stringify({
-                model: "openai/gpt-oss-20b:nitro",
+                model: "openai/gpt-oss-20b:free:nitro",
                 messages: [
                     {
                         role: "system",
@@ -1172,6 +1170,13 @@ app.get("/api/client-logs", (req, res) => {
 // Endpoint API per l'Audit Log unificato (HTTP + SYSTEM)
 app.get("/api/logs", (req, res) => {
     res.json(auditLogs);
+});
+
+// Endpoint API per svuotare tutti i log (svuotamento in memory)
+app.delete("/api/logs", (req, res) => {
+    auditLogs.length = 0;
+    clientLogs.length = 0;
+    res.json({ success: true });
 });
 
 // F) Gestione rotta di default (404)

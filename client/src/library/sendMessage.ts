@@ -89,34 +89,63 @@ export const sendNormalMessage = async (
             reasoning: reasoningContent
         };
 
-        if (options.isTemporary) {
-            setLoading(false);
-            return;
+        if (!options.isTemporary) {
+            if (currentConversationId && userId) {
+                await createMessage(messagePayload, currentConversationId, model);
+            } else if (userId) {
+                let newTitle = "New Chat";
+                try {
+                    const titleRes = await fetch("http://localhost:3000/api/gemini/getTitleConversation", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ message }),
+                    });
+                    const titleData = await titleRes.json();
+                    newTitle = titleData.text || "New Chat";
+                } catch (e) {
+                    console.warn("Fallimento generazione titolo, uso default");
+                }
+
+                const newConvData = await createConversation(userId, newTitle);
+                if (newConvData && newConvData.length > 0) {
+                    const newConvId = newConvData[0].id;
+                    await createMessage(messagePayload, newConvId, model);
+                    setCurrentConversationId(newConvId);
+                    _navigate(`/app/chat/${newConvId}`);
+                    await fetchConversations();
+                }
+            }
         }
 
-        if (currentConversationId && userId) {
-            await createMessage(messagePayload, currentConversationId, model);
-        } else if (userId) {
-            let newTitle = "New Chat";
+        // Dopo il salvataggio (o se temporanea), recuperiamo comunque le domande suggerite se non presenti
+        let finalSuggestedQuestions = suggestedQuestions;
+        if (finalSuggestedQuestions.length === 0) {
             try {
-                const titleRes = await fetch("http://localhost:3000/api/gemini/getTitleConversation", {
+                const resSQ = await fetch("http://localhost:3000/api/getSuggestedQuestion", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ message }),
+                    body: JSON.stringify({ message: message, response: responseText })
                 });
-                const titleData = await titleRes.json();
-                newTitle = titleData.text || "New Chat";
+                if (resSQ.ok) {
+                    const sqData = await resSQ.json();
+                    finalSuggestedQuestions = sqData.suggested_questions || [];
+                    
+                    if (finalSuggestedQuestions.length > 0) {
+                        setMessageHistory((prev) => {
+                            const newHistory = [...prev];
+                            const lastMsgIndex = newHistory.length - 1;
+                            if (newHistory[lastMsgIndex].role === 'bot') {
+                                newHistory[lastMsgIndex] = {
+                                    ...newHistory[lastMsgIndex],
+                                    suggestedQuestions: finalSuggestedQuestions
+                                };
+                            }
+                            return newHistory;
+                        });
+                    }
+                }
             } catch (e) {
-                console.warn("Fallimento generazione titolo, uso default");
-            }
-
-            const newConvData = await createConversation(userId, newTitle);
-            if (newConvData && newConvData.length > 0) {
-                const newConvId = newConvData[0].id;
-                await createMessage(messagePayload, newConvId, model);
-                setCurrentConversationId(newConvId);
-                _navigate(`/app/chat/${newConvId}`);
-                await fetchConversations();
+                console.error("Errore fetch suggested questions:", e);
             }
         }
 
@@ -259,7 +288,44 @@ export const sendStreamedMessage = async (
             }
         }
 
-        // Fetch suggested questions after streaming
+        // Save the message after streaming is complete
+        const messagePayload = {
+            sender: message,
+            content: accumulatedText,
+            usage: Object.keys(accumulatedUsage).length > 0 ? accumulatedUsage : { total_tokens: 0 },
+            model: model,
+            reasoning: accumulatedReasoning
+        };
+
+        if (!options.isTemporary) {
+            if (currentConversationId && userId) {
+                await createMessage(messagePayload, currentConversationId, model);
+            } else if (userId) {
+                let newTitle = "New Chat";
+                try {
+                    const titleRes = await fetch("http://localhost:3000/api/gemini/getTitleConversation", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ message }),
+                    });
+                    const titleData = await titleRes.json();
+                    newTitle = titleData.text || "New Chat";
+                } catch (e) {
+                    console.warn("Fallimento generazione titolo, uso default");
+                }
+
+                const newConvData = await createConversation(userId, newTitle);
+                if (newConvData && newConvData.length > 0) {
+                    const newConvId = newConvData[0].id;
+                    await createMessage(messagePayload, newConvId, model);
+                    setCurrentConversationId(newConvId);
+                    _navigate(`/app/chat/${newConvId}`);
+                    await fetchConversations();
+                }
+            }
+        }
+
+        // Fetch suggested questions after saving (so the message is secure even if this fails)
         let finalSuggestedQuestions: string[] = [];
         try {
             const resSQ = await fetch("http://localhost:3000/api/getSuggestedQuestion", {
@@ -287,46 +353,6 @@ export const sendStreamedMessage = async (
             }
         } catch (e) {
             console.error("Errore fetch suggested questions streaming:", e);
-        }
-
-        // Save the message after streaming is complete
-        const messagePayload = {
-            sender: message,
-            content: accumulatedText,
-            usage: Object.keys(accumulatedUsage).length > 0 ? accumulatedUsage : { total_tokens: 0 },
-            model: model,
-            reasoning: accumulatedReasoning
-        };
-
-        if (options.isTemporary) {
-            setLoading(false);
-            return;
-        }
-
-        if (currentConversationId && userId) {
-            await createMessage(messagePayload, currentConversationId, model);
-        } else if (userId) {
-            let newTitle = "New Chat";
-            try {
-                const titleRes = await fetch("http://localhost:3000/api/gemini/getTitleConversation", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ message }),
-                });
-                const titleData = await titleRes.json();
-                newTitle = titleData.text || "New Chat";
-            } catch (e) {
-                console.warn("Fallimento generazione titolo, uso default");
-            }
-
-            const newConvData = await createConversation(userId, newTitle);
-            if (newConvData && newConvData.length > 0) {
-                const newConvId = newConvData[0].id;
-                await createMessage(messagePayload, newConvId, model);
-                setCurrentConversationId(newConvId);
-                _navigate(`/app/chat/${newConvId}`);
-                await fetchConversations();
-            }
         }
 
     } catch (error: any) {
