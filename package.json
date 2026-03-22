@@ -3,7 +3,7 @@
     "concurrently": "^9.2.1"
   },
   "scripts": {
-    "client": "npm run dev --prefix client",
+    "client": "npm run dev --prefix client -- --host",
     "server": "npx tsx --watch server/server.ts",
     "dev": "concurrently -n \"CLIENT,SERVER\" -c \"cyan,magenta\" \"npm run client\" \"npm run server\""
   }
