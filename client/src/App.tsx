@@ -13,7 +13,8 @@ import DocumentLayout from './layouts/DocumentLayout';
 import CalendarPage from './pages/CalendarPage/CalendarPage';
 import { CalendarProvider } from './context/CalendarContext';
 import ArtifactsPage from './pages/ArtifactsPage';
-
+import { initRemoteLogger } from './utils/remoteLogger';
+initRemoteLogger();
 
 function App() {
   return (

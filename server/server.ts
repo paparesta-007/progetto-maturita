@@ -30,23 +30,96 @@ const port: number = 3000;
 let paginaErr: string = "";
 const app: express.Express = express();
 
-interface LogEntry {
-    requestId: string;
-    date: string;
+interface ServerLogEntry {
+    type: 'HTTP' | 'SYSTEM';
     timestamp: string;
-    method: string;
-    url: string;
-    params: any;
+    date: string;
+    // Fields for HTTP
+    requestId?: string;
+    method?: string;
+    url?: string;
+    params?: any;
     response?: any;
-    status: number;
-    error: boolean;
-    durationMs: number;
+    status?: number;
+    error?: boolean;
+    durationMs?: number;
+    clientIp?: string;
+    userAgent?: string;
+    // Fields for SYSTEM
+    level?: string;
+    message?: string;
+}
+
+const auditLogs: ServerLogEntry[] = [];
+const MAX_AUDIT_LOGS = 500;
+
+interface ClientLogEntry {
+    type: string;
+    message: string;
+    stack: string | null;
+    source: string | null;
+    lineno: number | null;
+    colno: number | null;
+    url: string;
+    timestamp: string;
     clientIp: string;
     userAgent: string;
 }
+const clientLogs: ClientLogEntry[] = [];
+const MAX_CLIENT_LOGS = 100;
 
-const serverLogs: LogEntry[] = [];
-const MAX_LOGS = 100;
+// Monkey-patch console to capture internal logs
+const originalConsoleLog = console.log;
+const originalConsoleError = console.error;
+const originalConsoleWarn = console.warn;
+
+function addSystemLog(level: string, ...args: any[]) {
+    const message = args.map(arg => {
+        if (arg instanceof Error) {
+            return arg.stack || arg.message;
+        }
+        if (typeof arg === 'object' && arg !== null) {
+            try { return JSON.stringify(arg, null, 2); }
+            catch (e) { return String(arg); }
+        }
+        return String(arg);
+    }).join(' ');
+
+    const now = new Date();
+    const log: ServerLogEntry = {
+        type: 'SYSTEM',
+        level,
+        message,
+        date: now.toLocaleDateString('it-IT'),
+        timestamp: now.toLocaleTimeString('it-IT', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    };
+
+    auditLogs.unshift(log);
+    if (auditLogs.length > MAX_AUDIT_LOGS) auditLogs.pop();
+}
+
+console.log = (...args) => {
+    originalConsoleLog.apply(console, args);
+    addSystemLog('INFO', ...args);
+};
+console.error = (...args) => {
+    originalConsoleError.apply(console, args);
+    addSystemLog('ERROR', ...args);
+};
+console.warn = (...args) => {
+    originalConsoleWarn.apply(console, args);
+    addSystemLog('WARN', ...args);
+};
+
+// Global error handlers
+process.on('uncaughtException', (err) => {
+    addSystemLog('CRITICAL', 'Uncaught Exception:', err.message, err.stack);
+    originalConsoleError('CRITICAL: Uncaught Exception', err);
+});
+process.on('unhandledRejection', (reason, promise) => {
+    addSystemLog('CRITICAL', 'Unhandled Rejection at:', promise, 'reason:', reason);
+    originalConsoleError('CRITICAL: Unhandled Rejection', reason);
+});
 
 
 const __filename = fileURLToPath(import.meta.url);
@@ -126,22 +199,24 @@ app.use((req: express.Request, res: express.Response, next: express.NextFunction
         }
         return (originalEnd as any)(...args);
     };
-    
+
     // Intercettiamo la fine della risposta per loggare lo stato
     res.on('finish', () => {
-        // Non loggare le chiamate all'API dei log per evitare rumore
-        if (req.originalUrl.startsWith('/api/logs')) {
+        // Evitiamo di loggare le chiamate agli endpoint di log stessi (evita loop e rumore)
+        const logEndpoints = ['/api/logs', '/api/client-logs', '/api/internal-logs'];
+        if (logEndpoints.some(e => req.originalUrl.startsWith(e))) {
             return;
         }
 
         const duration = Date.now() - start;
         let finalResponse: any = responseBody;
-        try { if (responseBody) finalResponse = JSON.parse(responseBody); } catch (e) {}
+        try { if (responseBody) finalResponse = JSON.parse(responseBody); } catch (e) { }
 
         const now = new Date();
         const clientIp = (req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown') as string;
-        
-        const logEntry: LogEntry = {
+
+        const logEntry: ServerLogEntry = {
+            type: 'HTTP',
             requestId: crypto.randomUUID(),
             date: now.toLocaleDateString('it-IT'),
             timestamp: now.toLocaleTimeString('it-IT', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
@@ -155,13 +230,13 @@ app.use((req: express.Request, res: express.Response, next: express.NextFunction
             clientIp: clientIp,
             userAgent: req.headers['user-agent'] || 'unknown'
         };
-        
-        serverLogs.unshift(logEntry);
-        if (serverLogs.length > MAX_LOGS) {
-            serverLogs.pop();
+
+        auditLogs.unshift(logEntry);
+        if (auditLogs.length > MAX_AUDIT_LOGS) {
+            auditLogs.pop();
         }
-        
-        console.log(`[LOG] ${logEntry.method} ${logEntry.url} - Status: ${logEntry.status} (${duration}ms)`);
+
+        // console.log(`[LOG] ${logEntry.method} ${logEntry.url} - Status: ${logEntry.status} (${duration}ms)`);
     });
     next();
 });
@@ -375,7 +450,7 @@ app.post("/api/gemini/getTitleConversation", async function (req: express.Reques
                 "X-Title": "NomeTuaApp"
             },
             body: JSON.stringify({
-                model: "mistralai/mistral-nemo",
+                model: "mistralai/mistral-nemeeeo",
                 messages: [
                     {
                         role: "user",
@@ -505,6 +580,7 @@ async function getSuggestedQuestion(question: string, answer: string): Promise<s
 
 app.post("/api/streamingOutput", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
     try {
+
         const { message, history, modelName, systemPromptUser, personalInfo, tone, allowedCustomInstructions, reasoning } = req.body;
         const selectedModel = modelName ? modelName : "google/gemini-2.0-flash-001";
 
@@ -1066,9 +1142,36 @@ app.get("/logs", (req, res) => {
     res.sendFile(path.join(__dirname, "static", "log.html"));
 });
 
-// Endpoint API per i log
+// Endpoint per ricevere i log del client via POST
+app.post("/logs", (req, res) => {
+    const clientIp = (req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown') as string;
+    const log: ClientLogEntry = {
+        type: req.body.type || 'UNKNOWN',
+        message: req.body.message || '',
+        stack: req.body.stack || null,
+        source: req.body.source || null,
+        lineno: req.body.lineno || null,
+        colno: req.body.colno || null,
+        url: req.body.url || '',
+        timestamp: req.body.timestamp || new Date().toISOString(),
+        clientIp: clientIp,
+        userAgent: req.headers['user-agent'] || 'unknown'
+    };
+    clientLogs.unshift(log);
+    if (clientLogs.length > MAX_CLIENT_LOGS) {
+        clientLogs.pop();
+    }
+    res.status(200).send("OK");
+});
+
+// Endpoint API per i log del client (errori frontend)
+app.get("/api/client-logs", (req, res) => {
+    res.json(clientLogs);
+});
+
+// Endpoint API per l'Audit Log unificato (HTTP + SYSTEM)
 app.get("/api/logs", (req, res) => {
-    res.json(serverLogs);
+    res.json(auditLogs);
 });
 
 // F) Gestione rotta di default (404)

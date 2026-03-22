@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
     <style>
         :root {
             --bg-color: #050505;
@@ -209,6 +210,18 @@
             border-color: rgba(239, 68, 68, 0.2);
         }
 
+        .status-console {
+            background: rgba(167, 139, 250, 0.1);
+            color: #a78bfa;
+            border-color: rgba(167, 139, 250, 0.2);
+        }
+
+        .status-vite {
+            background: rgba(234, 179, 8, 0.1);
+            color: #eab308;
+            border-color: rgba(234, 179, 8, 0.2);
+        }
+
         .method-badge {
             font-family: 'JetBrains Mono', monospace;
             padding: 0.2rem 0.4rem;
@@ -255,6 +268,112 @@
                 max-width: 300px;
             }
         }
+
+        /* AI Help Styles */
+        .help-btn {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: rgba(59, 130, 246, 0.1);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: var(--accent-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .help-btn:hover {
+            background: var(--accent-color);
+            color: white;
+            box-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+        }
+
+        #ai-assistant {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            width: 400px;
+            height: 500px;
+            background: rgba(10, 10, 10, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 1rem;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            display: none;
+            flex-direction: column;
+            z-index: 1000;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            transform: translateY(20px);
+            opacity: 0;
+        }
+
+        #ai-assistant.visible {
+            display: flex;
+            transform: translateY(0);
+            opacity: 1;
+        }
+
+        .ai-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(to right, rgba(59, 130, 246, 0.1), transparent);
+        }
+
+        .ai-content {
+            flex: 1;
+            padding: 1.25rem;
+            overflow-y: auto;
+            font-size: 0.85rem;
+            line-height: 1.6;
+            color: #d1d5db;
+        }
+
+        .ai-content p { margin-bottom: 1rem; }
+        .ai-content code {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 0.2rem 0.4rem;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+        }
+        .ai-content pre {
+            background: #000;
+            padding: 1rem;
+            border-radius: 0.5rem;
+            overflow-x: auto;
+            border: 1px solid var(--border-color);
+            margin-bottom: 1rem;
+        }
+        .ai-content pre code { background: transparent; padding: 0; }
+        .ai-content ul, .ai-content ol { margin-left: 1.5rem; margin-bottom: 1rem; }
+        .ai-content h1, .ai-content h2, .ai-content h3 { color: var(--accent-color); margin-top: 1.5rem; margin-bottom: 0.5rem; }
+
+        .ai-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 1.2em;
+            background: var(--accent-color);
+            margin-left: 2px;
+            vertical-align: middle;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink { 50% { opacity: 0; } }
+
+        .close-ai {
+            color: var(--text-secondary);
+            cursor: pointer;
+            padding: 0.5rem;
+        }
+
+        .close-ai:hover { color: var(--text-primary); }
     </style>
 </head>
 <body>
@@ -278,6 +397,7 @@
                     <label style="cursor: pointer; display: flex; align-items: center; gap: 0.25rem; color: var(--text-primary); font-size: 0.85rem;"><input type="checkbox" value="POST" checked class="filter-cb method-cb"> POST</label>
                     <label style="cursor: pointer; display: flex; align-items: center; gap: 0.25rem; color: var(--text-primary); font-size: 0.85rem;"><input type="checkbox" value="PUT" checked class="filter-cb method-cb"> PUT</label>
                     <label style="cursor: pointer; display: flex; align-items: center; gap: 0.25rem; color: var(--text-primary); font-size: 0.85rem;"><input type="checkbox" value="DELETE" checked class="filter-cb method-cb"> DELETE</label>
+                    <label style="cursor: pointer; display: flex; align-items: center; gap: 0.25rem; color: var(--text-secondary); font-size: 0.85rem; margin-left: 1rem; border-left: 1px solid var(--border-color); padding-left: 1rem;"><input type="checkbox" value="SYSTEM" checked class="filter-cb system-cb"> SYSTEM LOGS</label>
                 </div>
             </div>
             <div class="filter-group">
@@ -305,26 +425,64 @@
             </div>
         </div>
 
+        <h2 style="margin-top: 3rem; margin-bottom: 1rem; font-size: 1.5rem; background: linear-gradient(to right, #60a5fa, #a78bfa); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Server Audit Log</h2>
         <div class="log-table-container">
             <div class="table-responsive">
                 <table id="log-table">
                     <thead>
                         <tr>
                             <th style="width: 120px;">Timestamp</th>
-                            <th style="width: 80px;">Method</th>
-                            <th>Resource Path</th>
+                            <th style="width: 100px;">Level / Method</th>
+                            <th>Event / Resource Path</th>
                             <th style="width: 80px;">Status</th>
                             <th style="width: 100px;">Duration</th>
-                            <th style="width: 120px;">Client IP</th>
+                            <th style="width: 140px;">Client IP / Source</th>
+                            <th style="width: 140px;"></th>
                         </tr>
                     </thead>
                     <tbody id="log-body">
-                        <!-- Logs will be dynamically inserted here -->
+                        <!-- Unified Audit Logs will be dynamically inserted here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <h2 style="margin-top: 3rem; margin-bottom: 1rem; font-size: 1.5rem; background: linear-gradient(to right, #ef4444, #f87171); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Client Application Errors</h2>
+        <div class="log-table-container">
+            <div class="table-responsive">
+                <table id="client-log-table">
+                    <thead>
+                        <tr>
+                            <th style="width: 120px;">Timestamp</th>
+                            <th style="width: 100px;">Type</th>
+                            <th>Error Message</th>
+                            <th style="width: 250px;">URL / Component</th>
+                            <th style="width: 120px;">Client IP</th>
+                            <th style="width: 140px;"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="client-log-body">
+                        <!-- Client Logs will be dynamically inserted here -->
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
+
+    <!-- AI Assistant Floating Widget -->
+    <div id="ai-assistant">
+        <div class="ai-header">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                <div style="width: 8px; height: 8px; border-radius: 50%; background: var(--accent-color); box-shadow: 0 0 8px var(--accent-color);"></div>
+                <span style="font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em;">AI Debug Assistant</span>
+            </div>
+            <div class="close-ai" id="close-ai">&times;</div>
+        </div>
+        <div id="ai-content" class="ai-content">
+            <!-- AI response will be streamed here -->
+        </div>
+    </div>
+
     <script src="log.js"></script>
 </body>
 </html>
