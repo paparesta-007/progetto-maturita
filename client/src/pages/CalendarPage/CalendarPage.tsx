@@ -15,6 +15,9 @@ const CalendarPage = () => {
     const isDark = theme === 'dark';
     const { isFloatingChat, setIsFloatingChat } = useCalendar();
     
+    // Nuovo stato per l'evento selezionato
+    const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
+    
     // Definiamo il colore del bordo una volta per riutilizzarlo facilmente
     const borderColor = isDark ? "border-neutral-800" : "border-neutral-300";
 
@@ -54,11 +57,13 @@ const CalendarPage = () => {
 
                 if (!response.ok) throw new Error('Errore nel recupero');
                 const data = await response.json();
+                console.log(data);  
                 setEvents(data.items || []);
             } catch (err) {
                 setError("Impossibile caricare gli eventi.");
             }
         }
+        
         getCalendarEvents();
     }, [session, currentWeekStart]);
 
@@ -96,8 +101,13 @@ const CalendarPage = () => {
             });
     };
 
+    // Modificata per aprire il modale
+    function handleEventClick(event: any) {
+        setSelectedEvent(event);
+    }
+
     return (
-        <div className={`h-full flex flex-col overflow-hidden ${isDark ? "bg-neutral-950 text-neutral-100" : "bg-white text-neutral-900"}`}>
+        <div className={`h-full flex flex-col overflow-hidden relative ${isDark ? "bg-neutral-950 text-neutral-100" : "bg-white text-neutral-900"}`}>
 
             {/* Header - Bordo dinamico */}
             <div className={`p-4 flex items-center justify-between border-b ${borderColor}`}>
@@ -140,14 +150,19 @@ const CalendarPage = () => {
                                         {dayEvents.map(event => {
                                             const topPx = event.startMinuteOffset * ROW_HEIGHT;
                                             const heightPx = event.durationHours * ROW_HEIGHT - 2; // -2 for gap
+                                           
                                             return (
                                                 <div
                                                     key={event.id}
+                                                    onClick={(e) => {
+                                                        e.stopPropagation(); // Evita conflitti di click
+                                                        handleEventClick(event);
+                                                    }}
                                                     style={{ top: `${topPx}px`, height: `${heightPx}px` }}
-                                                    className={`absolute inset-x-1 p-1.5 text-[10px] leading-tight rounded-md overflow-hidden z-10 border transition-colors ${
+                                                    className={`absolute inset-x-1 p-1.5 text-[10px] leading-tight rounded-md overflow-hidden z-10 border transition-colors cursor-pointer ${
                                                         isDark
-                                                            ? "bg-blue-500/20 border-blue-500/40 text-blue-200"
-                                                            : "bg-blue-500 border-blue-600 text-white"
+                                                            ? "bg-blue-500/20 border-blue-500/40 text-blue-200 hover:bg-blue-500/30"
+                                                            : "bg-blue-500 border-blue-600 text-white hover:bg-blue-600"
                                                     }`}
                                                 >
                                                     <span className="font-semibold block truncate">{event.summary}</span>
@@ -171,7 +186,7 @@ const CalendarPage = () => {
 
             {/* Pulsante Floating */}
             {!isFloatingChat && (
-                <div className="fixed bottom-4 right-4">
+                <div className="fixed bottom-4 right-4 z-40">
                     <button
                         onClick={() => setIsFloatingChat(!isFloatingChat)}
                         className={`p-3 rounded-full transition-all shadow-lg ${isDark ? "bg-neutral-800 text-white hover:bg-neutral-700" : "bg-white text-neutral-900 border border-neutral-300 hover:bg-neutral-100"}`}
@@ -181,6 +196,76 @@ const CalendarPage = () => {
                 </div>
             )}
             {isFloatingChat && <FloatingChat />}
+
+            {/* --- Modale Event Detail --- */}
+            {selectedEvent && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setSelectedEvent(null)}>
+                    <div 
+                        className={`relative w-full max-w-lg p-6 rounded-2xl shadow-2xl overflow-hidden ${isDark ? "bg-neutral-900 border border-neutral-800" : "bg-white"}`}
+                        onClick={(e) => e.stopPropagation()} // Previene la chiusura cliccando dentro il modale
+                    >
+                        {/* Header Modale */}
+                        <div className="flex justify-between items-start mb-4">
+                            <h2 className="text-xl font-bold pr-4">{selectedEvent.summary || "(Nessun titolo)"}</h2>
+                            <button 
+                                onClick={() => setSelectedEvent(null)}
+                                className={`p-1 rounded-md transition-colors ${isDark ? "hover:bg-neutral-800 text-neutral-400" : "hover:bg-neutral-100 text-neutral-500"}`}
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* Corpo Modale */}
+                        <div className="space-y-4 text-sm">
+                            <div className="flex gap-3">
+                                <span className={`font-medium w-16 ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>Inizio:</span>
+                                <span>{new Date(selectedEvent.start.dateTime || selectedEvent.start.date).toLocaleString("it-IT")}</span>
+                            </div>
+                            <div className="flex gap-3">
+                                <span className={`font-medium w-16 ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>Fine:</span>
+                                <span>{new Date(selectedEvent.end.dateTime || selectedEvent.end.date).toLocaleString("it-IT")}</span>
+                            </div>
+
+                            {selectedEvent.location && (
+                                <div className="flex gap-3">
+                                    <span className={`font-medium w-16 ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>Luogo:</span>
+                                    <span>{selectedEvent.location}</span>
+                                </div>
+                            )}
+
+                            {selectedEvent.description && (
+                                <div className="flex gap-3">
+                                    <span className={`font-medium w-16 ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>Dettagli:</span>
+                                    <div 
+                                        className="whitespace-pre-wrap max-h-32 overflow-y-auto pr-2"
+                                        dangerouslySetInnerHTML={{ __html: selectedEvent.description }} 
+                                    />
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Footer Modale */}
+                        <div className="mt-8 flex justify-end gap-3 items-center">
+                            {selectedEvent.htmlLink && (
+                                <a 
+                                    href={selectedEvent.htmlLink} 
+                                    target="_blank" 
+                                    rel="noopener noreferrer"
+                                    className="text-blue-500 hover:underline text-sm font-medium mr-auto"
+                                >
+                                    Apri in GCalendar
+                                </a>
+                            )}
+                            <button 
+                                onClick={() => setSelectedEvent(null)}
+                                className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${isDark ? "bg-neutral-800 hover:bg-neutral-700" : "bg-neutral-100 hover:bg-neutral-200"}`}
+                            >
+                                Chiudi
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

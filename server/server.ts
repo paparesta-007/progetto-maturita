@@ -30,6 +30,25 @@ const port: number = 3000;
 let paginaErr: string = "";
 const app: express.Express = express();
 
+interface LogEntry {
+    requestId: string;
+    date: string;
+    timestamp: string;
+    method: string;
+    url: string;
+    params: any;
+    response?: any;
+    status: number;
+    error: boolean;
+    durationMs: number;
+    clientIp: string;
+    userAgent: string;
+}
+
+const serverLogs: LogEntry[] = [];
+const MAX_LOGS = 100;
+
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const openrouter = new OpenRouter({
@@ -83,31 +102,71 @@ server.listen(port, function () {
 // Esempio: app.use(cors({ origin: 'https://tuo-frontend.com' }));
 app.use(cors());
 
+// Middleware per il parsing del body JSON
+app.use(express.json({ limit: "10mb" }));
+
 // Middleware di logging per ogni richiesta
 app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
     const start = Date.now();
-    console.log(`Metodo: ${req.method}, URL: ${req.originalUrl}`);
+    let responseBody = '';
+
+    const originalWrite = res.write.bind(res);
+    const originalEnd = res.end.bind(res);
+
+    res.write = function (...args: any[]) {
+        if (args[0] && (typeof args[0] === 'string' || Buffer.isBuffer(args[0]))) {
+            responseBody += args[0].toString('utf8');
+        }
+        return (originalWrite as any)(...args);
+    };
+
+    res.end = function (...args: any[]) {
+        if (args[0] && (typeof args[0] === 'string' || Buffer.isBuffer(args[0]))) {
+            responseBody += args[0].toString('utf8');
+        }
+        return (originalEnd as any)(...args);
+    };
+    
+    // Intercettiamo la fine della risposta per loggare lo stato
     res.on('finish', () => {
+        // Non loggare le chiamate all'API dei log per evitare rumore
+        if (req.originalUrl.startsWith('/api/logs')) {
+            return;
+        }
+
         const duration = Date.now() - start;
-        console.log(`Request to ${req.originalUrl} took ${duration}ms - Status: ${res.statusCode}`);
+        let finalResponse: any = responseBody;
+        try { if (responseBody) finalResponse = JSON.parse(responseBody); } catch (e) {}
+
+        const now = new Date();
+        const clientIp = (req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown') as string;
+        
+        const logEntry: LogEntry = {
+            requestId: crypto.randomUUID(),
+            date: now.toLocaleDateString('it-IT'),
+            timestamp: now.toLocaleTimeString('it-IT', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+            method: req.method,
+            url: req.originalUrl,
+            params: req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH' ? req.body : req.query,
+            response: finalResponse,
+            status: res.statusCode,
+            error: res.statusCode >= 400,
+            durationMs: duration,
+            clientIp: clientIp,
+            userAgent: req.headers['user-agent'] || 'unknown'
+        };
+        
+        serverLogs.unshift(logEntry);
+        if (serverLogs.length > MAX_LOGS) {
+            serverLogs.pop();
+        }
+        
+        console.log(`[LOG] ${logEntry.method} ${logEntry.url} - Status: ${logEntry.status} (${duration}ms)`);
     });
     next();
 });
 
-// SUGGERIMENTO: La riga qui sotto è ridondante perché hai già una gestione più robusta
-// dei file statici con path.join all'inizio del file. Puoi rimuoverla.
-// app.use("/", express.static("./static"));
 
-// Middleware per il parsing del body JSON
-app.use("/", express.json({ limit: "10mb" }));
-
-// Middleware per loggare il body delle richieste POST
-app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
-    if (req.body && Object.keys(req.body).length > 0) {
-        console.log("-------------------\nParametri post: " + JSON.stringify(req.body));
-    }
-    next();
-});
 
 
 // E) Rotte API
@@ -316,7 +375,7 @@ app.post("/api/gemini/getTitleConversation", async function (req: express.Reques
                 "X-Title": "NomeTuaApp"
             },
             body: JSON.stringify({
-                model: "openai/gpt-oss-20b:nitro",
+                model: "mistralai/mistral-nemo",
                 messages: [
                     {
                         role: "user",
@@ -325,7 +384,7 @@ app.post("/api/gemini/getTitleConversation", async function (req: express.Reques
                 ],
                 temperature: 0.5, // Leggermente più bassa per essere più deterministico nel titolo
                 max_tokens: 50,    // Limitiamo i token perché il titolo deve essere breve
-                reasoning: { effort: "minimal" }
+                reasoning: { effort: "none" }
             })
         });
 
@@ -551,7 +610,7 @@ app.post("/api/streamingOutput", async function (req: express.Request, res: expr
                             // Invia text chunk in tempo reale
                             if (textPart) {
                                 res.write(JSON.stringify({ type: "text", content: textPart }) + "\n");
-                                await delay(11);
+                                await delay(3);
                             }
 
                             // Invia usage chunk
@@ -1001,6 +1060,16 @@ app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response
     }
 });
 
+
+// Route per la pagina dei log
+app.get("/logs", (req, res) => {
+    res.sendFile(path.join(__dirname, "static", "log.html"));
+});
+
+// Endpoint API per i log
+app.get("/api/logs", (req, res) => {
+    res.json(serverLogs);
+});
 
 // F) Gestione rotta di default (404)
 app.use("/", function (req: express.Request, res: express.Response) {
