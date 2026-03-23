@@ -14,6 +14,7 @@ import CalendarPage from './pages/CalendarPage/CalendarPage';
 import { CalendarProvider } from './context/CalendarContext';
 import ArtifactsPage from './pages/ArtifactsPage';
 import { initRemoteLogger } from './utils/remoteLogger';
+import QuizPage from './pages/ArtifactsPages/QuizPage';
 initRemoteLogger();
 
 function App() {
@@ -21,32 +22,38 @@ function App() {
     <AuthProvider>
       <AppProvider>
         <BrowserRouter>
-        <Routes>
-          {/* ROTTE PUBBLICHE */}
-          <Route path='/' element={<LandingPage />} />
-          <Route path='/login' element={<LoginPage />} />
-          <Route path='/reset-password' element={<CreateNewPassword />} />
+          <Routes>
+            {/* ROTTE PUBBLICHE */}
+            <Route path='/' element={<LandingPage />} />
+            <Route path='/login' element={<LoginPage />} />
+            <Route path='/reset-password' element={<CreateNewPassword />} />
 
-          {/* ROTTE PROTETTE (Layout + Guard) */}
-          {/* Il ProtectedRoute avvolge tutto ciò che deve essere privato */}
-          <Route element={<ProtectedRoute />}>
-            <Route path='/complete-profile' element={<CompleteProfile/>} />
-            {/* Se passi il controllo, entri nel Layout */}
-            <Route path='/app' element={<AppLayout />}>
-              <Route index element={<Navigate to="/app/chat" replace />} />
-              <Route path='chat/:conversationId' element={<ChatPage />} />
-              <Route path='documents' element={<DocumentLayout />} />
-              <Route path='documents/:documentId' element={<DocumentPage />} />
-              <Route path='chat' element={<ChatPage />} />
-              <Route path='calendar' element={<CalendarProvider><CalendarPage /></CalendarProvider>} />
-              <Route path='artifacts' element={<ArtifactsPage />} />
+            {/* ROTTE PROTETTE */}
+            <Route element={<ProtectedRoute />}>
+              <Route path='/complete-profile' element={<CompleteProfile />} />
+
+              <Route path='/app' element={<AppLayout />}>
+                <Route index element={<Navigate to="/app/chat" replace />} />
+                <Route path='chat/:conversationId' element={<ChatPage />} />
+                <Route path='chat' element={<ChatPage />} />
+
+                <Route path='documents' element={<DocumentLayout />} />
+                <Route path='documents/:documentId' element={<DocumentPage />} />
+
+                <Route path='calendar' element={<CalendarProvider><CalendarPage /></CalendarProvider>} />
+
+                {/* --- SEZIONE ARTIFACTS --- */}
+                <Route path='artifacts'>
+                  <Route index element={<ArtifactsPage />} /> {/* /app/artifacts */}
+                  <Route path='quiz' element={<QuizPage />} /> {/* /app/artifacts/quiz */}
+                </Route>
+
+              </Route>
             </Route>
 
-          </Route>
-
-          {/* 404 */}
-          <Route path='*' element={<Navigate to="/404" />} />
-        </Routes>
+            {/* 404 */}
+            <Route path='*' element={<Navigate to="/" />} />
+          </Routes>
         </BrowserRouter>
       </AppProvider>
     </AuthProvider>
