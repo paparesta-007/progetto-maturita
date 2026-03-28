@@ -1168,16 +1168,16 @@ app.post("/api/quiz/generate", async function (req: express.Request, res: expres
         }
 
         const modeToModelMap: Record<string, string> = {
-            fast: "openai/gpt-oss-20b",
-            standard: "openai/gpt-oss-20b",
-            accurate: "openai/gpt-oss-20b"
+            fast: "openai/gpt-oss-120b",
+            standard: "openai/gpt-oss-120b",
+            accurate: "openai/gpt-oss-120b"
         };
 
         const selectedModel = typeof mode === "string" && modeToModelMap[mode]
             ? modeToModelMap[mode]
-            : "openai/gpt-oss-20b";
+            : "openai/gpt-oss-120b";
 
-        const prompt = `Genera un quiz a scelta multipla con esattamente 4 domande sul seguente argomento o testo: "${topic}".`;
+        const prompt = `Genera un quiz a scelta multipla con esattamente 10 domande sul seguente argomento o testo: "${topic}".`;
 
         // 2. Chiamata a OpenRouter definendo il JSON Schema nativo
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -1206,8 +1206,8 @@ app.post("/api/quiz/generate", async function (req: express.Request, res: expres
                             properties: {
                                 quiz: {
                                     type: "array",
-                                    minItems: 4,
-                                    maxItems: 4,
+                                    minItems: 10,
+                                    maxItems: 10,
                                     items: {
                                         type: "object",
                                         properties: {
@@ -1272,7 +1272,7 @@ app.post("/api/quiz/generate", async function (req: express.Request, res: expres
             throw new Error("Formato quiz non valido");
         }
 
-        const normalizedQuiz = parsedQuiz.quiz.slice(0, 4).map((item: any) => ({
+        const normalizedQuiz = parsedQuiz.quiz.slice(0, 10).map((item: any) => ({
             domanda: String(item?.domanda || "").trim(),
             opzioni: {
                 A: String(item?.opzioni?.A || "").trim(),
@@ -1284,7 +1284,7 @@ app.post("/api/quiz/generate", async function (req: express.Request, res: expres
         }));
 
         const isValidQuiz =
-            normalizedQuiz.length === 4 &&
+            normalizedQuiz.length === 10 &&
             normalizedQuiz.every((q: any) =>
                 q.domanda &&
                 q.opzioni.A && q.opzioni.B && q.opzioni.C && q.opzioni.D &&

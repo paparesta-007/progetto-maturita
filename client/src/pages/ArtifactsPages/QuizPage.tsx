@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { LightningIcon, PaperPlaneRight } from "@phosphor-icons/react";
 import type { SelectOption } from "../../components/other/SelectPopup";
-import { BrainIcon, GaugeIcon } from "lucide-react";
+import { BrainIcon, CheckCircle2, ChevronLeft, ChevronRight, GaugeIcon, RotateCcw, XCircle } from "lucide-react";
 import SelectPopup from "../../components/other/SelectPopup";
 import { SendQuizMessage, type QuizQuestion } from "../../library/sendMessage";
 
@@ -37,8 +37,8 @@ const QuizTextbar = ({
 
     return (
         <div className={`sm:max-w-3xl w-full flex flex-col rounded-2xl border p-3 shadow-sm transition-colors ${isDark
-                ? "bg-neutral-900 border-neutral-700 focus-within:border-emerald-500/50"
-                : "bg-white border-neutral-200 focus-within:border-emerald-500/50"
+            ? "bg-neutral-900 border-neutral-700 focus-within:border-emerald-500/50"
+            : "bg-white border-neutral-200 focus-within:border-emerald-500/50"
             }`}>
             {/* TEXTAREA */}
             <textarea
@@ -56,17 +56,17 @@ const QuizTextbar = ({
                     <label className={`text-xs font-medium ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>
                         Modalità:
                     </label>
-                   <SelectPopup options={REASONING} value={mode} onChange={setMode} />
+                    <SelectPopup options={REASONING} value={mode} onChange={setMode} />
                 </div>
 
                 <button
                     onClick={handleSubmit}
                     disabled={!text.trim()}
                     className={`p-2 rounded-full flex items-center justify-center transition-all ${text.trim()
-                            ? "bg-emerald-500 text-white hover:bg-emerald-600 cursor-pointer shadow-md"
-                            : isDark
-                                ? "bg-neutral-800 text-neutral-600 cursor-not-allowed"
-                                : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
+                        ? "bg-emerald-500 text-white hover:bg-emerald-600 cursor-pointer shadow-md"
+                        : isDark
+                            ? "bg-neutral-800 text-neutral-600 cursor-not-allowed"
+                            : "bg-neutral-100 text-neutral-400 cursor-not-allowed"
                         }`}
                 >
                     <PaperPlaneRight size={20} weight="fill" />
@@ -85,6 +85,7 @@ const QuizPage = () => {
     const [error, setError] = useState<string | null>(null);
     const [quiz, setQuiz] = useState<QuizQuestion[]>([]);
     const [submitted, setSubmitted] = useState(false);
+    const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [answers, setAnswers] = useState<Record<number, "A" | "B" | "C" | "D">>({});
 
     const handleSend = async (promptText: string, selectedMode: string) => {
@@ -92,6 +93,7 @@ const QuizPage = () => {
         setError(null);
         setSubmitted(false);
         setAnswers({});
+        setCurrentQuestionIndex(0);
 
         const response = await SendQuizMessage(promptText, selectedMode);
         if (response.success) {
@@ -105,6 +107,8 @@ const QuizPage = () => {
     };
 
     const optionKeys: Array<"A" | "B" | "C" | "D"> = ["A", "B", "C", "D"];
+    const currentQuestion = quiz[currentQuestionIndex];
+    const answeredCount = Object.keys(answers).length;
 
     const handleSelect = (questionIndex: number, option: "A" | "B" | "C" | "D") => {
         if (submitted) return;
@@ -125,10 +129,20 @@ const QuizPage = () => {
         return acc;
     }, 0);
 
+    const handleResetQuiz = () => {
+        setQuiz([]);
+        setAnswers({});
+        setSubmitted(false);
+        setCurrentQuestionIndex(0);
+        setError(null);
+    };
+
+    const canGoPrev = currentQuestionIndex > 0;
+    const canGoNext = currentQuestionIndex < quiz.length - 1;
+
     const styles = {
         wrapper: `flex flex-col h-screen w-full overflow-hidden relative transition-colors duration-300 ${isDark ? "bg-neutral-950" : "bg-white"}`,
         main: `flex-1 flex flex-col items-center overflow-y-auto overflow-x-hidden relative w-full min-w-0 p-4`,
-        footer: `flex-shrink-0 w-full pt-0 pb-6 transition-colors duration-300 z-10 ${isDark ? "bg-neutral-950" : "bg-white"}`
     };
 
     return (
@@ -140,7 +154,7 @@ const QuizPage = () => {
                         <p className="text-sm">Inserisci un testo o un argomento e genera un quiz a risposta multipla.</p>
                     </div>
 
-                    <QuizTextbar onSubmit={handleSend} isDark={isDark} />
+                    {quiz.length === 0 && <QuizTextbar onSubmit={handleSend} isDark={isDark} />}
 
                     {isLoading && (
                         <div className={`mt-5 text-sm ${isDark ? "text-emerald-400" : "text-emerald-600"}`}>
@@ -154,66 +168,184 @@ const QuizPage = () => {
                         </div>
                     )}
 
-                    {quiz.length > 0 && (
+                    {quiz.length > 0 && currentQuestion && (
                         <div className="mt-6 space-y-4 pb-10">
-                            {quiz.map((q, qIndex) => (
+                            <div className="flex items-center justify-between text-sm">
+                                <p className={isDark ? "text-neutral-400" : "text-neutral-600"}>
+                                    Domanda {currentQuestionIndex + 1} di {quiz.length}
+                                </p>
+                                <p className={isDark ? "text-neutral-400" : "text-neutral-600"}>
+                                    Risposte date: {answeredCount}/{quiz.length}
+                                </p>
+                            </div>
+
+                            <div className={`w-full h-2 rounded-full overflow-hidden ${isDark ? "bg-neutral-800" : "bg-neutral-200"}`}>
                                 <div
-                                    key={qIndex}
-                                    className={`rounded-xl border p-4 ${isDark ? "border-neutral-800 bg-neutral-900/40" : "border-neutral-200 bg-white"}`}
-                                >
-                                    <h3 className={`font-medium mb-3 ${isDark ? "text-neutral-100" : "text-neutral-900"}`}>
-                                        {qIndex + 1}. {q.domanda}
-                                    </h3>
+                                    className="h-full bg-emerald-500 transition-all duration-300"
+                                    style={{ width: `${((currentQuestionIndex + 1) / quiz.length) * 100}%` }}
+                                />
+                            </div>
 
-                                    <div className="space-y-2">
-                                        {optionKeys.map((optionKey) => {
-                                            const selected = answers[qIndex] === optionKey;
-                                            const isCorrect = q.rispostaCorretta === optionKey;
-                                            const showFeedback = submitted;
+                            <div className={`rounded-xl border p-4 ${isDark ? "border-neutral-800 bg-neutral-900/40" : "border-neutral-200 bg-white"}`}>
+                                <h3 className={`font-medium mb-3 ${isDark ? "text-neutral-100" : "text-neutral-900"}`}>
+                                    {currentQuestionIndex + 1}. {currentQuestion.domanda}
+                                </h3>
 
-                                            const baseStyle = isDark
-                                                ? "border-neutral-700 hover:border-neutral-500 text-neutral-200"
-                                                : "border-neutral-200 hover:border-neutral-300 text-neutral-700";
+                                <div className="space-y-2">
+                                    {optionKeys.map((optionKey) => {
+                                        const selected = answers[currentQuestionIndex] === optionKey;
+                                        const isCorrect = currentQuestion.rispostaCorretta === optionKey;
+                                        const showFeedback = submitted;
 
-                                            const selectedStyle = selected
-                                                ? (isDark ? "border-emerald-500 bg-emerald-500/10" : "border-emerald-500 bg-emerald-50")
-                                                : "";
+                                        // Classi fisse per tutti gli stati
+                                        const commonStyle = "border-2 transition-colors";
 
-                                            const feedbackStyle = showFeedback
-                                                ? isCorrect
-                                                    ? (isDark ? "border-emerald-500 bg-emerald-500/10" : "border-emerald-500 bg-emerald-50")
-                                                    : selected
-                                                        ? (isDark ? "border-red-500 bg-red-500/10" : "border-red-500 bg-red-50")
-                                                        : ""
-                                                : "";
+                                        // 1. Determiniamo lo STILE DI BASE (quando l'opzione non è né selezionata né in fase di feedback)
+                                        let dynamicStyle = isDark
+                                            ? "border-neutral-700 hover:border-neutral-500 text-neutral-100 bg-neutral-900/50"
+                                            : "border-neutral-300 hover:border-neutral-500 text-neutral-900 bg-white";
 
-                                            return (
-                                                <button
-                                                    type="button"
-                                                    key={optionKey}
-                                                    onClick={() => handleSelect(qIndex, optionKey)}
-                                                    className={`w-full text-left rounded-lg border px-3 py-2 text-sm transition-colors ${baseStyle} ${selectedStyle} ${feedbackStyle}`}
-                                                >
-                                                    <span className="font-semibold mr-2">{optionKey}.</span>
-                                                    {q.opzioni[optionKey]}
-                                                </button>
-                                            );
-                                        })}
-                                    </div>
+                                        // 2. Sovrascriviamo se è SELEZIONATA (ma non ancora confermata)
+                                        if (!showFeedback && selected) {
+                                            dynamicStyle = isDark
+                                                ? "border-emerald-500 bg-emerald-500/20 text-emerald-100 ring-2 ring-emerald-500/50" // Ho regolato i colori per renderli più evidenti
+                                                : "border-emerald-600 bg-emerald-100 text-emerald-900 ring-2 ring-emerald-500/50";
+                                        }
+
+                                        // 3. Sovrascriviamo se c'è il FEEDBACK (quiz confermato)
+                                        if (showFeedback) {
+                                            if (isCorrect) {
+                                                // È la risposta giusta (indipendentemente da se l'abbiamo selezionata o no)
+                                                dynamicStyle = isDark
+                                                    ? "border-emerald-500 bg-emerald-500/40 text-white ring-2 ring-emerald-500/70"
+                                                    : "border-emerald-600 bg-emerald-200 text-emerald-950 ring-2 ring-emerald-600/50";
+                                            } else if (selected) {
+                                                // L'abbiamo selezionata ed è sbagliata
+                                                dynamicStyle = isDark
+                                                    ? "border-red-500 bg-red-500/35 text-white ring-2 ring-red-500/70"
+                                                    : "border-red-600 bg-red-200 text-red-950 ring-2 ring-red-600/50";
+                                            } else {
+                                                // Non selezionata e non corretta (rimane grigia/neutra, disabilitata visivamente)
+                                                dynamicStyle = isDark
+                                                    ? "border-neutral-800 text-neutral-500 bg-neutral-900/30 opacity-50"
+                                                    : "border-neutral-200 text-neutral-400 bg-neutral-50 opacity-50";
+                                            }
+                                        }
+
+                                        const stateBadge = showFeedback
+                                            ? isCorrect
+                                                ? (
+                                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${isDark ? "bg-emerald-500/20 text-emerald-300" : "bg-emerald-700 text-white"}`}>
+                                                        <CheckCircle2 size={12} />
+                                                        Corretta
+                                                    </span>
+                                                )
+                                                : selected
+                                                    ? (
+                                                        <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold ${isDark ? "bg-red-500/20 text-red-300" : "bg-red-700 text-white"}`}>
+                                                            <XCircle size={12} />
+                                                            Errata
+                                                        </span>
+                                                    )
+                                                    : null
+                                            : null;
+
+                                        return (
+                                            <button
+                                                type="button"
+                                                key={optionKey}
+                                                disabled={showFeedback} // Disabilita il clic se il quiz è confermato
+                                                onClick={() => handleSelect(currentQuestionIndex, optionKey)}
+                                                className={`w-full text-left rounded-lg px-3 py-3 text-sm ${commonStyle} ${dynamicStyle}`}
+                                            >
+                                                <div className="flex items-start justify-between gap-3">
+                                                    <div>
+                                                        <span className="font-bold mr-2">{optionKey}.</span>
+                                                        <span className="font-medium">{currentQuestion.opzioni[optionKey]}</span>
+                                                    </div>
+                                                    {stateBadge}
+                                                </div>
+                                            </button>
+                                        );
+                                    })}
                                 </div>
-                            ))}
+                            </div>
 
-                            {!submitted ? (
+                            <div className="grid grid-cols-2 gap-3">
                                 <button
                                     type="button"
-                                    onClick={handleSubmitAnswers}
-                                    className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-3 transition-colors"
+                                    onClick={() => setCurrentQuestionIndex((prev) => prev - 1)}
+                                    disabled={!canGoPrev}
+                                    className={`rounded-xl border py-2.5 px-4 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${canGoPrev
+                                        ? isDark
+                                            ? "border-neutral-700 text-neutral-200 hover:bg-neutral-800"
+                                            : "border-neutral-300 text-neutral-700 hover:bg-neutral-50"
+                                        : isDark
+                                            ? "border-neutral-800 text-neutral-600 cursor-not-allowed"
+                                            : "border-neutral-200 text-neutral-400 cursor-not-allowed"
+                                        }`}
                                 >
-                                    Conferma Risposte
+                                    <ChevronLeft size={16} />
+                                    Precedente
                                 </button>
+
+                                <button
+                                    type="button"
+                                    onClick={() => setCurrentQuestionIndex((prev) => prev + 1)}
+                                    disabled={!canGoNext}
+                                    className={`rounded-xl border py-2.5 px-4 text-sm font-medium transition-colors flex items-center justify-center gap-2 ${canGoNext
+                                        ? isDark
+                                            ? "border-neutral-700 text-neutral-200 hover:bg-neutral-800"
+                                            : "border-neutral-300 text-neutral-700 hover:bg-neutral-50"
+                                        : isDark
+                                            ? "border-neutral-800 text-neutral-600 cursor-not-allowed"
+                                            : "border-neutral-200 text-neutral-400 cursor-not-allowed"
+                                        }`}
+                                >
+                                    Successiva
+                                    <ChevronRight size={16} />
+                                </button>
+                            </div>
+
+                            {!submitted ? (
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                    <button
+                                        type="button"
+                                        onClick={handleSubmitAnswers}
+                                        className="w-full rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white font-medium py-3 transition-colors"
+                                    >
+                                        Conferma Quiz
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={handleResetQuiz}
+                                        className={`w-full rounded-xl border py-3 font-medium transition-colors flex items-center justify-center gap-2 ${isDark ? "border-neutral-700 text-neutral-200 hover:bg-neutral-800" : "border-neutral-300 text-neutral-700 hover:bg-neutral-50"}`}
+                                    >
+                                        <RotateCcw size={16} />
+                                        Nuovo Quiz
+                                    </button>
+                                </div>
                             ) : (
-                                <div className={`rounded-xl border px-4 py-3 text-sm font-medium ${isDark ? "border-emerald-800/50 bg-emerald-950/30 text-emerald-300" : "border-emerald-200 bg-emerald-50 text-emerald-700"}`}>
-                                    Punteggio: {score}/{quiz.length}
+                                <div className="space-y-3">
+                                    <div className={`rounded-xl border px-5 py-4 ${isDark ? "border-emerald-400/50 bg-gradient-to-r from-emerald-500/25 to-teal-500/20 text-emerald-100" : "border-emerald-400 bg-gradient-to-r from-emerald-100 to-teal-100 text-emerald-900"}`}>
+                                        <p className={`text-xs uppercase tracking-wide ${isDark ? "text-emerald-200/90" : "text-emerald-800"}`}>
+                                            Risultato Finale
+                                        </p>
+                                        <p className="mt-1 text-2xl font-bold">
+                                            {score} / {quiz.length}
+                                        </p>
+                                        <p className={`mt-1 text-sm ${isDark ? "text-emerald-100/90" : "text-emerald-900/80"}`}>
+                                            {Math.round((score / quiz.length) * 100)}% corrette
+                                        </p>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={handleResetQuiz}
+                                        className={`w-full rounded-xl border py-3 font-medium transition-colors flex items-center justify-center gap-2 ${isDark ? "border-neutral-700 text-neutral-200 hover:bg-neutral-800" : "border-neutral-300 text-neutral-700 hover:bg-neutral-50"}`}
+                                    >
+                                        <RotateCcw size={16} />
+                                        Crea un Altro Quiz
+                                    </button>
                                 </div>
                             )}
                         </div>
