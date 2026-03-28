@@ -23,6 +23,7 @@ import PreferencesPage from "../pages/SettingPages/PreferencesPage";
 import ToastNotification from "../components/other/ToastNotification";
 const AppLayout = () => {
   const [isMinimized, setIsMinimized] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { isSettingOpen, setIsSettingOpen, setSettingPage, settingPage, isLivePreview } = useApp();
   const { theme, setTheme } = useAuth(); // Estrai il tema globale
   const isDark = theme === 'dark';
@@ -73,11 +74,16 @@ const AppLayout = () => {
     <ChatProvider>
       <DocumentProvider>
         <div className={style.layoutContainer}>
-          {/* Toggle per Sidebar minimizzata */}
-          {isMinimized && !isLivePreview && (
+          {/* Mobile and Minimized Desktop Toggle */}
+          {((isMinimized && !isLivePreview) || !isMobileMenuOpen) && (
             <button
-              className={`fixed top-4 left-4 z-50 p-2 rounded-lg transition-colors ${isDark ? "bg-neutral-900 text-white hover:bg-neutral-800" : "bg-white text-neutral-900 hover:bg-neutral-100 shadow-md"}`}
-              onClick={() => setIsMinimized(false)}
+              className={`fixed top-4 left-4 z-50 p-2 rounded-lg transition-all 
+                ${isMinimized ? 'hidden md:block' : 'block md:hidden'} 
+                ${isDark ? "bg-neutral-900 text-white hover:bg-neutral-800" : "bg-white text-neutral-900 hover:bg-neutral-100 shadow-md"}`}
+              onClick={() => {
+                if (window.innerWidth < 768) setIsMobileMenuOpen(true);
+                else setIsMinimized(false);
+              }}
             >
               <ListIcon size={24} />
             </button>
@@ -87,9 +93,11 @@ const AppLayout = () => {
             isMinimized={effectiveSidebarMinimized}
             setIsMinimized={setIsMinimized}
             isLockedMinimized={isLivePreview}
+            isMobileOpen={isMobileMenuOpen}
+            setIsMobileOpen={setIsMobileMenuOpen}
           />
 
-          <main className="flex-1 min-w-0 overflow-hidden relative">
+          <main className={`flex-1 min-w-0 overflow-hidden relative ${isMobileMenuOpen ? 'hidden md:block' : 'block'}`}>
             <Outlet />
           </main>
 

@@ -2,14 +2,13 @@ import React, { useState } from "react";
 import { motion } from "framer-motion";
 import { useCalendar } from "../../context/CalendarContext";
 import { useAuth } from "../../context/AuthContext";
-import type { SelectOption } from "../../components/other/SelectPopup";
 import SelectPopup from "../../components/other/SelectPopup";
 import { useChat } from "../../context/ChatContext";
-import {CALENDAR_TOOLS,executeToolCall} from "../../library/calendarTools";
+import { executeToolCall } from "../../library/calendarTools";
 const FloatingChat = () => {
     const { setIsFloatingChat } = useCalendar();
     const [isExiting, setIsExiting] = useState(false);
-    const { theme } = useAuth();
+    const { theme, session } = useAuth();
     const {model,setModel}=useChat()
     const isDark = theme === 'dark';
 
@@ -42,7 +41,13 @@ const FloatingChat = () => {
     function handleSend() {
         // Esempio di chiamata a uno strumento (puoi adattarlo in base alla tua logica)
         const exampleArgs = { start_date: "2026-03-24", keywords: ["Riunione"] };
-        const providerToken = "your_provider_token_here"; // Sostituisci con il token reale
+        const providerToken = session?.provider_token;
+        
+        if (!providerToken) {
+            console.error("Token di Google non trovato. Effettua il login.");
+            return;
+        }
+
         executeToolCall('searchEvents', exampleArgs, providerToken)
             .then(response => {
                 console.log("Risposta dallo strumento:", response);
@@ -139,7 +144,7 @@ const FloatingChat = () => {
 };
 
 // Componente di supporto per renderizzare la lista in modo pulito
-const ActionItem = ({ icon, text, isDark }) => (
+const ActionItem = ({ icon, text, isDark }: { icon: React.ReactNode, text: string, isDark: boolean }) => (
     <div className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors
         ${isDark ? 'hover:bg-[#2a2a2a]' : 'hover:bg-gray-100'}`}>
         <span className={`${isDark ? 'text-gray-400' : 'text-gray-500'}`}>{icon}</span>

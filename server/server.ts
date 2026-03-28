@@ -152,6 +152,23 @@ const supabaseUrl = process.env.SUPABASE_URL!;
 const supabaseKey = process.env.SUPABASE_SERVICE_KEY!;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
+async function logSupabaseAction(action: string, userId: string = "unknown") {
+    const maskedUserId = userId.length > 4 ? userId.substring(0, 4) + "****" : "****";
+    try {
+        await fetch("http://localhost:3000/logs", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                type: "SUPABASE_ACTION",
+                message: `Action: ${action} | User: ${maskedUserId}`,
+                url: "localhost:3000"
+            })
+        });
+    } catch (err) {
+        console.error("Error logging supabase action:", err);
+    }
+}
+
 try {
     const errorPagePath = path.join(__dirname, 'static', 'error.html');
     paginaErr = fs.readFileSync(errorPagePath, 'utf-8'); // o il tuo metodo di letturaf
@@ -806,6 +823,7 @@ app.post("/api/documents/ingest", upload.single("file"), async (req: express.Req
         }));
 
         // 6. Salvataggio su Supabase
+        logSupabaseAction("insert_documents_chunks", user_id);
         const { error } = await supabase
             .from('documents')
             .insert(documentsToInsert);
@@ -847,6 +865,7 @@ app.post("/api/conversations/create", async (req: express.Request, res: express.
         const { user_id, title } = req.body;
         if (!user_id) throw new Error("user_id mancante");
 
+        logSupabaseAction("insert_conversation", user_id);
         const { data, error } = await supabase
             .from("conversations")
             .insert({
@@ -874,6 +893,8 @@ app.post("/api/conversations/messages/create", async (req: express.Request, res:
         const { conversation_id, sender, content, usage, model, reasoning_text } = req.body;
         if (!conversation_id) throw new Error("conversation_id mancante");
 
+        // Dobbiamo avere l'user_id per passarlo ai log se presente nella session, ma potremmo non averlo nel body... passiamo 'unknown'
+        logSupabaseAction("insert_message", req.body.sender === 'user' ? "user" : "bot");
         const { data, error } = await supabase
             .from("messages")
             .insert({
@@ -903,6 +924,7 @@ app.get("/api/conversations/list", async (req: express.Request, res: express.Res
         const user_id = req.query.user_id as string;
         if (!user_id) throw new Error("user_id mancante");
 
+        logSupabaseAction("select_conversations_list", user_id);
         const { data, error } = await supabase
             .from("conversations")
             .select("*")
@@ -927,6 +949,7 @@ app.get("/api/conversations/messages", async (req: express.Request, res: express
         const conversation_id = req.query.conversation_id as string;
         if (!conversation_id) throw new Error("conversation_id mancante");
 
+        logSupabaseAction("select_messages", "unknown");
         const { data, error } = await supabase
             .from("messages")
             .select("*")
@@ -952,6 +975,7 @@ app.delete("/api/conversations/delete", async (req: express.Request, res: expres
         const { user_id, conversation_id } = req.body;
         if (!user_id || !conversation_id) throw new Error("user_id e conversation_id richiesti");
 
+        logSupabaseAction("delete_conversation", user_id);
         const { data, error } = await supabase
             .from("conversations")
             .delete()
@@ -974,6 +998,7 @@ app.patch("/api/conversations/update-title", async (req: express.Request, res: e
         const { user_id, conversation_id, new_title } = req.body;
         if (!user_id || !conversation_id || !new_title) throw new Error("user_id, conversation_id e new_title richiesti");
 
+        logSupabaseAction("update_conversation_title", user_id);
         const { data, error } = await supabase
             .from("conversations")
             .update({ title: new_title })
@@ -1029,6 +1054,7 @@ app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response
 
         // 2. Chiama la funzione RPC su Supabase
         sendLog("🔎 [Fase 3/8] Ricerca dei chunk semantici su Supabase in corso...");
+        logSupabaseAction("rpc_match_documents", user_id);
         const { data: chunks, error } = await supabase
             .rpc('match_documents', {
                 query_embedding: embedding,
@@ -1169,8 +1195,8 @@ app.post("/api/quiz/generate", async function (req: express.Request, res: expres
 
         const modeToModelMap: Record<string, string> = {
             fast: "openai/gpt-oss-120b",
-            standard: "openai/gpt-oss-120b",
-            accurate: "openai/gpt-oss-120b"
+            standard: "mistralai/mistral-small-2603b",
+            accurate: "nvidia/nemotron-3-super-120b-a12b:free"
         };
 
         const selectedModel = typeof mode === "string" && modeToModelMap[mode]
@@ -1188,7 +1214,7 @@ app.post("/api/quiz/generate", async function (req: express.Request, res: expres
                 "HTTP-Referer": "http://localhost:3000/quiz",
             },
             body: JSON.stringify({
-                model: selectedModel+":nitro",
+                model: selectedModel,
                 messages: [
                     {
                         role: "system",
@@ -1196,6 +1222,7 @@ app.post("/api/quiz/generate", async function (req: express.Request, res: expres
                     },
                     { role: "user", content: prompt }
                 ],
+                reasoning: { effort: "minimal" },
                 response_format: {
                     type: "json_schema",
                     json_schema: {
