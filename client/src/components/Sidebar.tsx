@@ -15,9 +15,11 @@ import {
     File,
     ChevronUp,
     Search,
-    Keyboard
+    Keyboard,
+    Sparkles,
+    ChevronRight
 } from 'lucide-react';
-import { ClockCounterClockwiseIcon, DotsThreeIcon, PencilLineIcon, ShareNetworkIcon, SidebarSimpleIcon, SquaresFourIcon, TrashIcon } from "@phosphor-icons/react";
+import { ClockCounterClockwiseIcon, DotsThreeIcon, PencilLineIcon, ShareNetworkIcon, SidebarSimpleIcon, SquaresFourIcon, TrashIcon, X as XIcon } from "@phosphor-icons/react";
 import supabase from "../library/supabaseclient";
 import selectUserDetails from "../services/supabase/User/SelectuserDetails";
 import { useChat } from "../context/ChatContext";
@@ -99,6 +101,19 @@ const SidebarStyles = () => (
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
+        .premium-upgrade-btn {
+            background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
+            box-shadow: 0 4px 12px rgba(168, 85, 247, 0.25);
+            transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+        }
+        .premium-upgrade-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(168, 85, 247, 0.35);
+            filter: brightness(1.1);
+        }
+        .premium-upgrade-btn:active {
+            transform: translateY(0);
+        }
     `}</style>
 );
 
@@ -106,10 +121,14 @@ const Sidebar = ({
     isMinimized,
     setIsMinimized,
     isLockedMinimized = false,
+    isMobileOpen = false,
+    setIsMobileOpen
 }: {
     isMinimized: boolean;
     setIsMinimized: (val: boolean) => void;
     isLockedMinimized?: boolean;
+    isMobileOpen?: boolean;
+    setIsMobileOpen?: (val: boolean) => void;
 }) => {
     // --- Context & State ---
     const { user, theme, setTheme } = useAuth() || { user: { displayName: "Matteo Rossi", photoURL: null } };
@@ -136,7 +155,7 @@ const Sidebar = ({
 
     // ─── Premium Style System ───
     const style = {
-        sidebar: `sidebar-premium ${isMinimized ? 'w-[72px]' : 'w-[280px]'} h-screen flex flex-col font-sans text-sm transition-all duration-500 ease-in-out relative ${isDark ? "bg-[#0a0a0a]" : ""}`,
+        sidebar: `sidebar-premium h-screen flex flex-col font-sans text-sm transition-all duration-500 ease-in-out relative ${isDark ? "bg-[#0a0a0a]" : ""} ${isMobileOpen ? 'fixed inset-0 z-50 w-full' : 'hidden md:flex'} ${isMinimized ? 'md:w-[72px] min-w-[72px]' : 'md:w-[280px] min-w-[280px]'}`,
 
         textPrimary: isDark ? "text-neutral-100" : "text-neutral-900",
         textSecondary: isDark ? "text-neutral-500" : "text-neutral-600",
@@ -402,18 +421,28 @@ const Sidebar = ({
                             </div>
                         )}
 
-                        {/* Sidebar Toggle */}
-                        <button
-                            type="button"
-                            disabled={isLockedMinimized}
-                            onClick={() => {
-                                if (isLockedMinimized) return;
-                                setIsMinimized(!isMinimized);
-                            }}
-                            className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 ${isDark ? "text-neutral-600 hover:text-neutral-600 hover:bg-white/[0.04]" : "text-neutral-300 hover:text-neutral-500 hover:bg-black/[0.03]"} ${isLockedMinimized ? "opacity-40 cursor-not-allowed" : ""}`}
-                        >
-                            <SidebarSimpleIcon size={20} />
-                        </button>
+                        {/* Sidebar Toggle & Mobile Close */}
+                        <div className="flex items-center gap-1">
+                            {isMobileOpen && setIsMobileOpen && (
+                              <button
+                                onClick={() => setIsMobileOpen(false)}
+                                className={`md:hidden w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 ${isDark ? "text-neutral-600 hover:text-neutral-400 hover:bg-white/[0.04]" : "text-neutral-400 hover:text-neutral-600 hover:bg-black/[0.03]"}`}
+                              >
+                                <XIcon size={20} />
+                              </button>
+                            )}
+                            <button
+                                type="button"
+                                disabled={isLockedMinimized}
+                                onClick={() => {
+                                    if (isLockedMinimized) return;
+                                    setIsMinimized(!isMinimized);
+                                }}
+                                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 ${isDark ? "text-neutral-600 hover:text-neutral-600 hover:bg-white/[0.04]" : "text-neutral-300 hover:text-neutral-500 hover:bg-black/[0.03]"} ${isLockedMinimized ? "opacity-40 cursor-not-allowed" : ""} ${isMobileOpen ? 'hidden md:flex' : ''}`}
+                            >
+                                <SidebarSimpleIcon size={20} />
+                            </button>
+                        </div>
                     </div>
 
                     {/* ─── Search Bar (Premium Touch) ─── */}
@@ -657,6 +686,18 @@ const Sidebar = ({
                                 className="absolute bottom-full left-0 w-[calc(100%-16px)] mx-2 mb-2 z-50 origin-bottom"
                             >
                                 <div className={`rounded-xl border overflow-hidden backdrop-blur-xl ${style.popoverBg}`}>
+                                    <div className="p-1 px-1.5 pb-0">
+                                        <button className={`${style.popoverItem} group/pro !text-indigo-500 hover:!bg-indigo-500/10`}>
+                                            <div className="flex items-center gap-2.5">
+                                                <Sparkles size={15} className="text-indigo-500 group-hover/pro:scale-110 transition-transform" />
+                                                <span className="font-semibold">Upgrade to Pro</span>
+                                            </div>
+                                            <ChevronRight size={13} className="ml-auto opacity-0 group-hover/pro:opacity-100 transition-all translate-x-[-4px] group-hover/pro:translate-x-0" />
+                                        </button>
+                                    </div>
+
+                                    <div className={style.divider} />
+
                                     <div className="p-1.5 flex flex-col gap-0.5 w-full">
                                         <button
                                             className={`${style.popoverItem} justify-between`}
