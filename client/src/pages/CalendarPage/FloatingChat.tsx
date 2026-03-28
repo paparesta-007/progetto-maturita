@@ -5,7 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import type { SelectOption } from "../../components/other/SelectPopup";
 import SelectPopup from "../../components/other/SelectPopup";
 import { useChat } from "../../context/ChatContext";
-
+import {CALENDAR_TOOLS,executeToolCall} from "../../library/calendarTools";
 const FloatingChat = () => {
     const { setIsFloatingChat } = useCalendar();
     const [isExiting, setIsExiting] = useState(false);
@@ -38,6 +38,19 @@ const FloatingChat = () => {
             });
         }
     };
+
+    function handleSend() {
+        // Esempio di chiamata a uno strumento (puoi adattarlo in base alla tua logica)
+        const exampleArgs = { start_date: "2026-03-24", keywords: ["Riunione"] };
+        const providerToken = "your_provider_token_here"; // Sostituisci con il token reale
+        executeToolCall('searchEvents', exampleArgs, providerToken)
+            .then(response => {
+                console.log("Risposta dallo strumento:", response);
+            })
+            .catch(error => {
+                console.error("Errore durante l'esecuzione dello strumento:", error);
+            });
+    }
 
     return (
         <motion.div
@@ -114,7 +127,8 @@ const FloatingChat = () => {
                             placeholder={typeof model === 'object' && model !== null ? model.name : "Model"} 
                         />
                         <button className={`p-1.5 rounded-full transition-colors 
-                            ${isDark ? 'bg-neutral-700 hover:bg-neutral-600' : 'bg-gray-200 hover:bg-gray-300'}`}>
+                            ${isDark ? 'bg-neutral-700 hover:bg-neutral-600' : 'bg-gray-200 hover:bg-gray-300'}`}
+                            onClick={() => {handleSend()}}>
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 10l7-7m0 0l7 7m-7-7v18"></path></svg>
                         </button>
                     </div>

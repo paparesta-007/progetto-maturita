@@ -11,6 +11,23 @@ export interface ChatOptions {
     attachedFiles?: any[];
 }
 
+export interface QuizQuestion {
+    domanda: string;
+    opzioni: {
+        A: string;
+        B: string;
+        C: string;
+        D: string;
+    };
+    rispostaCorretta: "A" | "B" | "C" | "D";
+}
+
+export interface QuizResponse {
+    success: boolean;
+    data: QuizQuestion[];
+    error?: string;
+}
+
 // ============================================================
 // DEFAULT: Normal chat message (calls the real server)
 // ============================================================
@@ -129,7 +146,7 @@ export const sendNormalMessage = async (
                 if (resSQ.ok) {
                     const sqData = await resSQ.json();
                     finalSuggestedQuestions = sqData.suggested_questions || [];
-                    
+
                     if (finalSuggestedQuestions.length > 0) {
                         setMessageHistory((prev) => {
                             const newHistory = [...prev];
@@ -151,7 +168,7 @@ export const sendNormalMessage = async (
 
     } catch (error: any) {
         console.error("Errore sendNormalMessage:", error);
-        
+
         let displayError = error.message || "Si è verificato un errore durante la richiesta.";
         const lowerError = displayError.toLowerCase();
         if (lowerError.includes("image") || lowerError.includes("vision") || lowerError.includes("support")) {
@@ -228,6 +245,10 @@ export const sendStreamedMessage = async (
             throw new Error(errData?.error?.message || response.statusText);
         }
 
+        if (!response.body) {
+            throw new Error("Risposta streaming non valida: body assente.");
+        }
+
         const reader = response.body.getReader();
         const decoder = new TextDecoder();
         let done = false;
@@ -242,18 +263,18 @@ export const sendStreamedMessage = async (
 
             if (value) {
                 ndjsonBuffer += decoder.decode(value, { stream: true });
-                
+
                 // Parsing NDJSON: processa riga per riga
                 let eolIndex;
                 while ((eolIndex = ndjsonBuffer.indexOf('\n')) >= 0) {
                     const line = ndjsonBuffer.slice(0, eolIndex).trim();
                     ndjsonBuffer = ndjsonBuffer.slice(eolIndex + 1);
-                    
+
                     if (!line) continue;
-                    
+
                     try {
                         const data = JSON.parse(line);
-                        
+
                         if (data.type === "reasoning" && data.content) {
                             accumulatedReasoning += data.content;
                         } else if (data.type === "text" && data.content) {
@@ -336,7 +357,7 @@ export const sendStreamedMessage = async (
             if (resSQ.ok) {
                 const sqData = await resSQ.json();
                 finalSuggestedQuestions = sqData.suggested_questions || [];
-                
+
                 if (finalSuggestedQuestions.length > 0) {
                     setMessageHistory((prev) => {
                         const newHistory = [...prev];
@@ -357,7 +378,7 @@ export const sendStreamedMessage = async (
 
     } catch (error: any) {
         console.error("Errore durante lo streaming:", error);
-        
+
         let displayError = error.message || "Si è verificato un problema.";
         const lowerError = displayError.toLowerCase();
         if (lowerError.includes("image") || lowerError.includes("vision") || lowerError.includes("support")) {
@@ -436,3 +457,41 @@ export const sendWebSearchMessage = async (
         setLoading(false);
     }
 };
+
+export const SendQuizMessage = async (
+    message: string,
+    mode: string,
+): Promise<QuizResponse> => {
+    if (!message.trim()) {
+        return { success: false, data: [], error: "Inserisci un argomento prima di generare il quiz." };
+    }
+
+    try {
+        const response = await fetch("http://localhost:3000/api/quiz/generate", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                topic: message,
+                mode
+            }),
+        });
+
+        if (!response.ok) {
+            const errData = await response.json().catch(() => ({}));
+            throw new Error(errData?.details || errData?.error || response.statusText);
+        }
+
+        const data = await response.json();
+        return {
+            success: true,
+            data: Array.isArray(data.quiz) ? data.quiz : []
+        };
+    } catch (error: any) {
+        console.error("Errore SendQuizMessage:", error);
+        return {
+            success: false,
+            data: [],
+            error: error?.message || "Errore durante la generazione del quiz."
+        };
+    }
+}
