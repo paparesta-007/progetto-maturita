@@ -23,6 +23,19 @@ This project was developed as a **Maturità capstone project** *(Progetto di Mat
 
 ---
 
+## 🎯 What this project does
+
+At a practical level, Smart AI is designed to solve two main problems:
+
+1. **General AI assistant usage** — users can chat with multiple LLMs from one interface, with streaming responses and saved conversations.
+2. **Document-grounded answers (RAG)** — users can upload a PDF and ask questions about it; answers are generated using retrieved document chunks instead of relying only on model memory.
+
+This means the app is useful both as:
+- a daily multi-model AI chat client, and
+- a study/work assistant that can explain and query your own documents with traceable context.
+
+---
+
 ## ✨ Features
 
 | Feature | Description |
@@ -214,12 +227,67 @@ The document intelligence pipeline follows a classic **Retrieval-Augmented Gener
                     └──────────────────────────────┘
 ```
 
-1. **PDF Parsing** — Extract raw text from uploaded PDF files.
-2. **Intelligent Chunking** — Split text into ~1000-character chunks with 200-character overlap, respecting sentence and paragraph boundaries.
-3. **Embedding** — Generate vector embeddings using `text-embedding-3-small` via OpenRouter.
-4. **Storage** — Store chunks with their embeddings in Supabase (pgvector).
-5. **Retrieval** — On user query, embed the question, perform cosine similarity search, and retrieve the top 5 relevant chunks.
-6. **Generation** — Feed retrieved context to the LLM and generate a grounded answer.
+### Step-by-step flow used in this project
+
+1. **Upload & validation**
+   - The client uploads a PDF through `/api/documents/ingest`.
+   - The server validates file presence and user context before processing.
+
+2. **Text extraction**
+   - PDF text is extracted server-side using `pdf-parse`.
+   - If parsing fails (corrupted/invalid PDF), ingestion stops with an explicit error response.
+
+3. **Text normalization**
+   - Raw text is cleaned (`normalizeText`) to remove control characters, normalize line breaks, and improve chunk quality.
+
+4. **Semantic chunking**
+   - The backend runs `splitTextIntoChunks(text, 1500, 300, ...)`:
+     - chunk size ≈ 1500 chars
+     - overlap ≈ 300 chars
+     - paragraph/sentence-aware splitting
+   - It also detects likely section titles and stores them as metadata (`sectionHeading`).
+   - `validateChunks` is used to check chunk continuity.
+
+5. **Embedding generation**
+   - Each chunk is embedded with `openai/text-embedding-3-small` (via OpenRouter embeddings API).
+   - Chunk text is enriched with source metadata before vectorization.
+
+6. **Vector storage**
+   - Chunk + embedding + metadata are saved in Supabase (`documents` table with pgvector).
+   - Metadata includes source filename, title/category, and document UUID.
+
+7. **Question-time retrieval**
+   - For `/api/chat/ask-pdf`, the user question is embedded with the same embedding model.
+   - Supabase RPC `match_documents` performs similarity search (cosine-based vector match) with threshold + top-k style filtering.
+   - The API returns the most relevant chunks for that user/document scope.
+
+8. **Grounded answer generation**
+   - Retrieved chunks are assembled into a structured context block.
+   - The LLM receives: user question + retrieved context + system guidance.
+   - Final answer is streamed back to the client with references/sources to keep responses grounded in uploaded content.
+
+### Why this RAG flow is effective
+
+- **Reduces hallucinations** by grounding generation on retrieved chunks.
+- **Improves relevance** by searching semantically similar text instead of exact keyword matching.
+- **Keeps answers explainable** through source-aware context construction.
+- **Scales better** than putting an entire long document directly in the model prompt.
+
+---
+
+## 📚 Inspiration and sources for the RAG approach
+
+The implementation follows standard RAG architecture patterns commonly described in:
+
+- **Lewis et al., 2020 — Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks**  
+  https://arxiv.org/abs/2005.11401
+- **OpenAI Cookbook — Question Answering using embeddings / vector search patterns**  
+  https://cookbook.openai.com/
+- **Supabase documentation — pgvector and similarity search in Postgres**  
+  https://supabase.com/docs/guides/ai
+- **General RAG architecture best practices** from modern AI engineering documentation and community references (chunking, overlap, embedding + retrieval + generation pipeline).
+
+In short, the project adapts these well-known patterns to a practical, full-stack app context: PDF ingestion, semantic indexing, and grounded Q&A inside a single product.
 
 ---
 
