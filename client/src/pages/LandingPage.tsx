@@ -21,7 +21,11 @@ import {
     EyeOff,
     User,
     Sparkles,
-    ChevronRight
+    ChevronRight,
+    ChevronDown,
+    Book,
+    Video,
+    LifeBuoy
 } from 'lucide-react';
 import { Link } from "react-router-dom";
 import Tooltip from "../components/other/Tooltip";
@@ -180,6 +184,7 @@ const SectionLabel = ({ children }: { children: React.ReactNode }) => (
 const Navbar = () => {
     const [isScrolled, setIsScrolled] = useState(false);
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+    const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
 
     useEffect(() => {
         const handleScroll = () => setIsScrolled(window.scrollY > 20);
@@ -187,26 +192,130 @@ const Navbar = () => {
         return () => window.removeEventListener('scroll', handleScroll);
     }, []);
 
+    // Struttura dati per i menu a tendina SaaS
+    const navItems = [
+        {
+            label: "Features",
+            hasDropdown: true,
+            content: (
+                <div className="grid grid-cols-2 gap-2 w-[500px] p-3">
+                    {[
+                        { icon: Zap, title: "Fast Actions", desc: "Comandi rapidi da tastiera", link: "/fast-actions" },
+                        { icon: Shield, title: "Privacy Assoluta", desc: "Crittografia end-to-end", link: "/privacy" },
+                        { icon: BrainCircuit, title: "Modelli AI", desc: "Scegli tra GPT-4o e Claude 3.5", link: "/models" },
+                        { icon: Layers, title: "Knowledge Base", desc: "Il tuo archivio intelligente", link: "/knowledge" },
+                    ].map((item, idx) => (
+                        <div key={idx} className="flex items-start gap-4 p-3 hover:bg-neutral-50 rounded-xl cursor-pointer transition-colors group">
+                            <div className="w-10 h-10 rounded-lg bg-neutral-100 flex items-center justify-center text-neutral-600 group-hover:bg-white group-hover:text-neutral-900 group-hover:shadow-sm transition-all">
+                                <item.icon size={18} />
+                            </div>
+                            <Link to={item.link}>
+                                <div className="text-sm font-bold text-neutral-900 mb-0.5">{item.title}</div>
+                                <div className="text-xs text-neutral-500 leading-snug">{item.desc}</div>
+                            </Link>
+                        </div>
+                    ))}
+                    <div className="col-span-2 mt-2 pt-3 border-t border-neutral-100 px-3 pb-1">
+                        <a href="#features" className="text-xs font-semibold text-neutral-900 flex items-center gap-1.5 hover:gap-2 transition-all">
+                            Esplora tutte le features <ArrowRight size={14} />
+                        </a>
+                    </div>
+                </div>
+            )
+        },
+        {
+            label: "Workflow",
+            hasDropdown: false,
+            href: "#workflow"
+        },
+        {
+            label: "Resources",
+            hasDropdown: true,
+            content: (
+                <div className="flex flex-col w-[260px] p-2">
+                    {[
+                        { icon: Book, title: "Documentazione", desc: "Guide e API reference" },
+                        { icon: Video, title: "Video Tutorial", desc: "Impara ad usare NeuralTrust" },
+                        { icon: LifeBuoy, title: "Help Center", desc: "Supporto 24/7" },
+                    ].map((item, idx) => (
+                        <div key={idx} className="flex items-center gap-3 p-3 hover:bg-neutral-50 rounded-lg cursor-pointer transition-colors">
+                            <div className="text-neutral-400"><item.icon size={18} /></div>
+                            <div>
+                                <div className="text-sm font-semibold text-neutral-900">{item.title}</div>
+                                <div className="text-[11px] text-neutral-500">{item.desc}</div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            )
+        },
+        {
+            label: "Pricing",
+            hasDropdown: false,
+            href: "#pricing"
+        }
+    ];
+
     return (
         <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${isScrolled ? 'glass border-b border-neutral-200/50 py-3' : 'bg-transparent py-5'}`}>
             <div className="max-w-6xl mx-auto px-6 flex items-center justify-between">
-                <div className="flex items-center gap-3">
+                
+                {/* Logo */}
+                <div className="flex items-center gap-3 relative z-20">
                     <div className="w-9 h-9 bg-neutral-900 text-white flex items-center justify-center rounded-lg shadow-md shadow-neutral-900/20">
                         <BrainCircuit size={18} />
                     </div>
                     <span className="text-lg font-bold tracking-tight text-neutral-900">NeuralTrust</span>
                 </div>
 
-                {/* Desktop Links */}
-                <div className="hidden md:flex items-center gap-1 bg-neutral-100/60 backdrop-blur-sm rounded-full px-2 py-1 border border-neutral-200/50">
-                    {["Features", "Workflow", "Privacy", "Pricing"].map((item) => (
-                        <a key={item} href={`#${item.toLowerCase()}`} className="text-sm font-medium text-neutral-500 hover:text-neutral-900 hover:bg-white/80 transition-all px-4 py-1.5 rounded-full">
-                            {item}
-                        </a>
+                {/* Desktop SaaS Navigation */}
+                <div className="hidden md:flex items-center bg-neutral-100/60 backdrop-blur-sm rounded-full px-1.5 py-1 border border-neutral-200/50">
+                    {navItems.map((item) => (
+                        <div 
+                            key={item.label}
+                            className="relative"
+                            onMouseEnter={() => item.hasDropdown && setActiveDropdown(item.label)}
+                            onMouseLeave={() => item.hasDropdown && setActiveDropdown(null)}
+                        >
+                            {item.hasDropdown ? (
+                                <button className="flex items-center gap-1.5 text-sm font-medium text-neutral-600 hover:text-neutral-900 hover:bg-white/80 transition-all px-4 py-2 rounded-full cursor-default">
+                                    {item.label}
+                                    <ChevronDown size={14} className={`transition-transform duration-300 ${activeDropdown === item.label ? 'rotate-180' : ''}`} />
+                                </button>
+                            ) : (
+                                <a href={item.href} className="flex items-center text-sm font-medium text-neutral-600 hover:text-neutral-900 hover:bg-white/80 transition-all px-4 py-2 rounded-full">
+                                    {item.label}
+                                </a>
+                            )}
+
+                            {/* Dropdown Animato */}
+                            {item.hasDropdown && (
+                                <AnimatePresence>
+                                    {activeDropdown === item.label && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10, scale: 0.96 }}
+                                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                                            exit={{ opacity: 0, y: 10, scale: 0.96 }}
+                                            transition={{ duration: 0.2, ease: "easeOut" }}
+                                            className="absolute top-full left-1/2 -translate-x-1/2 pt-4"
+                                        >
+                                            <div className="bg-white rounded-2xl shadow-xl shadow-neutral-900/10 border border-neutral-200/60 relative overflow-hidden">
+                                                {/* Freccia superiore del dropdown */}
+                                                <div className="absolute -top-2 left-1/2 -translate-x-1/2 w-4 h-4 bg-white border-l border-t border-neutral-200/60 rotate-45" />
+                                                <div className="relative z-10 bg-white">
+                                                    {item.content}
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+                            )}
+                        </div>
                     ))}
                 </div>
 
-                <div className="hidden md:flex items-center gap-4">
+                {/* Auth Buttons */}
+                <div className="hidden md:flex items-center gap-4 relative z-20">
                     <Link to="/login" className="text-sm font-semibold text-neutral-600 hover:text-neutral-900 transition-colors">Log in</Link>
                     <Button variant="primary" className="!py-2.5 !px-5 !rounded-full !text-xs">
                         Get Started
@@ -214,8 +323,8 @@ const Navbar = () => {
                     </Button>
                 </div>
 
-                {/* Mobile Toggle */}
-                <button className="md:hidden text-neutral-900 p-2 hover:bg-neutral-100 rounded-lg transition-colors" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
+                {/* Mobile Menu Toggle */}
+                <button className="md:hidden text-neutral-900 p-2 hover:bg-neutral-100 rounded-lg transition-colors relative z-20" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
                     {mobileMenuOpen ? <X size={22} /> : <Menu size={22} />}
                 </button>
             </div>
@@ -227,15 +336,16 @@ const Navbar = () => {
                         initial={{ opacity: 0, height: 0 }}
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
-                        className="md:hidden glass border-b border-neutral-200/50 overflow-hidden"
+                        className="md:hidden glass border-b border-neutral-200/50 overflow-hidden absolute top-full left-0 right-0 bg-white"
                     >
                         <div className="px-6 py-8 flex flex-col gap-5">
-                            {["Features", "Workflow", "Privacy", "Pricing"].map((item) => (
-                                <a key={item} href={`#${item.toLowerCase()}`} className="text-lg font-semibold text-neutral-900 hover:text-neutral-600 transition-colors">
-                                    {item}
+                            {navItems.map((item) => (
+                                <a key={item.label} href={item.href || `#${item.label.toLowerCase()}`} className="text-lg font-semibold text-neutral-900 hover:text-neutral-600 transition-colors flex justify-between items-center">
+                                    {item.label}
+                                    {item.hasDropdown && <ChevronDown size={18} className="text-neutral-400" />}
                                 </a>
                             ))}
-                            <hr className="border-neutral-100" />
+                            <hr className="border-neutral-100 my-2" />
                             <Button variant="secondary" className="w-full justify-center">Log in</Button>
                             <Button variant="primary" className="w-full justify-center">Get Started</Button>
                         </div>
