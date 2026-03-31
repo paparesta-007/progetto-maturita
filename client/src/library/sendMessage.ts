@@ -108,7 +108,7 @@ export const sendNormalMessage = async (
 
         if (!options.isTemporary) {
             if (currentConversationId && userId) {
-                await createMessage(messagePayload, currentConversationId, model);
+                await createMessage(messagePayload, currentConversationId, model,userId);
             } else if (userId) {
                 let newTitle = "New Chat";
                 try {
@@ -126,7 +126,7 @@ export const sendNormalMessage = async (
                 const newConvData = await createConversation(userId, newTitle);
                 if (newConvData && newConvData.length > 0) {
                     const newConvId = newConvData[0].id;
-                    await createMessage(messagePayload, newConvId, model);
+                    await createMessage(messagePayload, newConvId, model, userId);
                     setCurrentConversationId(newConvId);
                     _navigate(`/app/chat/${newConvId}`);
                     await fetchConversations();
@@ -320,7 +320,7 @@ export const sendStreamedMessage = async (
 
         if (!options.isTemporary) {
             if (currentConversationId && userId) {
-                await createMessage(messagePayload, currentConversationId, model);
+                await createMessage(messagePayload, currentConversationId, model, userId);
             } else if (userId) {
                 let newTitle = "New Chat";
                 try {
@@ -338,7 +338,7 @@ export const sendStreamedMessage = async (
                 const newConvData = await createConversation(userId, newTitle);
                 if (newConvData && newConvData.length > 0) {
                     const newConvId = newConvData[0].id;
-                    await createMessage(messagePayload, newConvId, model);
+                    await createMessage(messagePayload, newConvId, model, userId);
                     setCurrentConversationId(newConvId);
                     _navigate(`/app/chat/${newConvId}`);
                     await fetchConversations();

@@ -409,9 +409,11 @@ app.post("/api/completion/chat", async function (req: express.Request, res: expr
         const text = data.choices[0]?.message?.content || "";
         const reasoningContent = data.choices[0]?.message?.reasoning || null;
         const usage = {
-            promptTokens: data.usage?.prompt_tokens || 0,
-            outputTokens: data.usage?.completion_tokens || 0,
-            totalTokens: data.usage?.total_tokens || 0
+            ...data.usage,
+            prompt_tokens: data.usage?.prompt_tokens || 0,
+            completion_tokens: data.usage?.completion_tokens || 0,
+            total_tokens: data.usage?.total_tokens || 0,
+            cost: data.usage?.cost || data.cost || 0
         };
 
         // 2. STOP Timer
@@ -490,9 +492,11 @@ app.post("/api/gemini/getTitleConversation", async function (req: express.Reques
 
         // Mappiamo l'usage per mantenere la compatibilità con il tuo frontend
         const usage = {
-            promptTokens: data.usage?.prompt_tokens || 0,
-            outputTokens: data.usage?.completion_tokens || 0,
-            totalTokens: data.usage?.total_tokens || 0
+            ...data.usage,
+            prompt_tokens: data.usage?.prompt_tokens || 0,
+            completion_tokens: data.usage?.completion_tokens || 0,
+            total_tokens: data.usage?.total_tokens || 0,
+            cost: data.usage?.cost || data.cost || 0
         };
 
         res.send({ text, usage });
@@ -890,11 +894,11 @@ app.post("/api/conversations/create", async (req: express.Request, res: express.
 // Crea un nuovo messaggio in una conversazione
 app.post("/api/conversations/messages/create", async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     try {
-        const { conversation_id, sender, content, usage, model, reasoning_text } = req.body;
+        const { conversation_id, sender, content, usage, model, reasoning_text, user_id } = req.body;
         if (!conversation_id) throw new Error("conversation_id mancante");
 
         // Dobbiamo avere l'user_id per passarlo ai log se presente nella session, ma potremmo non averlo nel body... passiamo 'unknown'
-        logSupabaseAction("insert_message", req.body.sender === 'user' ? "user" : "bot");
+        logSupabaseAction("insert_message", user_id || "unknown");
         const { data, error } = await supabase
             .from("messages")
             .insert({
@@ -907,6 +911,14 @@ app.post("/api/conversations/messages/create", async (req: express.Request, res:
                 reasoning_text: reasoning_text,
             });
 
+        //update conversation updated_at
+        logSupabaseAction("update_conversation", user_id);
+        const { data: updatedConversation, error: updateError } = await supabase
+            .from("conversations")
+            .update({
+                updated_at: new Date().toISOString(),
+            })
+            .eq("id", conversation_id);
         if (error) {
             console.error("Errore creazione messaggio:", error);
             return res.status(500).json({ error: error.message });
@@ -929,7 +941,7 @@ app.get("/api/conversations/list", async (req: express.Request, res: express.Res
             .from("conversations")
             .select("*")
             .eq("user_id", user_id)
-            .order("created_at", { ascending: false })
+            .order("updated_at", { ascending: false })
             .limit(20);
 
         if (error) {
@@ -1001,7 +1013,7 @@ app.patch("/api/conversations/update-title", async (req: express.Request, res: e
         logSupabaseAction("update_conversation_title", user_id);
         const { data, error } = await supabase
             .from("conversations")
-            .update({ title: new_title })
+            .update({ title: new_title, updated_at: new Date().toISOString() })
             .eq("id", conversation_id)
             .eq("user_id", user_id);
 
@@ -1266,7 +1278,6 @@ app.post("/api/quiz/generate", async function (req: express.Request, res: expres
                     }
                 },
                 temperature: 0.5,
-                reasoning: { effort: "minimal" },
                 provider: {
                     require_parameters: true
                 }
