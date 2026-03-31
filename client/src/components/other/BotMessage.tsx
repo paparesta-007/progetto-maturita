@@ -428,24 +428,24 @@ const BotMessage = ({ i, children, usage, model, suggestedQuestions, logs, isCom
                                             <p className={s.tooltipLabel}>Utilizzo Token</p>
                                             <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1.5">
                                                 <span className={`text-[11px] ${isDark ? "text-neutral-500" : "text-neutral-600"}`}>Input</span>
-                                                <span className={`${s.tooltipValue} text-right`}>{usage?.inputTokens || 0}</span>
+                                                <span className={`${s.tooltipValue} text-right`}>{usage?.prompt_tokens || usage?.inputTokens || 0}</span>
 
                                                 <span className={`text-[11px] ${isDark ? "text-neutral-500" : "text-neutral-600"}`}>Output</span>
-                                                <span className={`${s.tooltipValue} text-right`}>{usage?.outputTokens || 0}</span>
+                                                <span className={`${s.tooltipValue} text-right`}>{usage?.completion_tokens || usage?.outputTokens || 0}</span>
 
-                                                {(usage?.reasoningTokens || 0) > 0 && (
+                                                {(usage?.completion_tokens_details?.reasoning_tokens || usage?.reasoningTokens || 0) > 0 && (
                                                     <>
                                                         <span className={`text-[11px] ${isDark ? "text-neutral-500" : "text-neutral-600"}`}>Reasoning</span>
-                                                        <span className={`${s.tooltipValue} text-right`}>{usage?.reasoningTokens}</span>
+                                                        <span className={`${s.tooltipValue} text-right`}>{usage?.completion_tokens_details?.reasoning_tokens || usage?.reasoningTokens}</span>
                                                     </>
                                                 )}
 
                                                 <div className={`col-span-2 ${s.tooltipDivider}`} />
 
                                                 <span className={`text-[11px] font-semibold ${isDark ? "text-neutral-300" : "text-neutral-600"}`}>Totale</span>
-                                                <span className={`${s.tooltipValue} text-right font-bold ${isDark ? "text-neutral-500" : "text-neutral-900"}`}>{usage?.totalTokens || 0}</span>
+                                                <span className={`${s.tooltipValue} text-right font-bold ${isDark ? "text-neutral-500" : "text-neutral-900"}`}>{usage?.total_tokens || usage?.totalTokens || 0}</span>
                                                 <span className={`text-[11px] font-semibold ${isDark ? "text-neutral-300" : "text-neutral-600"}`}>Costo</span>
-                                                <span className={`${s.tooltipValue} text-right  ${isDark ? "text-white" : "text-neutral-900"}`}>${usage?.raw?.cost?.toFixed(4) || "0.0000"}</span>
+                                                <span className={`${s.tooltipValue} text-right  ${isDark ? "text-white" : "text-neutral-900"}`}>${usage?.cost?.toFixed(4) || usage?.raw?.cost?.toFixed(4) || "0.0000"}</span>
                                             </div>
 
                                         </div>
@@ -453,7 +453,7 @@ const BotMessage = ({ i, children, usage, model, suggestedQuestions, logs, isCom
                                 >
                                     <span className={s.modelBadge}>
                                         <BrainCircuit size={10} />
-                                        {usage?.totalTokens || 0} tokens
+                                        {usage?.total_tokens || usage?.totalTokens || 0} tokens
                                     </span>
                                 </Tooltip>
                             )}
