@@ -132,7 +132,7 @@ const Sidebar = ({
 }) => {
     // --- Context & State ---
     const { user, theme, setTheme } = useAuth() || { user: { displayName: "Matteo Rossi", photoURL: null } };
-    const { conversations, setMessageHistory, fetchConversations, setCurrentConversationId, setCurrentConversationName } = useChat();
+    const { conversations, setMessageHistory, fetchConversations, setCurrentConversationId, setCurrentConversationName, areConversationsLoaded } = useChat();
     const [userDetails, setUserDetails] = useState<{ full_name: string | null, birthday: string | null, avatar_url?: string } | null>(null);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
 
@@ -547,7 +547,14 @@ const Sidebar = ({
                 {!isMinimized && <div className={style.scrollbar}>
                     <div className="flex flex-col gap-0.5">
                         <ul className="flex flex-col gap-0.5 relative" ref={convMenuRef}>
-                            {isDocumentsPage ? (
+                            {!areConversationsLoaded ? (
+                                // --- LOADING STATE ---
+                                <div className="space-y-2 px-1">
+                                    {[1, 2, 3].map((i) => (
+                                        <div key={i} className={`h-9 w-full rounded-xl animate-pulse ${isDark ? "bg-white/[0.04]" : "bg-black/[0.03]"}`} />
+                                    ))}
+                                </div>
+                            ) : isDocumentsPage ? (
                                 // --- DOCUMENTS VIEW ---
                                 documentList.length > 0 ? (
                                     documentList.map((doc, index) => (

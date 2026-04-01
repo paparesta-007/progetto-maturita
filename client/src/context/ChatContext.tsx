@@ -5,7 +5,7 @@ import getMessages from "../services/supabase/Conversation/getMessages";
 import { sendNormalMessage, sendStreamedMessage, sendCanvasMessage, sendWebSearchMessage, type ChatOptions } from "../library/sendMessage";
 import { useNavigate } from "react-router-dom";
 interface ChatContextType {
-    sendMessage: (message: string, functionality: string, reasoning: string, files?: any[]) => void;
+    sendMessage: (message: string, functionality: string, reasoning: string, files?: any[]) => Promise<void>;
     messageHistory: { role: 'user' | 'bot'; content: string; usage?: any, model?: string, suggestedQuestions?: string[], reasoning?: string | null, logs?: string[], isComplete?: boolean }[];
     loading: boolean;
     conversations: any[]; // Per tenere traccia delle conversazioni salvate
@@ -30,6 +30,7 @@ interface ChatContextType {
 
     isTemporaryConversation: boolean;
     setIsTemporaryConversation: React.Dispatch<React.SetStateAction<boolean>>;
+    updateConversationPosition: (conversationId: string) => void;
 }
 
 // 1. Creazione del Context
@@ -51,19 +52,33 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const navigate = useNavigate();
 
     const fetchConversations = useCallback(async () => {
+        if (!user?.id) {
+            setAreConversationsLoaded(true);
+            return;
+        }
         try {
-            if (!user?.id) return;
-            const data = await getAllConversation(user?.id);
+            const data = await getAllConversation(user.id);
             if (data) {
                 setConversations(data);
             }
         } catch (error) {
             console.error("Errore durante il recupero delle conversazioni:", error);
         } finally {
-            // NUOVO: Segnaliamo che il caricamento è finito (anche se vuoto o errore)
             setAreConversationsLoaded(true);
         }
     }, [user?.id]);
+
+    const updateConversationPosition = useCallback((conversationId: string) => {
+        setConversations(prev => {
+            const index = prev.findIndex(c => c.id === conversationId);
+            if (index === -1) return prev; // Not found, maybe it's a new one that will be added by fetchConversations later
+            if (index === 0) return prev; // Already at top
+            
+            const newConvs = [...prev];
+            const [movedConv] = newConvs.splice(index, 1);
+            return [movedConv, ...newConvs];
+        });
+    }, []);
 
     const sendMessage = useCallback(async (message: string, functionality: string, reasoning: string, files?: any[]) => {
         const chatOptions: ChatOptions = {
@@ -77,37 +92,23 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         };
 
         try {
-            switch (functionality) {
-                case "canvas":
-                    await sendCanvasMessage(message, setMessageHistory, setLoading, model, messageHistory);
-                    break;
-                case "web_search":
-                    await sendWebSearchMessage(message, setMessageHistory, setLoading, model, messageHistory);
-                    break;
-                default:
-                    if (isStreamTextEnabled) {
-                        await sendStreamedMessage(message, setMessageHistory, setLoading, model, messageHistory, currentConversationId, user?.id, setCurrentConversationId, fetchConversations, navigate, chatOptions);
-                    } else {
-                        await sendNormalMessage(
-                            message,
-                            setMessageHistory,
-                            setLoading,
-                            model,
-                            messageHistory,
-                            currentConversationId,
-                            user?.id,
-                            setCurrentConversationId,
-                            fetchConversations,
-                            navigate,
-                            chatOptions
-                        );
-                    }
-                    break;
+            const res = await (functionality === "canvas" 
+                ? sendCanvasMessage(message, setMessageHistory, setLoading, model, messageHistory)
+                : functionality === "web_search"
+                ? sendWebSearchMessage(message, setMessageHistory, setLoading, model, messageHistory)
+                : isStreamTextEnabled
+                ? sendStreamedMessage(message, setMessageHistory, setLoading, model, messageHistory, currentConversationId, user?.id, setCurrentConversationId, fetchConversations, navigate, chatOptions)
+                : sendNormalMessage(message, setMessageHistory, setLoading, model, messageHistory, currentConversationId, user?.id, setCurrentConversationId, fetchConversations, navigate, chatOptions));
+            
+            if (currentConversationId) {
+                updateConversationPosition(currentConversationId);
             }
+            
+            return res;
         } catch (error) {
             console.error("Errore durante l'invio del messaggio:", error);
         }
-    }, [isStreamTextEnabled, model, messageHistory, currentConversationId, user, systemPrompt, personalInfo, tone, allowedCustomInstructions, fetchConversations, navigate, isTemporaryConversation]);
+    }, [isStreamTextEnabled, model, messageHistory, currentConversationId, user, systemPrompt, personalInfo, tone, allowedCustomInstructions, fetchConversations, navigate, isTemporaryConversation, updateConversationPosition]);
 
     const loadConversation = useCallback(async (conversationId: string) => {
         try {
@@ -199,12 +200,12 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
         if (user?.id) {
             fetchConversations();
-        } else {
-            // Se non c'è user, non caricheremo mai, quindi sblocchiamo comunque o gestiamo diversamente
-            // Di solito qui si aspetta l'auth, ma per sicurezza:
-            setAreConversationsLoaded(false);
+        } else if (user === null) {
+            // Se l'utente è esplicitamente null (non loggato), carichiamo come finito
+            setAreConversationsLoaded(true);
+            setConversations([]);
         }
-    }, [user?.id, fetchConversations]);
+    }, [user, fetchConversations]);
 
     const userOwnsConversation = useCallback((conversationId: string) => {
         // Se la lista è vuota, controlliamo se è perché non abbiamo ancora caricato
@@ -212,8 +213,6 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     }, [conversations]);
 
     const contextValue = useMemo(() => ({
-
-
         sendMessage,
         messageHistory,
         loading,
@@ -232,11 +231,9 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         currentConversationName,
         setCurrentConversationName,
         isTemporaryConversation,
-        setIsTemporaryConversation
-
+        setIsTemporaryConversation,
+        updateConversationPosition
     }), [
-
-
         sendMessage,
         messageHistory,
         loading,
@@ -251,7 +248,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         currentConversationName,
         setCurrentConversationName,
         isTemporaryConversation,
-        setIsTemporaryConversation
+        setIsTemporaryConversation,
+        updateConversationPosition
     ]);
 
     return (
