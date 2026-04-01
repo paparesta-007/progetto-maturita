@@ -16,6 +16,7 @@ import ArtifactsPage from './pages/ArtifactsPage';
 import { initRemoteLogger } from './utils/remoteLogger';
 import QuizPage from './pages/ArtifactsPages/QuizPage';
 import KnowledgePage from './pages/static/Knowledge';
+import HelpPage from './pages/HelpPage';
 initRemoteLogger();
 
 function App() {
@@ -27,6 +28,7 @@ function App() {
             {/* ROTTE PUBBLICHE */}
             <Route path='/' element={<LandingPage />} />
             <Route path='/knowledge' element={<KnowledgePage />} />
+            <Route path='/help' element={<HelpPage />} />
             <Route path='/login' element={<LoginPage />} />
             <Route path='/reset-password' element={<CreateNewPassword />} />
 

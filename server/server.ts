@@ -258,91 +258,6 @@ app.use((req: express.Request, res: express.Response, next: express.NextFunction
     next();
 });
 
-
-
-
-// E) Rotte API
-app.get("/api/gemini/generate", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
-    try {
-        const startTime = Date.now();
-        const prompt = decodeURIComponent(req.query.prompt as string) || "Explain what is climate change like I am 10 years old. short answer.";
-
-        // SUGGERIMENTO: Sposta i nomi dei modelli in variabili d'ambiente per non averli hardcoded.
-        // const modelName = process.env.GEMINI_GENERATE_MODEL || "gemini-2.5-flash-lite";
-        const { text, usage } = await generateText({
-            model: google("gemini-2.5-flash-lite"), // SUGGERIMENTO: Valuta se usare un modello stabile per produzione.
-            system: "You are a 8 years old kid",
-            prompt: prompt,
-        });
-
-        const endTime = Date.now();
-        res.send({ text, usage, totaltime: endTime - startTime });
-    } catch (error) {
-        next(error);
-    }
-});
-
-app.get("/api/gemini/structured-output", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
-    try {
-        const randomNum = Math.floor(Math.random() * 1000);
-        const prompt = `Generate 10 flashcard about ${decodeURIComponent(req.query.prompt as string)} Use a random creative angle seed: ${randomNum}.` || "Generate quiz for learning basic of Star Wars universe";
-        const startTime = Date.now();
-
-        const { object, usage } = await generateObject({
-            model: google("gemini-2.5-flash-lite"), // SUGGERIMENTO: Valuta se usare un modello stabile per produzione.
-            temperature: 1.2,
-            seed: randomNum,
-            schema: z.object({
-                flashcards: z.array(z.object({
-                    question: z.string().describe("The question on the front of the flashcard"),
-                    options: z.array(z.string()).describe("Multiple choice options for the question, 4 choices"),
-                    answer: z.string().describe("The correct answer to the question"),
-                    explanation: z.string().optional().describe("A brief explanation of the answer"),
-                })).describe("A list of quiz to help learn about the topic"),
-            }),
-            prompt: prompt,
-        });
-        const endTime = Date.now();
-        res.send({ object, usage, totaltime: endTime - startTime });
-    } catch (error) {
-        next(error);
-    }
-});
-
-// Add this inside server.ts, before the default 404 route
-
-app.post("/api/gemini/chat/stream", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
-    try {
-        const { message, history, modelName } = req.body;
-
-        const allowedModels = ["gemini-2.5-flash-lite", "gemini-2.5-flash"];
-        const selectedModel = modelName && allowedModels.includes(modelName) ? modelName : "gemini-2.5-flash-lite";
-
-        const messages = [
-            ...history,
-            { role: 'user', content: message }
-        ];
-
-        // Intestazioni per lo streaming
-        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-        res.setHeader("Transfer-Encoding", "chunked");
-        res.flushHeaders(); // FONDAMENTALE: forza l'invio immediato degli header e apre il flusso
-
-        const { textStream } = streamText({
-            model: google(selectedModel as any),
-            messages: messages,
-
-        });
-
-        for await (const textPart of textStream) {
-            res.write(textPart);
-        }
-
-        res.end();
-    } catch (error) {
-        next(error);
-    }
-});
 app.post("/api/completion/chat", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
     try {
         const { message, history, modelName, systemPromptUser, personalInfo, tone, allowedCustomInstructions, reasoning } = req.body;
@@ -1341,7 +1256,65 @@ app.post("/api/quiz/generate", async function (req: express.Request, res: expres
     }
 });
 
+app.post("/api/support/getUserTickets", async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    try {
+        const { userId } = req.body;
+        if (!userId) throw new Error("userId mancante");
 
+        logSupabaseAction("select_support_tickets", userId);
+        const { data, error } = await supabase
+            .from("support_tickets")
+            .select("*")
+            .eq("user_id", userId)
+            .order("created_at", { ascending: false });
+
+        if (error) {
+            console.error("Errore recupero ticket di supporto:", error);
+            return res.status(500).json({ error: error.message });
+        }
+
+        res.json({ success: true, tickets: data });
+    } catch (error: any) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+app.post("/api/support/submit", async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+    try {
+        const { userId, email, problemType, subject, message } = req.body;
+        /*
+        -- Create support_tickets table
+        CREATE TABLE support_tickets (
+            id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+            user_id UUID REFERENCES auth.users(id),
+            email TEXT NOT NULL,
+            problem_type TEXT NOT NULL,
+            subject TEXT NOT NULL,
+            message TEXT NOT NULL,
+            status TEXT DEFAULT 'open', -- 'open', 'in-progress', 'resolved', 'closed'
+            admin_reply TEXT,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+            updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+        );
+        */
+        const { data, error } = await supabase
+            .from('support_tickets')
+            .insert([
+                {
+                    user_id: userId,
+                    email: email,
+                    problem_type: problemType,
+                    subject: subject,
+                    message: message,
+                },
+            ])
+            .select();
+        if (error) throw error;
+        return res.status(200).json({ success: true, data });
+    } catch (error: any) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+})
 
 
 

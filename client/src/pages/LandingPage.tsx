@@ -234,17 +234,17 @@ const Navbar = () => {
             content: (
                 <div className="flex flex-col w-[260px] p-2">
                     {[
-                        { icon: Book, title: "Documentazione", desc: "Guide e API reference" },
-                        { icon: Video, title: "Video Tutorial", desc: "Impara ad usare NeuralTrust" },
-                        { icon: LifeBuoy, title: "Help Center", desc: "Supporto 24/7" },
+                        { icon: Book, title: "Documentazione", desc: "Guide e API reference", link: "/docs" },
+                        { icon: Video, title: "Video Tutorial", desc: "Impara ad usare NeuralTrust", link: "/tutorial" },
+                        { icon: LifeBuoy, title: "Help Center", desc: "Supporto 24/7", link: "/help" },
                     ].map((item, idx) => (
-                        <div key={idx} className="flex items-center gap-3 p-3 hover:bg-neutral-50 rounded-lg cursor-pointer transition-colors">
+                        <Link to={item.link} key={idx} className="flex items-center gap-3 p-3 hover:bg-neutral-50 rounded-lg cursor-pointer transition-colors">
                             <div className="text-neutral-400"><item.icon size={18} /></div>
                             <div>
                                 <div className="text-sm font-semibold text-neutral-900">{item.title}</div>
                                 <div className="text-[11px] text-neutral-500">{item.desc}</div>
                             </div>
-                        </div>
+                        </Link>
                     ))}
                 </div>
             )
