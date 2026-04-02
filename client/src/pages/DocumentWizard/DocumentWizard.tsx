@@ -19,6 +19,7 @@ import {
 import { Sparkles } from "lucide-react";
 import Tooltip from "../../components/other/Tooltip";
 import { useNavigate } from "react-router-dom";
+import supabase from "../../library/supabaseclient";
 
 const DocumentWizard = () => {
     // --- Context & State ---
@@ -147,6 +148,19 @@ const DocumentWizard = () => {
         const data = await response.json();
         if(data.success){
             console.log("Document ingested successfully:", data.message);
+            // Salva PDF su supabase
+            if (formData.file && formData.file.name.toLowerCase().endsWith('.pdf') && data.documentId) {
+                const { error: uploadError } = await supabase.storage
+                    .from('pdfs')
+                    .upload(`${data.documentId}.pdf`, formData.file, {
+                        upsert: true
+                    });
+                if (uploadError) {
+                    console.error("Errore salvataggio PDF su Supabase:", uploadError);
+                } else {
+                    console.log("PDF salvato correttamente in Supabase storage");
+                }
+            }
         } else {
             console.error("Error ingesting document:", data.error);
         }
