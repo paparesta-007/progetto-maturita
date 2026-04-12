@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState , useMemo } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import {
     CaretDownIcon,
@@ -55,12 +55,16 @@ const OptionsPopup: React.FC = () => {
 
     const containerRef = useRef<HTMLDivElement>(null);
 
-    const groupedModels = filteredModels.reduce((acc: Record<string, any[]>, m) => {
-        const p = m.provider || "Unknown";
-        if (!acc[p]) acc[p] = [];
-        acc[p].push(m);
-        return acc;
-    }, {});
+    // ⚡ Bolt Optimization: Memoize the grouping of models to avoid expensive reduction
+    // on every render, especially useful since the model list can be large.
+    const groupedModels = useMemo(() => {
+        return filteredModels.reduce((acc: Record<string, any[]>, m) => {
+            const p = m.provider || "Unknown";
+            if (!acc[p]) acc[p] = [];
+            acc[p].push(m);
+            return acc;
+        }, {});
+    }, [filteredModels]);
 
     useEffect(() => {
         getModels().then((data) => {
