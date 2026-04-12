@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { motion } from 'framer-motion';
+import { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import { 
     FileText, 
@@ -12,7 +12,9 @@ import {
     ChevronRight,
     ChevronDown,
     Bot,
-    BookOpen
+    BookOpen,
+    Plus,
+    Minus
 } from 'lucide-react';
 
 /* --- Effects & Utilities --- */
@@ -141,13 +143,18 @@ const SystemStyles = () => (
 
 const TopNav = () => {
     const [scrolled, setScrolled] = useState(false);
-    const [isExploreOpen, setIsExploreOpen] = useState(false);
-    const dropdownRef = useRef<HTMLDivElement | null>(null);
-    const exploreLinks = [
-        { label: 'Help Tickets', to: '/help' },
-        { label: 'Roadmap', to: '/roadmap' },
-        { label: 'Resources', to: '/resources' },
-        { label: 'Changelog', to: '/changelog' }
+    const [openMenu, setOpenMenu] = useState<'features' | 'resources' | null>(null);
+    const featureLinks = [
+        { label: 'Features', href: '#features' },
+        { label: 'Models', href: '#models' },
+        { label: 'Capabilities', href: '#capabilities' },
+    ];
+    const resourceLinks = [
+        { label: 'About', href: '#about' },
+        { label: 'Help Tickets', href: '/help' },
+        { label: 'Roadmap', href: '/roadmap' },
+        { label: 'Resources', href: '/resources' },
+        { label: 'Changelog', href: '/changelog' },
     ];
     
     useEffect(() => {
@@ -158,14 +165,19 @@ const TopNav = () => {
 
     useEffect(() => {
         const onMouseDown = (event: MouseEvent) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
-                setIsExploreOpen(false);
+            const target = event.target as HTMLElement;
+            if (!target.closest('[data-nav-dropdown]')) {
+                setOpenMenu(null);
             }
         };
 
         document.addEventListener('mousedown', onMouseDown);
         return () => document.removeEventListener('mousedown', onMouseDown);
     }, []);
+
+    const toggleMenu = (menu: 'features' | 'resources') => {
+        setOpenMenu((current) => (current === menu ? null : menu));
+    };
     
     return (
         <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-stone-50/90 backdrop-blur-md border-b border-stone-200' : ''}`}>
@@ -180,44 +192,104 @@ const TopNav = () => {
                     </span>
                 </div>
                 
-                <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
-                    <a href="#features" className="hover:text-orange-600 transition-colors">Features</a>
-                    <a href="#models" className="hover:text-orange-600 transition-colors">Models</a>
-                    <a href="#capabilities" className="hover:text-orange-600 transition-colors">Capabilities</a>
-                    <a href="#about" className="hover:text-orange-600 transition-colors">About</a>
-                    <Link to="/help" className="hover:text-orange-600 transition-colors">Help Tickets</Link>
-                    <div className="relative" ref={dropdownRef}>
-                        <button
-                            onClick={() => setIsExploreOpen((previous) => !previous)}
-                            className="inline-flex items-center gap-1.5 hover:text-orange-600 transition-colors"
-                        >
-                            Explore
-                            <ChevronDown size={14} className={`transition-transform ${isExploreOpen ? 'rotate-180' : ''}`} />
-                        </button>
-                        {isExploreOpen && (
-                            <div className="absolute top-full right-0 mt-2 min-w-[180px] bg-white border border-stone-200 rounded-lg p-1.5 shadow-lg">
-                                {exploreLinks.map((route) => (
-                                    <Link
-                                        key={route.to}
-                                        to={route.to}
-                                        onClick={() => setIsExploreOpen(false)}
-                                        className="block px-3 py-2 text-stone-700 hover:bg-stone-100 rounded-md"
+                <nav className="hidden md:flex items-center justify-center flex-1">
+                    <ul className="flex items-center gap-8 text-sm font-medium text-stone-700">
+                        <li className="relative" data-nav-dropdown>
+                            <button
+                                onClick={() => toggleMenu('features')}
+                                aria-expanded={openMenu === 'features'}
+                                aria-haspopup="menu"
+                                className="inline-flex items-center gap-1.5 hover:text-orange-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded-sm transition-colors"
+                            >
+                                Features
+                                <ChevronDown size={14} className={`transition-transform duration-300 ${openMenu === 'features' ? 'rotate-180' : ''}`} />
+                            </button>
+                            <AnimatePresence>
+                                {openMenu === 'features' && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: 8 }}
+                                        transition={{ duration: 0.18 }}
+                                        className="absolute top-full left-1/2 -translate-x-1/2 mt-2 min-w-[180px] bg-white border border-stone-200 rounded-lg p-1.5 shadow-lg"
                                     >
-                                        {route.label}
-                                    </Link>
-                                ))}
-                            </div>
-                        )}
-                    </div>
+                                        {featureLinks.map((item) => (
+                                            <a
+                                                key={item.href}
+                                                href={item.href}
+                                                onClick={() => setOpenMenu(null)}
+                                                className="block px-3 py-2 text-stone-700 hover:bg-stone-100 rounded-md"
+                                            >
+                                                {item.label}
+                                            </a>
+                                        ))}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </li>
+
+                        <li className="relative" data-nav-dropdown>
+                            <button
+                                onClick={() => toggleMenu('resources')}
+                                aria-expanded={openMenu === 'resources'}
+                                aria-haspopup="menu"
+                                className="inline-flex items-center gap-1.5 hover:text-orange-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded-sm transition-colors"
+                            >
+                                Resources
+                                <ChevronDown size={14} className={`transition-transform duration-300 ${openMenu === 'resources' ? 'rotate-180' : ''}`} />
+                            </button>
+                            <AnimatePresence>
+                                {openMenu === 'resources' && (
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 8 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        exit={{ opacity: 0, y: 8 }}
+                                        transition={{ duration: 0.18 }}
+                                        className="absolute top-full left-1/2 -translate-x-1/2 mt-2 min-w-[190px] bg-white border border-stone-200 rounded-lg p-1.5 shadow-lg"
+                                    >
+                                        {resourceLinks.map((item) => (
+                                            item.href.startsWith('#') ? (
+                                                <a
+                                                    key={item.href}
+                                                    href={item.href}
+                                                    onClick={() => setOpenMenu(null)}
+                                                    className="block px-3 py-2 text-stone-700 hover:bg-stone-100 rounded-md"
+                                                >
+                                                    {item.label}
+                                                </a>
+                                            ) : (
+                                                <Link
+                                                    key={item.href}
+                                                    to={item.href}
+                                                    onClick={() => setOpenMenu(null)}
+                                                    className="block px-3 py-2 text-stone-700 hover:bg-stone-100 rounded-md"
+                                                >
+                                                    {item.label}
+                                                </Link>
+                                            )
+                                        ))}
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </li>
+
+                        <li>
+                            <a href="#faq" className="hover:text-orange-600 transition-colors">Pricing</a>
+                        </li>
+                    </ul>
                 </nav>
                 
                 <div className="flex items-center gap-4">
-                    <button className="p-2 hover:bg-stone-200 rounded-lg transition-colors">
-                        <Github size={20} />
+                    <button 
+                        onClick={()=>window.open("https://github.com/paparesta-007/progetto-maturita","_blank")}
+                        aria-label="View source code on GitHub"
+                        className="p-2 hover:bg-stone-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded-lg transition-all group"
+                    >
+                        <Github size={20} className="text-stone-600 group-hover:text-stone-900 transition-colors" />
                     </button>
                     <Link
                         to="/login"
-                        className="font-mono text-sm bg-stone-900 text-white px-4 py-2 brutalist-shadow hover:bg-orange-500 transition-colors"
+                        className="font-mono text-sm bg-stone-900 text-white px-4 py-2 brutalist-shadow hover:bg-orange-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-orange-500 transition-colors"
                     >
                         Login
                     </Link>
@@ -276,7 +348,9 @@ const Hero = () => {
                                 <ExternalLink size={16} />
                                 Login
                             </Link>
-                            <button className="bg-white border-2 border-stone-900 px-6 py-3 font-mono text-sm brutalist-shadow hover:bg-stone-100 flex items-center gap-2">
+                            <button 
+                                onClick={()=>window.open("https://github.com/paparesta-007/progetto-maturita","_blank")}
+                            className="bg-white border-2 border-stone-900 px-6 py-3 font-mono text-sm brutalist-shadow hover:bg-stone-100 flex items-center gap-2">
                                 <Github size={16} />
                                 Source Code
                             </button>
@@ -466,12 +540,12 @@ const FeaturesBento = () => {
 
 const ModelShowcase = () => {
     const models = [
-        { name: "GPT-4o", provider: "OpenAI", color: "bg-green-100" },
-        { name: "Claude 3.5", provider: "Anthropic", color: "bg-orange-100" },
-        { name: "Llama 3", provider: "Meta", color: "bg-blue-100" },
+        { name: "GPT-4o", provider: "OpenAI", color: "bg-green-100", iconUrl: "https://cdn.simpleicons.org/openai/black" },
+        { name: "Claude 3.5", provider: "Anthropic", color: "bg-orange-100", iconUrl: "https://cdn.simpleicons.org/anthropic/black" },
+        { name: "Llama 3", provider: "Meta", color: "bg-blue-100", iconUrl: "https://cdn.simpleicons.org/meta/blue" },
         { name: "Deepseek", provider: "Deepseek", color: "bg-purple-100" },
-        { name: "Gemini Pro", provider: "Google", color: "bg-yellow-100" },
-        { name: "Grok", provider: "xAI", color: "bg-stone-200" }
+        { name: "Gemini Pro", provider: "Google", color: "bg-yellow-100", iconUrl: "https://upload.wikimedia.org/wikipedia/commons/8/8a/Google_Gemini_logo.svg" },
+        { name: "Grok", provider: "xAI", color: "bg-stone-200", iconUrl: "https://cdn.simpleicons.org/x/black" }
     ];
     
     return (
@@ -497,8 +571,21 @@ const ModelShowcase = () => {
                             viewport={{ once: true }}
                             className="bg-white brutalist-border brutalist-shadow-sm p-4 rounded-lg text-center hover:shadow-md transition-shadow"
                         >
-                            <div className={`w-12 h-12 ${model.color} rounded-full mx-auto mb-3 flex items-center justify-center font-bold text-lg`}>
-                                {model.name[0]}
+                            <div className={`w-12 h-12 ${model.color} rounded-full mx-auto mb-3 flex items-center justify-center font-bold text-lg overflow-hidden`}>
+                                {model.iconUrl ? (
+                                    <img 
+                                        src={model.iconUrl} 
+                                        alt={`${model.provider} logo`}
+                                        className="w-6 h-6 object-contain"
+                                        onError={(e) => {
+                                            e.currentTarget.style.display = 'none';
+                                            const parent = e.currentTarget.parentElement;
+                                            if (parent) parent.innerText = model.name[0];
+                                        }}
+                                    />
+                                ) : (
+                                    model.name[0]
+                                )}
                             </div>
                             <div className="font-bold text-sm mb-1">{model.name}</div>
                             <div className="text-[10px] font-mono text-stone-500 uppercase">{model.provider}</div>
@@ -508,7 +595,7 @@ const ModelShowcase = () => {
                 
                 <div className="mt-12 text-center">
                     <div className="inline-flex items-center gap-4 bg-white brutalist-border px-6 py-3 rounded-full">
-                        <span className="text-sm font-mono text-stone-600">+15 more models available</span>
+                        <span className="text-sm font-mono text-stone-600">+50 providers available</span>
                         <ChevronRight size={16} className="text-orange-500" />
                     </div>
                 </div>
@@ -518,6 +605,12 @@ const ModelShowcase = () => {
 };
 
 const ProductCapabilities = () => {
+    const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
+
+    const toggleCategory = (category: string) => {
+        setExpandedCategories(prev => ({ ...prev, [category]: !prev[category] }));
+    };
+
     const stack = [
         { category: "AI Chat", items: ["Model switch in one click", "Conversation memory", "Streaming responses", "Prompt shortcuts"] },
         { category: "Documents", items: ["PDF upload and parsing", "Semantic retrieval", "Focused document chat", "Context-aware answers"] },
@@ -564,22 +657,158 @@ const ProductCapabilities = () => {
                     </div>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {stack.map((section) => (
-                            <div key={section.category} className="bento-card p-6 rounded-xl bg-stone-50 border-stone-200">
-                                <h3 className="font-mono text-xs uppercase tracking-widest text-stone-500 mb-4">
-                                    {section.category}
-                                </h3>
-                                <ul className="space-y-2">
-                                    {section.items.map((item, j) => (
-                                        <li key={j} className="text-sm font-medium flex items-center gap-2">
-                                            <ChevronRight size={14} className="text-orange-500" />
-                                            {item}
-                                        </li>
-                                    ))}
-                                </ul>
-                            </div>
-                        ))}
+                        {stack.map((section) => {
+                            const isExpanded = expandedCategories[section.category];
+                            const visibleItems = isExpanded ? section.items : section.items.slice(0, 2);
+                            const hasMore = section.items.length > 2;
+
+                            return (
+                                <div key={section.category} className="bento-card p-6 rounded-xl bg-stone-50 border-stone-200 flex flex-col">
+                                    <h3 className="font-mono text-xs uppercase tracking-widest text-stone-500 mb-4">
+                                        {section.category}
+                                    </h3>
+                                    <ul id={`capabilities-${section.category}-list`} className="space-y-2 flex-grow">
+                                        <AnimatePresence initial={false}>
+                                            {visibleItems.map((item) => (
+                                                <motion.li 
+                                                    key={item}
+                                                    initial={{ opacity: 0, height: 0 }}
+                                                    animate={{ opacity: 1, height: 'auto' }}
+                                                    exit={{ opacity: 0, height: 0 }}
+                                                    transition={{ duration: 0.2 }}
+                                                    className="text-sm font-medium flex items-start gap-2 overflow-hidden"
+                                                >
+                                                    <ChevronRight size={14} className="text-orange-500 mt-1 flex-shrink-0" />
+                                                    <span>{item}</span>
+                                                </motion.li>
+                                            ))}
+                                        </AnimatePresence>
+                                    </ul>
+                                    {hasMore && (
+                                        <button
+                                            onClick={() => toggleCategory(section.category)}
+                                            aria-expanded={isExpanded}
+                                            aria-controls={`capabilities-${section.category}-list`}
+                                            className="mt-4 text-xs font-mono text-stone-500 hover:text-orange-600 flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded px-1 -ml-1 w-fit transition-colors"
+                                        >
+                                            {isExpanded ? 'Mostra meno' : `+ ${section.items.length - 2} altri`}
+                                            <ChevronDown size={14} className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
+                                        </button>
+                                    )}
+                                </div>
+                            );
+                        })}
                     </div>
+                </div>
+            </div>
+        </section>
+    );
+};
+
+const HowItWorks = () => {
+    const steps = [
+        {
+            number: "01",
+            title: "Upload & Chat",
+            description: "Drop your PDFs or start a conversation with any AI model. We chunk and index your documents automatically."
+        },
+        {
+            number: "02",
+            title: "Extract Knowledge",
+            description: "Ask questions and let the AI pull relevant citations from your files, ensuring accurate, context-aware answers."
+        },
+        {
+            number: "03",
+            title: "Generate Material",
+            description: "With a single click, convert key insights into structured flashcards, quizzes, or summary artifacts for studying."
+        }
+    ];
+
+    return (
+        <section id="how-it-works" className="py-24 px-6 bg-stone-50 border-t border-stone-200">
+            <div className="max-w-6xl mx-auto">
+                <div className="text-center mb-16">
+                    <h2 className="text-3xl font-black tracking-tight mb-4">
+                        How it <span className="text-gradient">Works</span>
+                    </h2>
+                    <p className="text-stone-600 font-mono text-sm max-w-lg mx-auto">
+                        From raw documents to structured knowledge in three simple steps.
+                    </p>
+                </div>
+
+                <div className="grid md:grid-cols-3 gap-8 relative">
+                    <div className="hidden md:block absolute top-6 left-[15%] right-[15%] h-[2px] bg-stone-200 z-0" />
+
+                    {steps.map((step, i) => (
+                        <div key={i} className="relative z-10 flex flex-col items-center text-center">
+                            <div className="w-12 h-12 bg-white brutalist-border rounded-full flex items-center justify-center font-mono font-bold text-orange-500 mb-6 shadow-sm">
+                                {step.number}
+                            </div>
+                            <h3 className="text-lg font-bold mb-3">{step.title}</h3>
+                            <p className="text-sm text-stone-600 leading-relaxed max-w-xs">
+                                {step.description}
+                            </p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </section>
+    );
+};
+
+const FAQ = () => {
+    const [openIndex, setOpenIndex] = useState<number | null>(null);
+
+    const faqs = [
+        { q: "Is it completely free to use?", a: "Yes, this is an open-source high school project. The platform itself is free, but you will need your own API keys for the AI providers you choose to use." },
+        { q: "Which models are supported?", a: "We support over 20+ models through our OpenRouter integration, including GPT-4o, Claude 3.5 Sonnet, Llama 3, and various Mixtral variants." },
+        { q: "Are my documents secure?", a: "Your documents are securely processed and stored on Supabase. We only send relevant snippets to the AI models when you explicitly ask questions about them." },
+        { q: "Can I self-host this project?", a: "Absolutely! The entire source code is available on GitHub with instructions on how to set up your own instance using Docker, Supabase, and Node." }
+    ];
+
+    return (
+        <section id="faq" className="py-24 px-6 bg-white border-t border-stone-200">
+            <div className="max-w-3xl mx-auto">
+                <div className="text-center mb-12">
+                    <h2 className="text-3xl font-black tracking-tight mb-4">
+                        Frequently Asked <span className="text-gradient">Questions</span>
+                    </h2>
+                </div>
+
+                <div className="space-y-4">
+                    {faqs.map((faq, i) => (
+                        <div key={i} className="bento-card rounded-lg overflow-hidden bg-white">
+                            <button
+                                onClick={() => setOpenIndex(openIndex === i ? null : i)}
+                                aria-expanded={openIndex === i}
+                                aria-controls={`faq-answer-${i}`}
+                                className="w-full px-6 py-4 flex items-center justify-between text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 transition-colors hover:bg-stone-50"
+                            >
+                                <span className="font-medium pr-4">{faq.q}</span>
+                                {openIndex === i ? (
+                                    <Minus size={18} className="text-orange-500 flex-shrink-0" />
+                                ) : (
+                                    <Plus size={18} className="text-stone-400 flex-shrink-0" />
+                                )}
+                            </button>
+                            <AnimatePresence>
+                                {openIndex === i && (
+                                    <motion.div
+                                        id={`faq-answer-${i}`}
+                                        initial={{ height: 0, opacity: 0 }}
+                                        animate={{ height: 'auto', opacity: 1 }}
+                                        exit={{ height: 0, opacity: 0 }}
+                                        transition={{ duration: 0.2 }}
+                                        className="overflow-hidden"
+                                    >
+                                        <div className="px-6 pb-4 text-sm text-stone-600 leading-relaxed border-t border-stone-100 pt-2">
+                                            {faq.a}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    ))}
                 </div>
             </div>
         </section>
@@ -653,6 +882,8 @@ export default function LandingPage() {
                     <FeaturesBento />
                     <ModelShowcase />
                     <ProductCapabilities />
+                    <HowItWorks />
+                    <FAQ />
                     <About />
                 </main>
                 <Footer />
