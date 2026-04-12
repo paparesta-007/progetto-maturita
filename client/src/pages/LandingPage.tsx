@@ -1,51 +1,29 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { 
-    Terminal, 
-    Cpu, 
-    Database, 
     FileText, 
     Zap, 
-    Lock,
     MessageSquare,
-    Moon,
-    Sun,
     Sparkles,
-    Layers,
-    Clock,
     Shield,
     Github,
     ExternalLink,
     ChevronRight,
+    ChevronDown,
     Bot,
-    BrainCircuit,
     BookOpen
 } from 'lucide-react';
 
 /* --- Effects & Utilities --- */
 
-const TextScramble = ({ text, className = "" }) => {
-    const [display, setDisplay] = useState(text);
-    const chars = '!<>-_\\/[]{}—=+*^?#________';
-    
-    useEffect(() => {
-        let iteration = 0;
-        const interval = setInterval(() => {
-            setDisplay(prev => text.split("").map((letter, index) => {
-                if(index < iteration) return text[index];
-                return chars[Math.floor(Math.random() * chars.length)];
-            }).join(""));
-            
-            if(iteration >= text.length) clearInterval(interval);
-            iteration += 1/2;
-        }, 30);
-        return () => clearInterval(interval);
-    }, [text]);
-    
-    return <span className={`font-mono ${className}`}>{display}</span>;
+type TypewriterTextProps = {
+    text: string;
+    delay?: number;
+    className?: string;
 };
 
-const TypewriterText = ({ text, delay = 0, className = "" }) => {
+const TypewriterText = ({ text, delay = 0, className = "" }: TypewriterTextProps) => {
     const [display, setDisplay] = useState("");
     
     useEffect(() => {
@@ -163,11 +141,30 @@ const SystemStyles = () => (
 
 const TopNav = () => {
     const [scrolled, setScrolled] = useState(false);
+    const [isExploreOpen, setIsExploreOpen] = useState(false);
+    const dropdownRef = useRef<HTMLDivElement | null>(null);
+    const exploreLinks = [
+        { label: 'Help Tickets', to: '/help' },
+        { label: 'Roadmap', to: '/roadmap' },
+        { label: 'Resources', to: '/resources' },
+        { label: 'Changelog', to: '/changelog' }
+    ];
     
     useEffect(() => {
         const handleScroll = () => setScrolled(window.scrollY > 20);
         window.addEventListener('scroll', handleScroll);
         return () => window.removeEventListener('scroll', handleScroll);
+    }, []);
+
+    useEffect(() => {
+        const onMouseDown = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsExploreOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', onMouseDown);
+        return () => document.removeEventListener('mousedown', onMouseDown);
     }, []);
     
     return (
@@ -186,17 +183,44 @@ const TopNav = () => {
                 <nav className="hidden md:flex items-center gap-8 text-sm font-medium">
                     <a href="#features" className="hover:text-orange-600 transition-colors">Features</a>
                     <a href="#models" className="hover:text-orange-600 transition-colors">Models</a>
-                    <a href="#stack" className="hover:text-orange-600 transition-colors">Stack</a>
+                    <a href="#capabilities" className="hover:text-orange-600 transition-colors">Capabilities</a>
                     <a href="#about" className="hover:text-orange-600 transition-colors">About</a>
+                    <Link to="/help" className="hover:text-orange-600 transition-colors">Help Tickets</Link>
+                    <div className="relative" ref={dropdownRef}>
+                        <button
+                            onClick={() => setIsExploreOpen((previous) => !previous)}
+                            className="inline-flex items-center gap-1.5 hover:text-orange-600 transition-colors"
+                        >
+                            Explore
+                            <ChevronDown size={14} className={`transition-transform ${isExploreOpen ? 'rotate-180' : ''}`} />
+                        </button>
+                        {isExploreOpen && (
+                            <div className="absolute top-full right-0 mt-2 min-w-[180px] bg-white border border-stone-200 rounded-lg p-1.5 shadow-lg">
+                                {exploreLinks.map((route) => (
+                                    <Link
+                                        key={route.to}
+                                        to={route.to}
+                                        onClick={() => setIsExploreOpen(false)}
+                                        className="block px-3 py-2 text-stone-700 hover:bg-stone-100 rounded-md"
+                                    >
+                                        {route.label}
+                                    </Link>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 </nav>
                 
                 <div className="flex items-center gap-4">
                     <button className="p-2 hover:bg-stone-200 rounded-lg transition-colors">
                         <Github size={20} />
                     </button>
-                    <button className="font-mono text-sm bg-stone-900 text-white px-4 py-2 brutalist-shadow hover:bg-orange-500 transition-colors">
-                        Try Demo
-                    </button>
+                    <Link
+                        to="/login"
+                        className="font-mono text-sm bg-stone-900 text-white px-4 py-2 brutalist-shadow hover:bg-orange-500 transition-colors"
+                    >
+                        Login
+                    </Link>
                 </div>
             </div>
         </header>
@@ -248,10 +272,10 @@ const Hero = () => {
                             transition={{ delay: 0.3 }}
                             className="flex flex-wrap gap-4"
                         >
-                            <button className="bg-orange-500 text-white px-6 py-3 font-mono text-sm brutalist-shadow hover:bg-orange-600 flex items-center gap-2">
+                            <Link to="/login" className="bg-orange-500 text-white px-6 py-3 font-mono text-sm brutalist-shadow hover:bg-orange-600 flex items-center gap-2">
                                 <ExternalLink size={16} />
-                                Live Demo
-                            </button>
+                                Login
+                            </Link>
                             <button className="bg-white border-2 border-stone-900 px-6 py-3 font-mono text-sm brutalist-shadow hover:bg-stone-100 flex items-center gap-2">
                                 <Github size={16} />
                                 Source Code
@@ -493,28 +517,28 @@ const ModelShowcase = () => {
     );
 };
 
-const TechStack = () => {
+const ProductCapabilities = () => {
     const stack = [
-        { category: "Frontend", items: ["Next.js 14", "TypeScript", "Tailwind CSS", "Framer Motion"] },
-        { category: "Backend", items: ["Supabase", "PostgreSQL", "Row Level Security", "Edge Functions"] },
-        { category: "AI/ML", items: ["OpenRouter API", "Vector Embeddings", "Zod Schemas", "SSE Streaming"] },
-        { category: "DevOps", items: ["Vercel", "GitHub Actions", "TypeScript strict", "ESLint"] }
+        { category: "AI Chat", items: ["Model switch in one click", "Conversation memory", "Streaming responses", "Prompt shortcuts"] },
+        { category: "Documents", items: ["PDF upload and parsing", "Semantic retrieval", "Focused document chat", "Context-aware answers"] },
+        { category: "Productivity", items: ["Calendar companion", "Artifacts area", "Quiz generation", "Flashcard workflows"] },
+        { category: "Support", items: ["Integrated help tickets", "User support history", "Status tracking", "Fast issue reporting"] }
     ];
     
     return (
-        <section id="stack" className="py-24 px-6 bg-white">
+        <section id="capabilities" className="py-24 px-6 bg-white">
             <div className="max-w-6xl mx-auto">
                 <div className="grid md:grid-cols-2 gap-12 items-start">
                     <div>
                         <span className="font-mono text-xs uppercase tracking-widest text-orange-600 mb-2 block">
-                            Implementation
+                            Product
                         </span>
                         <h2 className="text-4xl font-black tracking-tight mb-6">
-                            Technical <span className="text-gradient">Stack</span>
+                            Webapp <span className="text-gradient">Features</span>
                         </h2>
                         <p className="text-stone-600 font-mono text-sm leading-relaxed mb-8">
-                            Built with modern web standards and type-safe architecture. 
-                            Every component is engineered for performance, accessibility, and maintainability.
+                            Explore what Smart AI can do out of the box for students and creators.
+                            These are the practical tools available in the app experience today.
                         </p>
                         
                         <div className="space-y-4">
@@ -522,25 +546,25 @@ const TechStack = () => {
                                 <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
                                     <div className="w-2 h-2 bg-green-500 rounded-full" />
                                 </div>
-                                <span className="font-mono">Real-time streaming with Server-Sent Events</span>
+                                <span className="font-mono">Build study material from your conversations in seconds</span>
                             </div>
                             <div className="flex items-center gap-3 text-sm">
                                 <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
                                     <div className="w-2 h-2 bg-green-500 rounded-full" />
                                 </div>
-                                <span className="font-mono">RAG with pgvector for semantic search</span>
+                                <span className="font-mono">Keep learning workflows centralized in one workspace</span>
                             </div>
                             <div className="flex items-center gap-3 text-sm">
                                 <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
                                     <div className="w-2 h-2 bg-green-500 rounded-full" />
                                 </div>
-                                <span className="font-mono">Structured outputs with Zod validation</span>
+                                <span className="font-mono">Get direct help through in-app support tickets</span>
                             </div>
                         </div>
                     </div>
                     
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {stack.map((section, i) => (
+                        {stack.map((section) => (
                             <div key={section.category} className="bento-card p-6 rounded-xl bg-stone-50 border-stone-200">
                                 <h3 className="font-mono text-xs uppercase tracking-widest text-stone-500 mb-4">
                                     {section.category}
@@ -611,7 +635,7 @@ const Footer = () => {
                 </div>
                 
                 <div className="text-xs text-stone-400 font-mono">
-                    Built with Next.js + Supabase + OpenRouter
+                    Multi-model assistant with documents, calendar, artifacts, and support
                 </div>
             </div>
         </footer>
@@ -628,7 +652,7 @@ export default function LandingPage() {
                     <Hero />
                     <FeaturesBento />
                     <ModelShowcase />
-                    <TechStack />
+                    <ProductCapabilities />
                     <About />
                 </main>
                 <Footer />
