@@ -17,6 +17,7 @@ import { initRemoteLogger } from './utils/remoteLogger';
 import QuizPage from './pages/ArtifactsPages/QuizPage';
 import KnowledgePage from './pages/static/Knowledge';
 import HelpPage from './pages/HelpPage';
+import RoutePlaceholderPage from './pages/RoutePlaceholderPage';
 initRemoteLogger();
 
 function App() {
@@ -29,6 +30,9 @@ function App() {
             <Route path='/' element={<LandingPage />} />
             <Route path='/knowledge' element={<KnowledgePage />} />
             <Route path='/help' element={<HelpPage />} />
+            <Route path='/roadmap' element={<RoutePlaceholderPage />} />
+            <Route path='/resources' element={<RoutePlaceholderPage />} />
+            <Route path='/changelog' element={<RoutePlaceholderPage />} />
             <Route path='/login' element={<LoginPage />} />
             <Route path='/reset-password' element={<CreateNewPassword />} />
 
