@@ -65,7 +65,7 @@ const MarkdownRender = ({ text, isStreaming }: { text: string; isStreaming?: boo
 
                     token.text = `
                     <div class="code-block-wrapper text-sm rounded-md overflow-hidden my-2 border ${theme === 'dark' ? 'border-neutral-700' : 'border-neutral-200'}">
-                        <div class="flex items-center justify-between px-3 py-1.5 bg-opacity-10 ${theme === 'dark' ? 'bg-white/5 text-neutral-600' : 'bg-neutral-100 text-neutral-500'}">
+                        <div class="flex items-center justify-between px-3 py-1.5 bg-transparent ${theme === 'dark' ? 'text-neutral-500' : 'text-neutral-500'}">
                             <span class="text-xs font-mono font-bold">${lang}</span> 
                             ${copyButtonHtml}
                         </div>

@@ -38,7 +38,7 @@ const slideVariants = {
 };
 
 const OptionsPopup: React.FC = () => {
-    const { model, setModel, isStreamTextEnabled, setIsStreamTextEnabled } = useChat();
+    const { model, setModel, isStreamTextEnabled, setIsStreamTextEnabled, isBetterView, setIsBetterView } = useChat();
     const { theme } = useAuth();
     const isDark = theme === "dark";
 
@@ -260,6 +260,31 @@ const OptionsPopup: React.FC = () => {
                                         </span>
                                     </button>
                                             
+                                     <button
+                                        type="button"
+                                        className={rowBase}
+                                        onClick={() => setIsBetterView((p) => !p)}
+                                    >
+                                        <CpuIcon size={14} className="text-neutral-600 flex-shrink-0" />
+                                        <span className="flex-1">Better View</span>
+                                        <span className={`w-4 h-4 flex items-center justify-center rounded border transition-colors flex-shrink-0 ${
+                                            isBetterView
+                                                ? isDark
+                                                    ? "bg-neutral-100 border-neutral-100"
+                                                    : "bg-neutral-900 border-neutral-900"
+                                                : isDark
+                                                    ? "border-neutral-600"
+                                                    : "border-neutral-300"
+                                        }`}>
+                                            {isBetterView && (
+                                                <CheckIcon
+                                                    size={10}
+                                                    weight="bold"
+                                                    className={isDark ? "text-neutral-900" : "text-white"}
+                                                />
+                                            )}
+                                        </span>
+                                    </button>
                                     <div className="pb-1" />
                                 </motion.div>
                             )}

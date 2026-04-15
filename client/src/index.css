@@ -11,7 +11,7 @@
     --code-bg: #ffffff;
     --code-text: #dc2626;
     --code-border: #d1d5db;
-    --pre-bg: #f3f4f6;
+    --pre-bg: transparent;
     
     /* Variabili base per la chat (fallbacks) */
     --color-chat-primary: #1f2937; /* Gray 800 */
@@ -23,7 +23,7 @@
     --code-bg: #171717;
     --code-text: #f87171;
     --code-border: #404040;
-    --pre-bg: #0a0a0a;
+    --pre-bg: transparent;
 
     --color-chat-primary: #e5e5e5;
     --color-chat-muted: #a3a3a3;

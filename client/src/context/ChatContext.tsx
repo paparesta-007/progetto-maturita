@@ -2,11 +2,11 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import getAllConversation from "../services/supabase/Conversation/getAllConversation";
 import { useAuth } from "./AuthContext";
 import getMessages from "../services/supabase/Conversation/getMessages";
-import { sendNormalMessage, sendStreamedMessage, sendCanvasMessage, sendWebSearchMessage, type ChatOptions } from "../library/sendMessage";
+import { sendNormalMessage, sendStreamedMessage, sendCanvasMessage, sendWebSearchMessage, type ChatOptions, type RenderMode } from "../library/sendMessage";
 import { useNavigate } from "react-router-dom";
 interface ChatContextType {
     sendMessage: (message: string, functionality: string, reasoning: string, files?: any[]) => Promise<void>;
-    messageHistory: { role: 'user' | 'bot'; content: string; usage?: any, model?: string, suggestedQuestions?: string[], reasoning?: string | null, logs?: string[], isComplete?: boolean }[];
+    messageHistory: { role: 'user' | 'bot'; content: string; renderMode?: RenderMode; usage?: any, model?: string, suggestedQuestions?: string[], reasoning?: string | null, logs?: string[], isComplete?: boolean }[];
     loading: boolean;
     conversations: any[]; // Per tenere traccia delle conversazioni salvate
     loadConversation: (conversationId: string) => Promise<void>;
@@ -31,6 +31,9 @@ interface ChatContextType {
     isTemporaryConversation: boolean;
     setIsTemporaryConversation: React.Dispatch<React.SetStateAction<boolean>>;
     updateConversationPosition: (conversationId: string) => void;
+
+    isBetterView: boolean;
+    setIsBetterView: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 // 1. Creazione del Context
@@ -40,7 +43,7 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const { user ,systemPrompt, personalInfo, tone, allowedCustomInstructions} = useAuth();
     // const [inputValue, setInputValue] = useState("");
-    const [messageHistory, setMessageHistory] = useState<{ role: 'user' | 'bot'; content: string; usage?: any, model: string, suggestedQuestions?: string[], reasoning?: string | null, logs?: string[], isComplete?: boolean }[]>([]); // Per tenere traccia della cronologia dei messaggi
+    const [messageHistory, setMessageHistory] = useState<{ role: 'user' | 'bot'; content: string; renderMode?: RenderMode; usage?: any, model: string, suggestedQuestions?: string[], reasoning?: string | null, logs?: string[], isComplete?: boolean }[]>([]); // Per tenere traccia della cronologia dei messaggi
     const [loading, setLoading] = useState(false);
     const [conversations, setConversations] = useState<any[]>([]); // Per tenere traccia delle conversazioni salvate
     const [areConversationsLoaded, setAreConversationsLoaded] = useState(false); // Per sapere quando abbiamo finito di caricare le conversazioni
@@ -49,6 +52,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
     const [currentConversationName, setCurrentConversationName] = useState<string | null>(null);
     const [isTemporaryConversation, setIsTemporaryConversation] = useState(false);
+    const [isBetterView, setIsBetterView] = useState(false);
     const navigate = useNavigate();
 
     const fetchConversations = useCallback(async () => {
@@ -97,8 +101,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
                 : functionality === "web_search"
                 ? sendWebSearchMessage(message, setMessageHistory, setLoading, model, messageHistory)
                 : isStreamTextEnabled
-                ? sendStreamedMessage(message, setMessageHistory, setLoading, model, messageHistory, currentConversationId, user?.id, setCurrentConversationId, fetchConversations, navigate, chatOptions)
-                : sendNormalMessage(message, setMessageHistory, setLoading, model, messageHistory, currentConversationId, user?.id, setCurrentConversationId, fetchConversations, navigate, chatOptions));
+                ? sendStreamedMessage(message, setMessageHistory, setLoading, model, messageHistory, currentConversationId, user?.id, setCurrentConversationId, fetchConversations, navigate, chatOptions,isBetterView)
+                : sendNormalMessage(message, setMessageHistory, setLoading, model, messageHistory, currentConversationId, user?.id, setCurrentConversationId, fetchConversations, navigate, chatOptions,isBetterView));
             
             if (currentConversationId) {
                 updateConversationPosition(currentConversationId);
@@ -108,7 +112,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         } catch (error) {
             console.error("Errore durante l'invio del messaggio:", error);
         }
-    }, [isStreamTextEnabled, model, messageHistory, currentConversationId, user, systemPrompt, personalInfo, tone, allowedCustomInstructions, fetchConversations, navigate, isTemporaryConversation, updateConversationPosition]);
+    }, [isStreamTextEnabled, model, messageHistory, currentConversationId, user, systemPrompt, personalInfo, tone, allowedCustomInstructions, fetchConversations, navigate, isTemporaryConversation, updateConversationPosition, isBetterView]);
 
     const loadConversation = useCallback(async (conversationId: string) => {
         try {
@@ -137,6 +141,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
                     messages.push({
                         role: 'bot' as const,
                         content: row.content,
+                        renderMode: row.render_mode === 'html' ? 'html' : 'markdown',
                         usage: row.usage, // Assumiamo che usage sia una colonna nella tabella messages
                         model: row.model, // Assumiamo che model sia una colonna nella tabella messages
                         suggestedQuestions: row.suggestedQuestions, // Se salvato
@@ -232,7 +237,9 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         setCurrentConversationName,
         isTemporaryConversation,
         setIsTemporaryConversation,
-        updateConversationPosition
+        updateConversationPosition,
+        isBetterView,
+        setIsBetterView
     }), [
         sendMessage,
         messageHistory,
@@ -249,7 +256,9 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         setCurrentConversationName,
         isTemporaryConversation,
         setIsTemporaryConversation,
-        updateConversationPosition
+        updateConversationPosition,
+        isBetterView,
+        setIsBetterView
     ]);
 
     return (

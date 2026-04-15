@@ -28,6 +28,8 @@ export interface QuizResponse {
     error?: string;
 }
 
+export type RenderMode = 'html' | 'markdown';
+
 // ============================================================
 // DEFAULT: Normal chat message (calls the real server)
 // ============================================================
@@ -42,7 +44,8 @@ export const sendNormalMessage = async (
     setCurrentConversationId: React.Dispatch<React.SetStateAction<string | null>>,
     fetchConversations: () => Promise<void>,
     _navigate: NavigateFunction,
-    options: ChatOptions
+    options: ChatOptions,
+    isBetterView: boolean
 ) => {
     const { systemPrompt, personalInfo, tone, allowedCustomInstructions, reasoning } = options;
 
@@ -73,7 +76,8 @@ export const sendNormalMessage = async (
                 tone,
                 allowedCustomInstructions,
                 reasoning,
-                attachedFiles: options.attachedFiles
+                attachedFiles: options.attachedFiles,
+                isBetterView
             }),
         });
 
@@ -88,6 +92,7 @@ export const sendNormalMessage = async (
 
         const data = await response.json();
         const responseText = data.text;
+        const renderMode: RenderMode = data.renderMode === 'html' ? 'html' : 'markdown';
         const responseUsage = data.usage || { total_tokens: 0 };
         const responseModel = model?.name || model?.name_id || "Unknown";
         const suggestedQuestions = data.suggestedQuestions || [];
@@ -95,7 +100,7 @@ export const sendNormalMessage = async (
 
         setMessageHistory((prev) => [
             ...prev,
-            { role: 'bot', content: responseText, usage: responseUsage, model: responseModel, suggestedQuestions, reasoning: reasoningContent },
+            { role: 'bot', content: responseText, renderMode, usage: responseUsage, model: responseModel, suggestedQuestions, reasoning: reasoningContent },
         ]);
 
         const messagePayload = {
@@ -195,7 +200,8 @@ export const sendStreamedMessage = async (
     setCurrentConversationId: React.Dispatch<React.SetStateAction<string | null>>,
     fetchConversations: () => Promise<void>,
     _navigate: NavigateFunction,
-    options: ChatOptions
+    options: ChatOptions,
+    isBetterView: boolean
 ) => {
     if (!message.trim()) return;
 
@@ -203,7 +209,7 @@ export const sendStreamedMessage = async (
 
     const userMsg = { role: 'user' as const, content: message };
     const modelLabel = model?.name ?? model?.name_id ?? "Unknown";
-    const botMsgPlaceholder = { role: 'bot' as const, content: "", model: modelLabel };
+    const botMsgPlaceholder = { role: 'bot' as const, content: "", model: modelLabel, renderMode: 'markdown' as RenderMode };
 
     setMessageHistory((prev) => [...prev, userMsg, botMsgPlaceholder]);
     setLoading(true);
@@ -232,7 +238,8 @@ export const sendStreamedMessage = async (
                 tone,
                 allowedCustomInstructions,
                 reasoning,
-                attachedFiles: options.attachedFiles
+                attachedFiles: options.attachedFiles,
+                isBetterView
             }),
         });
 
@@ -253,6 +260,7 @@ export const sendStreamedMessage = async (
         const decoder = new TextDecoder();
         let done = false;
         let accumulatedText = "";
+        let accumulatedRenderMode: RenderMode = 'markdown';
         let accumulatedReasoning = "";
         let accumulatedUsage: any = {};
         let ndjsonBuffer = "";
@@ -277,6 +285,8 @@ export const sendStreamedMessage = async (
 
                         if (data.type === "reasoning" && data.content) {
                             accumulatedReasoning += data.content;
+                        } else if (data.type === "meta" && data.renderMode) {
+                            accumulatedRenderMode = data.renderMode === 'html' ? 'html' : 'markdown';
                         } else if (data.type === "text" && data.content) {
                             accumulatedText += data.content;
                         } else if (data.type === "usage" && data.content) {
@@ -300,6 +310,7 @@ export const sendStreamedMessage = async (
                         newHistory[lastMsgIndex] = {
                             ...newHistory[lastMsgIndex],
                             content: accumulatedText,
+                            renderMode: accumulatedRenderMode,
                             ...(accumulatedReasoning ? { reasoning: accumulatedReasoning } : {}),
                             ...(Object.keys(accumulatedUsage).length > 0 ? { usage: accumulatedUsage } : {})
                         };

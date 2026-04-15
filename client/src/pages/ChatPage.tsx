@@ -9,15 +9,21 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useRef } from "react";
 import { useApp } from "../context/AppContext";
 import MarkdownRender from "../library/markdownRender";
-import {  Rocket, ShieldCheck, Sparkles } from "lucide-react";
+import GenerativeUIRenderer from "../components/generativeUI/GenerativeUIRenderer";
 import "katex/dist/katex.min.css";
 import {GhostIcon} from "@phosphor-icons/react"
-const LivePreviewMock = ({ isDark }: { isDark: boolean }) => {
-    const shellBg = isDark ? "bg-neutral-900 border-neutral-700" : "bg-neutral-50 border-neutral-200";
-    const cardBg = isDark ? "bg-neutral-950 border-neutral-800" : "bg-white border-neutral-200";
-    const softText = isDark ? "text-neutral-600" : "text-neutral-600";
-    const titleText = isDark ? "text-white" : "text-neutral-900";
+import DOMPurify from "dompurify";
 
+const looksLikeRenderableHtml = (content: string): boolean => {
+    if (!content) return false;
+
+    const trimmed = content.trim();
+    if (!trimmed || trimmed.startsWith("```") || trimmed.startsWith("&lt;")) return false;
+    if (!trimmed.startsWith("<")) return false;
+
+    return /<\s*[a-z][\w:-]*(\s[^>]*)?>[\s\S]*<\s*\/\s*[a-z][\w:-]*\s*>/i.test(trimmed);
+};
+const LivePreviewMock = () => {
     return (
         <></>
     );
@@ -203,16 +209,35 @@ const ChatContent = () => {
                     >
                         {messageHistory.length !== 0 ? (
                             <div className={`space-y-6 ${chatContentClass}`}>
-                                {messageHistory.map((msg, index) => (
-                                    msg.role === 'user' ?
-                                        <UserMessage key={index} i={index} htmlContent={msg.content} /> :
-                                        <BotMessage key={index} i={index} usage={msg.usage} model={msg.model} suggestedQuestions={msg.suggestedQuestions} logs={msg.logs} isComplete={msg.isComplete} reasoning={msg.reasoning} onSuggestedClick={(q) => sendMessage(q, "normal", "fast")}>
-                                            {msg.content === "Elaborazione in corso..." || msg.content === "Avvio della richiesta..." 
+                                {messageHistory.map((msg, index) => {
+                                    const hasStructuredUI = /<ui-component\s+type="[^"]+">/i.test(msg.content);
+                                    const renderMode = msg.renderMode || 'markdown';
+                                    const htmlCandidate = looksLikeRenderableHtml(msg.content);
+                                    const canRenderHtml = (renderMode === 'html' || (!msg.renderMode && htmlCandidate)) && htmlCandidate;
+                                    const safeHtml = canRenderHtml
+                                        ? DOMPurify.sanitize(msg.content, {
+                                            ADD_TAGS: ['svg', 'path', 'g', 'rect', 'circle', 'line', 'polyline', 'polygon', 'button', 'span', 'section', 'article'],
+                                            ADD_ATTR: ['class', 'style', 'viewBox', 'd', 'fill', 'xmlns', 'width', 'height', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'x', 'y', 'rx', 'ry', 'cx', 'cy', 'r']
+                                        })
+                                        : '';
+                                    
+                                    return (
+                                        msg.role === 'user' ? (
+                                            <UserMessage key={index} i={index} htmlContent={msg.content} />
+                                        ) : (
+                                            <BotMessage key={index} i={index} usage={msg.usage} model={msg.model} suggestedQuestions={msg.suggestedQuestions} logs={msg.logs} isComplete={msg.isComplete} reasoning={msg.reasoning} onSuggestedClick={(q) => sendMessage(q, "normal", "fast")}>
+                                                {msg.content === "Elaborazione in corso..." || msg.content === "Avvio della richiesta..." 
                                                     ? <p className="text-neutral-500 italic text-sm">{msg.content}</p> 
-                                                    : <MarkdownRender text={msg.content} />
+                                                    : hasStructuredUI
+                                                        ? <GenerativeUIRenderer text={msg.content} />
+                                                        : canRenderHtml
+                                                            ? <div dangerouslySetInnerHTML={{ __html: safeHtml }} />
+                                                        : <MarkdownRender text={msg.content} />
                                                 }
-                                        </BotMessage>
-                                ))}
+                                            </BotMessage>
+                                        )
+                                    );
+                                })}
                                 {loading && <BotLoading />}
                                 <div ref={messagesEndRef} />
                             </div>
@@ -226,7 +251,7 @@ const ChatContent = () => {
 
                 {isLivePreview && (
                     <section className={`w-2/3 min-w-0 h-full p-4 overflow-x-hidden overflow-y-auto ${isDark ? "bg-neutral-900" : "bg-neutral-50"}`}>
-                        <LivePreviewMock isDark={isDark} />
+                        <LivePreviewMock />
                     </section>
                 )}
 
