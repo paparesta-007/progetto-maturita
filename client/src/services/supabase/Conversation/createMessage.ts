@@ -2,6 +2,7 @@ const createMessage = async (response: any, conversation_id: any, model: any, us
     let content = response.content;
     let sender = response.sender;
     let usage = response.usage;
+    let renderMode = response.renderMode;
     try {
         const res = await fetch("http://localhost:3000/api/conversations/messages/create", {
             method: "POST",
@@ -12,6 +13,7 @@ const createMessage = async (response: any, conversation_id: any, model: any, us
                 content: content,
                 usage: usage,
                 model: model.name_id,
+                render_mode: renderMode,
                 reasoning_text: response.reasoning || "none",
                 user_id: user_id,
             }),

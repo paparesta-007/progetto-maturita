@@ -52,7 +52,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const [currentConversationId, setCurrentConversationId] = useState<string | null>(null);
     const [currentConversationName, setCurrentConversationName] = useState<string | null>(null);
     const [isTemporaryConversation, setIsTemporaryConversation] = useState(false);
-    const [isBetterView, setIsBetterView] = useState(false);
+    const [isBetterView, setIsBetterView] = useState(true);
     const navigate = useNavigate();
 
     const fetchConversations = useCallback(async () => {
@@ -141,7 +141,11 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
                     messages.push({
                         role: 'bot' as const,
                         content: row.content,
-                        renderMode: row.render_mode === 'html' ? 'html' : 'markdown',
+                        renderMode: row.render_mode === 'html'
+                            ? 'html'
+                            : row.render_mode === 'markdown'
+                                ? 'markdown'
+                                : undefined,
                         usage: row.usage, // Assumiamo che usage sia una colonna nella tabella messages
                         model: row.model, // Assumiamo che model sia una colonna nella tabella messages
                         suggestedQuestions: row.suggestedQuestions, // Se salvato

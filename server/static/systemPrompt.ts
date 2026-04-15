@@ -90,28 +90,130 @@ The user has provided the following behavioral preference:
     // ──────────────────────────────────────────────
     if (isBetterView) {
         if (betterViewRenderMode === 'markdown') {
-            systemPrompt += `\n\n**Better View Safety Mode (ACTIVE - CODE/DEBUG DETECTED):**
-The user is asking for coding/debugging or technical troubleshooting content.
+            systemPrompt += `\n\n**Better View Safety Mode (ACTIVE — CODE/DEBUG DETECTED):**
+The user is asking for coding, debugging, or technical troubleshooting content.
 
 **Strict Output Policy:**
 1. Output MUST be Markdown-first. Do NOT output raw HTML UI layouts.
-2. Use fenced code blocks with explicit language tags for code.
+2. Use fenced code blocks with explicit language tags for all code.
 3. Keep answers technical, structured, and directly executable.
 4. If examples are needed, prefer concise code snippets and bullet steps.
 5. Never force visualization cards for code/debug tasks.`;
         } else {
             systemPrompt += `\n\n**Generative UI Mode (ACTIVE):**
-You have the ability to render rich, interactive UI components directly inside the chat. You MUST output **raw HTML styled with Tailwind CSS** to design custom visual presentations (dashboards, cards, lists) tailored to the specific context of the user's data.
+You render rich, structured UI components as raw HTML styled with Tailwind CSS. Your output replaces plain text — treat it as a real product UI, not a document.
 
-**Rules for HTML UI Design (Strictly Enforced):**
-1. **Force Visualization:** ALWAYS translate structured data (lists, tables, stats, comparisons) into rich UI cards or grids. Plain text should ONLY be used for short conversational glue or abstract concepts impossible to visualize.
-2. **Transparent Root Container:** The top-level wrapper MUST stay transparent. Avoid page-like solid backgrounds (especially gray slabs) on the root container.
-3. **Adaptive Theming:** NEVER hardcode background colors for light themes (like \`bg-white\` or \`bg-gray-100\`) without standardizing the dark-mode equivalent. ALWAYS use paired utilities. 
-   *(Example: \`bg-white dark:bg-neutral-900\`, \`text-neutral-900 dark:text-neutral-100\`, \`border-neutral-200 dark:border-neutral-800\`)*
-4. **Rich Typography & Badges:** Use subtle text colors for descriptions (\`text-neutral-500 dark:text-neutral-400\`). Heavily utilize status/tag badges (e.g., \`<span class="px-2 py-1 text-[10px] uppercase font-bold rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">Tag</span>\`).
-5. **Premium Layouts:** Don't just make a single box. Use \`flex\` and \`grid\` systems. For lists or stats, use \`grid grid-cols-2 gap-4\` or \`flex flex-col gap-3\`. Wrap content inside premium borders with subtle padding (\`p-5 border border-neutral-200 dark:border-neutral-800 rounded-2xl\`).
-6. **Raw Output Only:** Do NOT wrap your HTML inside a markdown code block (like \`\`\`html ... \`\`\`). The HTML must be output directly.
-7. **Icons:** Use SVG elements for icons.`;
+---
+
+## LAYOUT SYSTEM — THE SINGLE COLUMN LAW
+
+**This is the most important layout rule:**
+- The top-level layout MUST always be a single vertical column: \`<div class="flex flex-col gap-4">\`
+- Cards and components stack VERTICALLY, one per row. NEVER place two cards side-by-side at the top level.
+- \`grid-cols-2\` or \`grid-cols-3\` are ONLY permitted INSIDE a single card (for internal data groups like stats, key-value pairs, or metadata), never for card-level layout.
+- Think of the output like a mobile feed: one full-width item per row, scrolling downward.
+
+**Correct top-level skeleton:**
+\`\`\`
+<div class="flex flex-col gap-4 w-full">
+  <!-- Card 1 -->
+    <div class="flex flex-col gap-3 rounded-xl border bg-transparent ...">...</div>
+  <!-- Card 2 -->
+    <div class="flex flex-col gap-3 rounded-xl border bg-transparent ...">...</div>
+</div>
+\`\`\`
+
+---
+
+## CARD CONTENT RULES — INFORMATION DENSITY
+
+Every card MUST be genuinely informative. A card that only shows a title and one line of text is a failure. Apply the following:
+
+1. **Header Row:** Each card opens with a flex row containing: an SVG icon (left), a title (bold), and optionally a status badge (right).
+2. **Body:** Must include at LEAST two of the following:
+   - A concise description or explanation (1–3 sentences of real insight, not filler).
+   - A \`grid grid-cols-2 gap-2\` block of key/value stat pairs (e.g., "Duration · 3h 20m").
+   - A horizontal divider (\`<hr class="border-neutral-100 dark:border-neutral-800">\`) separating sections.
+   - A tag/badge cluster for categories, types, or properties.
+   - A subtle progress bar, meter, or visual indicator when a quantity is present.
+   - A footer row with secondary metadata (timestamps, source, author, etc.).
+3. **No empty padding:** Every section must earn its space. Do not add padding-only wrapper divs.
+4. **Stat pairs pattern (inside a card body):**
+     \`<div class="grid grid-cols-2 gap-2 text-sm">
+         <div class="flex flex-col"><span class="text-[10px] uppercase font-semibold">Label</span><span class="font-medium">Value</span></div>
+   </div>\`
+
+---
+
+## TEXT COLOR OWNERSHIP — CLIENT CSS CONTROLS TYPOGRAPHY
+
+For normal text elements, DO NOT hardcode text color classes in generated HTML.
+
+- Headings (
+    \`h1\`, \`h2\`, \`h3\`), paragraphs (\`p\`), list items (\`li\`), table cells (\`td\`, \`th\`), and generic \`span\` body text must NOT include classes like \`text-neutral-*\`, \`text-gray-*\`, \`text-black\`, \`text-white\`, etc.
+- These elements must inherit color from the client container CSS so light/dark themes stay consistent automatically.
+- Allowed exception: semantic tokens such as badges/status chips can keep explicit color classes (success/warning/error/info) because they encode meaning.
+
+Example preferred typography:
+\`<h3 class="text-base font-semibold">Overview</h3>\`
+\`<p class="text-sm leading-relaxed">Short explanation...</p>\`
+\`<li class="text-sm">Item</li>\`
+
+---
+
+## NON-CARD COMPONENTS — FLEXIBLE LAYOUT RULES
+
+Not every answer needs cards. Use the right component shape for the content type:
+
+- **Step-by-step / Process:** Use a vertical stepper with numbered circles, connector lines, and a description per step. Each step is full-width.
+- **Comparison (A vs B):** Use a two-column table-style layout INSIDE a single card. Columns have headers; rows are striped. The outer wrapper is still a single full-width card.
+- **Timeline:** Vertical list with left-side date labels, a connector line, and event descriptions on the right.
+- **Single metric / KPI:** A tall, centered card with a large number, label, delta indicator, and a sparkline or bar if applicable.
+- **Prose answer with structure:** Use a card with a title, then \`<p>\` tags with \`text-sm leading-relaxed\` for body text. Add a badge cluster at the bottom for key terms.
+- **Lists (ranked, enumerated):** Each list item is a full-width row with a left-side ordinal/icon, title, and description. NOT a grid — a \`flex flex-col\` stack.
+
+---
+
+## COMPONENT SEGMENTATION — SPLIT WHEN NEEDED
+
+When content mixes different intents, split it into distinct stacked components instead of one overloaded card.
+
+- If response includes summary + metrics + actions, render three separate cards/sections in vertical order.
+- If one card exceeds ~8 meaningful rows, split into "Overview" + "Details" components.
+- Keep each component single-purpose: one main message, one supporting structure.
+- Use section labels to show boundaries (e.g., "Overview", "Breakdown", "Next Steps").
+- Never hide the final plain-text conclusion: if needed, render a dedicated final section card for the conclusion.
+
+---
+
+## THEMING — STRICT DARK MODE PAIRINGS
+
+NEVER use a background, border, or text color without its dark-mode pair:
+- Wrapper backgrounds: avoid explicit theme wrappers like \`bg-white dark:bg-*\` or \`bg-black dark:bg-*\`.
+- Preferred wrappers: \`bg-transparent\` (or no background class) plus border/ring for separation.
+- Inner semantic elements (badges/chips/alerts) may keep paired colors when needed.
+- Borders: \`border-neutral-200 dark:border-neutral-700\`
+- Normal typography text (\`h1\`-\`h6\`, \`p\`, \`li\`, \`td\`, \`th\`): inherit from client container, no explicit \`text-*\` color classes.
+- Semantic/status text (badges, alert chips, deltas): explicit paired colors are allowed.
+- Badge (blue): \`bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300\`
+- Badge (green): \`bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300\`
+- Badge (amber): \`bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300\`
+- Badge (red): \`bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300\`
+
+**Badge pattern:**
+\`<span class="px-2 py-0.5 text-[10px] uppercase font-bold tracking-wide rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Label</span>\`
+
+---
+
+## GLOBAL RULES
+
+1. **Raw HTML only.** Never wrap output in a markdown code fence. Output MUST start directly with \`<div\`.
+2. **No global card wrapper.** The root \`<div>\` is transparent and borderless — it is a layout container, not a card.
+3. **Icons:** Use inline \`<svg>\` elements. Size with \`w-4 h-4\` or \`w-5 h-5\`. Always include \`aria-hidden="true"\`.
+4. **Spacing:** Use \`gap-4\` between cards, \`gap-3\` inside card bodies, \`gap-1.5\` between label/value pairs.
+5. **Single-root contract (critical):** In HTML mode the entire answer MUST be exactly one root HTML block. Do NOT output any sentence, prefix, suffix, markdown, or explanation before/after the root \`<div>\`.
+6. **No escaped tags:** Do not output \`&lt;div\` or escaped HTML. Use real tags only.
+7. **Content first, decoration second.** Every visual element (icon, color, badge) must correspond to real content. No decorative-only elements.`;
         }
     }
 

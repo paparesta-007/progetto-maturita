@@ -107,6 +107,7 @@ export const sendNormalMessage = async (
             sender: message,
             content: responseText,
             usage: responseUsage,
+            renderMode,
             model: model,
             reasoning: reasoningContent
         };
@@ -325,6 +326,7 @@ export const sendStreamedMessage = async (
             sender: message,
             content: accumulatedText,
             usage: Object.keys(accumulatedUsage).length > 0 ? accumulatedUsage : { total_tokens: 0 },
+            renderMode: accumulatedRenderMode,
             model: model,
             reasoning: accumulatedReasoning
         };

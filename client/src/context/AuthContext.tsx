@@ -41,6 +41,33 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [systemPrompt, setSystemPrompt] = useState("");
     const [personalInfo, setPersonalInfo] = useState({ name: "", job: "", hobbies: "" });
     const [stylePreferences, setStylePreferences] = useState({})
+
+    // Keep theme initialization and DOM sync global, not tied to specific UI components.
+    useEffect(() => {
+        const storedTheme = localStorage.getItem("theme");
+        if (storedTheme === "dark" || storedTheme === "light") {
+            setTheme(storedTheme);
+            return;
+        }
+
+        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            setTheme("dark");
+        }
+    }, []);
+
+    useEffect(() => {
+        const root = window.document.documentElement;
+        localStorage.setItem("theme", theme);
+
+        if (theme === 'dark') {
+            root.classList.add('dark');
+            root.setAttribute('data-theme', 'dark');
+        } else {
+            root.classList.remove('dark');
+            root.setAttribute('data-theme', 'light');
+        }
+    }, [theme]);
+
     // 1. EFFETTO PER L'AUTENTICAZIONE
     useEffect(() => {
         const initAuth = async () => {

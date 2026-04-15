@@ -14,7 +14,7 @@ import * as PhosphorIcons from '@phosphor-icons/react';
 export type SemanticColor = 'primary' | 'accent' | 'emerald' | 'amber' | 'rose' | 'violet' | 'cyan' | 'neutral';
 
 export interface UIElement {
-    type: 'container' | 'text' | 'metric' | 'progress' | 'icon' | 'divider' | 'sparkline';
+    type: 'container' | 'text' | 'metric' | 'progress' | 'icon' | 'divider' | 'label' | 'sparkline';
     props?: any;
     children?: UIElement[];
 }
@@ -49,7 +49,7 @@ const ElementRenderer: React.FC<{ element: UIElement; index: number }> = ({ elem
     const animation = {
         initial: { opacity: 0, y: 10 },
         animate: { opacity: 1, y: 0 },
-        transition: { delay: index * 0.05, duration: 0.4, ease: "easeOut" }
+        transition: { delay: index * 0.05, duration: 0.4 }
     };
 
     switch (type) {
@@ -64,6 +64,10 @@ const ElementRenderer: React.FC<{ element: UIElement; index: number }> = ({ elem
                 align = 'start',
                 justify = 'start'
             } = props;
+
+            const isRootContainer = index === 0;
+            const effectiveDirection = isRootContainer ? 'col' : direction;
+            const effectiveBorder = isRootContainer ? false : border;
             
             const gapMap: Record<number, string> = { 0: 'gap-0', 1: 'gap-1', 2: 'gap-2', 3: 'gap-3', 4: 'gap-4', 6: 'gap-6', 8: 'gap-8' };
             const padMap: Record<number, string> = { 0: 'p-0', 1: 'p-1', 2: 'p-2', 3: 'p-3', 4: 'p-4', 6: 'p-6', 8: 'p-8' };
@@ -71,14 +75,14 @@ const ElementRenderer: React.FC<{ element: UIElement; index: number }> = ({ elem
 
             const classes = [
                 'flex',
-                direction === 'row' ? 'flex-row' : 'flex-col',
+                effectiveDirection === 'row' ? 'flex-row' : 'flex-col',
                 gapMap[gap] || 'gap-4',
                 padMap[padding] || 'p-4',
                 roundedMap[rounded] || 'rounded-xl',
                 align === 'center' ? 'items-center' : align === 'end' ? 'items-end' : 'items-start',
                 justify === 'center' ? 'justify-center' : justify === 'between' ? 'justify-between' : 'justify-start',
-                glass ? 'bg-white/40 dark:bg-neutral-900/40 backdrop-blur-md' : '',
-                border ? 'border border-neutral-200 dark:border-neutral-800' : '',
+                glass ? 'bg-transparent backdrop-blur-md' : '',
+                effectiveBorder ? 'border border-neutral-200' : '',
                 props.className || ''
             ].join(' ');
 
@@ -144,7 +148,6 @@ const ElementRenderer: React.FC<{ element: UIElement; index: number }> = ({ elem
         case 'progress': {
             const { value, max = 100, color = 'accent', label, showValue = true } = props;
             const percentage = Math.min(100, Math.max(0, (value / max) * 100));
-            const colorClass = getColorClasses(color, 'bg').replace('bg-', 'bg-'); // Ensure it's a bg class
 
             return (
                 <motion.div {...animation} className="w-full flex flex-col gap-1.5">
@@ -190,6 +193,25 @@ const ElementRenderer: React.FC<{ element: UIElement; index: number }> = ({ elem
             );
         }
 
+        case 'label': {
+            const { content, tone = 'neutral' } = props;
+            const toneMap: Record<string, string> = {
+                neutral: 'bg-neutral-100 text-neutral-700 dark:bg-neutral-800 dark:text-neutral-300',
+                accent: 'bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300',
+                success: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300',
+                warning: 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300',
+            };
+
+            return (
+                <motion.span
+                    {...animation}
+                    className={`inline-flex items-center rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-wide ${toneMap[tone] || toneMap.neutral}`}
+                >
+                    {content}
+                </motion.span>
+            );
+        }
+
         default:
             return null;
     }
@@ -199,7 +221,7 @@ const DynamicCanvas: React.FC<DynamicCanvasProps> = ({ data }) => {
     if (!data || !data.root) return null;
 
     return (
-        <div className="w-full my-4 overflow-hidden">
+        <div className="w-full overflow-hidden">
             <ElementRenderer element={data.root} index={0} />
         </div>
     );

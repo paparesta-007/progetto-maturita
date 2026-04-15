@@ -212,24 +212,6 @@ const Sidebar = ({
 
     // --- Effects ---
     useEffect(() => {
-        const storedTheme = localStorage.getItem("theme");
-        if (storedTheme && storedTheme !== theme) setTheme(storedTheme);
-        else if (!storedTheme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) setTheme("dark");
-    }, []);
-
-    useEffect(() => {
-        const root = window.document.documentElement;
-        localStorage.setItem("theme", theme);
-        if (theme === 'dark') {
-            root.classList.add('dark');
-            root.setAttribute('data-theme', 'dark');
-        } else {
-            root.classList.remove('dark');
-            root.setAttribute('data-theme', 'light');
-        }
-    }, [theme]);
-
-    useEffect(() => {
         const fetchUserDetails = async () => {
             if (user?.id) {
                 const data = await selectUserDetails(user.id);

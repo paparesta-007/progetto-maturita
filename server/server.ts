@@ -832,7 +832,7 @@ app.post("/api/conversations/create", async (req: express.Request, res: express.
 // Crea un nuovo messaggio in una conversazione
 app.post("/api/conversations/messages/create", async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     try {
-        const { conversation_id, sender, content, usage, model, reasoning_text, user_id } = req.body;
+        const { conversation_id, sender, content, usage, model, render_mode, reasoning_text, user_id } = req.body;
         if (!conversation_id) throw new Error("conversation_id mancante");
 
         // Dobbiamo avere l'user_id per passarlo ai log se presente nella session, ma potremmo non averlo nel body... passiamo 'unknown'
@@ -846,6 +846,7 @@ app.post("/api/conversations/messages/create", async (req: express.Request, res:
                 content: content,
                 usage: usage,
                 model: model,
+                render_mode: render_mode === 'html' ? 'html' : 'markdown',
                 reasoning_text: reasoning_text,
             });
 

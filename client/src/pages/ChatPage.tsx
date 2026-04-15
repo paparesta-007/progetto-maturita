@@ -14,14 +14,29 @@ import "katex/dist/katex.min.css";
 import {GhostIcon} from "@phosphor-icons/react"
 import DOMPurify from "dompurify";
 
-const looksLikeRenderableHtml = (content: string): boolean => {
-    if (!content) return false;
+const extractRenderableHtml = (content: string): string | null => {
+    if (!content) return null;
 
     const trimmed = content.trim();
-    if (!trimmed || trimmed.startsWith("```") || trimmed.startsWith("&lt;")) return false;
-    if (!trimmed.startsWith("<")) return false;
+    if (!trimmed || trimmed.startsWith("```") || trimmed.startsWith("&lt;")) return null;
 
-    return /<\s*[a-z][\w:-]*(\s[^>]*)?>[\s\S]*<\s*\/\s*[a-z][\w:-]*\s*>/i.test(trimmed);
+    const htmlStart = trimmed.search(/<\s*[a-z][\w:-]*(\s[^>]*)?>/i);
+    if (htmlStart < 0) return null;
+
+    const candidate = trimmed.slice(htmlStart).trim();
+    const hasHtmlShape = /<\s*[a-z][\w:-]*(\s[^>]*)?>[\s\S]*<\s*\/\s*[a-z][\w:-]*\s*>/i.test(candidate);
+    return hasHtmlShape ? candidate : null;
+};
+
+const normalizeWrapperThemeClasses = (html: string): string => {
+    if (!html) return html;
+
+    return html
+        // Remove common wrapper theme combos that conflict with custom theme translators.
+        .replace(/\bbg-white\s+dark:bg-[^\s"']+/gi, 'bg-transparent')
+        .replace(/\bdark:bg-[^\s"']+\s+bg-white\b/gi, 'bg-transparent')
+        .replace(/\bbg-black\s+dark:bg-[^\s"']+/gi, 'bg-transparent')
+        .replace(/\bdark:bg-[^\s"']+\s+bg-black\b/gi, 'bg-transparent');
 };
 const LivePreviewMock = () => {
     return (
@@ -212,10 +227,11 @@ const ChatContent = () => {
                                 {messageHistory.map((msg, index) => {
                                     const hasStructuredUI = /<ui-component\s+type="[^"]+">/i.test(msg.content);
                                     const renderMode = msg.renderMode || 'markdown';
-                                    const htmlCandidate = looksLikeRenderableHtml(msg.content);
-                                    const canRenderHtml = (renderMode === 'html' || (!msg.renderMode && htmlCandidate)) && htmlCandidate;
+                                    const extractedHtml = extractRenderableHtml(msg.content);
+                                    const canRenderHtml = Boolean((renderMode === 'html' || (!msg.renderMode && extractedHtml)) && extractedHtml);
+                                    const normalizedHtml = canRenderHtml ? normalizeWrapperThemeClasses(extractedHtml || '') : '';
                                     const safeHtml = canRenderHtml
-                                        ? DOMPurify.sanitize(msg.content, {
+                                        ? DOMPurify.sanitize(normalizedHtml, {
                                             ADD_TAGS: ['svg', 'path', 'g', 'rect', 'circle', 'line', 'polyline', 'polygon', 'button', 'span', 'section', 'article'],
                                             ADD_ATTR: ['class', 'style', 'viewBox', 'd', 'fill', 'xmlns', 'width', 'height', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'x', 'y', 'rx', 'ry', 'cx', 'cy', 'r']
                                         })
@@ -231,7 +247,7 @@ const ChatContent = () => {
                                                     : hasStructuredUI
                                                         ? <GenerativeUIRenderer text={msg.content} />
                                                         : canRenderHtml
-                                                            ? <div dangerouslySetInnerHTML={{ __html: safeHtml }} />
+                                                            ? <div className="genui-html" dangerouslySetInnerHTML={{ __html: safeHtml }} />
                                                         : <MarkdownRender text={msg.content} />
                                                 }
                                             </BotMessage>
