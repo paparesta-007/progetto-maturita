@@ -154,4 +154,4 @@ const UserMessage = ({ i, htmlContent, tokens = 0 }: { i: number; htmlContent: s
     );
 };
 
-export default UserMessage;
+export default React.memo(UserMessage);

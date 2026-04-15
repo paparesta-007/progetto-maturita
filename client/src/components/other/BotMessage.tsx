@@ -488,4 +488,4 @@ const BotMessage = ({ i, children, usage, model, suggestedQuestions, logs, isCom
     );
 };
 
-export default BotMessage;
+export default React.memo(BotMessage);

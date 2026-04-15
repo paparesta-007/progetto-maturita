@@ -1,0 +1,3 @@
+## 2024-05-19 - Caching repeated user detail fetching
+**Learning:** In the chat component `UserMessage.tsx`, user details (e.g. `full_name`, `avatar_url`) were being fetched independently for *each* user message in a conversation. Given that these details are identical for the logged-in user in a single session, this resulted in N duplicate network requests to Supabase for N user messages, acting as an N+1 performance bottleneck.
+**Action:** Implemented a simple in-memory Promise cache in `selectUserDetails.ts` so that concurrent requests for the same `userId` await the same promise and subsequent requests return the cached result immediately, significantly reducing database load and network latency.
