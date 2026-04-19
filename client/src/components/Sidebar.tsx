@@ -155,7 +155,7 @@ const Sidebar = ({
 
     // ─── Premium Style System ───
     const style = {
-        sidebar: `sidebar-premium h-screen flex flex-col font-sans text-sm transition-all duration-500 ease-in-out relative ${isDark ? "bg-[#0a0a0a]" : ""} ${isMobileOpen ? 'fixed inset-0 z-50 w-full' : 'hidden md:flex'} ${isMinimized ? 'md:w-[72px] min-w-[72px]' : 'md:w-[280px] min-w-[280px]'}`,
+        sidebar: `sidebar-premium h-screen flex flex-col font-sans text-sm transition-all duration-500 ease-in-out relative ${isDark ? "bg-[#0a0a0a]/85 backdrop-blur-xl border-r border-white/[0.04]" : ""} ${isMobileOpen ? 'fixed inset-0 z-50 w-full' : 'hidden md:flex'} ${isMinimized ? 'md:w-[72px] min-w-[72px]' : 'md:w-[280px] min-w-[280px]'}`,
 
         textPrimary: isDark ? "text-neutral-100" : "text-neutral-900",
         textSecondary: isDark ? "text-neutral-500" : "text-neutral-600",
@@ -211,24 +211,6 @@ const Sidebar = ({
     } as React.CSSProperties;
 
     // --- Effects ---
-    useEffect(() => {
-        const storedTheme = localStorage.getItem("theme");
-        if (storedTheme && storedTheme !== theme) setTheme(storedTheme);
-        else if (!storedTheme && window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) setTheme("dark");
-    }, []);
-
-    useEffect(() => {
-        const root = window.document.documentElement;
-        localStorage.setItem("theme", theme);
-        if (theme === 'dark') {
-            root.classList.add('dark');
-            root.setAttribute('data-theme', 'dark');
-        } else {
-            root.classList.remove('dark');
-            root.setAttribute('data-theme', 'light');
-        }
-    }, [theme]);
-
     useEffect(() => {
         const fetchUserDetails = async () => {
             if (user?.id) {
@@ -586,11 +568,11 @@ const Sidebar = ({
 
                                             <button
                                                 className={`${style.contextDot} ${docMenuOpen === doc.document_id ? "opacity-100" : "opacity-0 group-hover:opacity-100"} ${isDark ? "text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.06]" : "text-neutral-600 hover:text-neutral-600 hover:bg-black/[0.04]"}`}
+                                                onMouseDown={(e) => e.stopPropagation()}
                                                 onClick={(e) => {
                                                     e.preventDefault();
                                                     e.stopPropagation();
                                                     setDocMenuOpen(docMenuOpen === doc.document_id ? null : doc.document_id);
-
                                                 }}
                                             >
                                                 <DotsThreeIcon size={18} weight="bold" />
@@ -641,6 +623,7 @@ const Sidebar = ({
 
                                             <button
                                                 className={`${style.contextDot} ${convMenuOpen === conv.id ? "opacity-100" : "opacity-0 group-hover:opacity-100"} ${isDark ? "text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.06]" : "text-neutral-600 hover:text-neutral-600 hover:bg-black/[0.04]"}`}
+                                                onMouseDown={(e) => e.stopPropagation()}
                                                 onClick={(e) => {
                                                     e.preventDefault();
                                                     e.stopPropagation();
@@ -763,7 +746,14 @@ const Sidebar = ({
                     </AnimatePresence>
 
                     {/* User Button */}
-                    <button className={style.userBtn} onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}>
+                    <button 
+                        className={style.userBtn} 
+                        onMouseDown={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setIsUserMenuOpen(!isUserMenuOpen);
+                        }}
+                    >
                         <div className={`flex items-center ${isMinimized ? 'justify-center' : 'gap-3'} overflow-hidden`}>
                             {/* Avatar with online indicator */}
                             <div className="relative flex-shrink-0">

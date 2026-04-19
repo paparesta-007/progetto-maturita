@@ -6,18 +6,121 @@ import BotLoading from "../components/other/BotLoading";
 import PromptStarter from "../components/PromptStarter";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, useParams } from "react-router-dom";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useApp } from "../context/AppContext";
 import MarkdownRender from "../library/markdownRender";
-import {  Rocket, ShieldCheck, Sparkles } from "lucide-react";
+import GenerativeUIRenderer from "../components/generativeUI/GenerativeUIRenderer";
 import "katex/dist/katex.min.css";
-import {GhostIcon} from "@phosphor-icons/react"
-const LivePreviewMock = ({ isDark }: { isDark: boolean }) => {
-    const shellBg = isDark ? "bg-neutral-900 border-neutral-700" : "bg-neutral-50 border-neutral-200";
-    const cardBg = isDark ? "bg-neutral-950 border-neutral-800" : "bg-white border-neutral-200";
-    const softText = isDark ? "text-neutral-600" : "text-neutral-600";
-    const titleText = isDark ? "text-white" : "text-neutral-900";
+import { GhostIcon } from "@phosphor-icons/react";
+import DOMPurify from "dompurify";
+import { Sparkles } from "lucide-react";
 
+/* -------------------------------------------------------
+   System Styles (Shared from LandingPage)
+------------------------------------------------------- */
+const ChatStyles = ({ isDark }: { isDark: boolean }) => {
+  if (!isDark) return null;
+  return (
+    <style>{`
+      @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+
+      :root {
+        --bg: #07070a;
+        --bg2: #0d0e14;
+        --panel: rgba(255,255,255,.04);
+        --panel2: rgba(255,255,255,.06);
+        --fg: #f4f1ea;
+        --muted: rgba(244,241,234,.68);
+        --line: rgba(255,255,255,.10);
+        --line2: rgba(255,255,255,.16);
+        --accent: #f97316;
+        --accent2: #fb923c;
+        --good: #22c55e;
+        --shadow: 0 20px 80px rgba(0,0,0,.42);
+      }
+
+      .font-mono { font-family: 'IBM Plex Mono', monospace; }
+
+      .glass {
+        background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(18px);
+      }
+
+      .glass-soft {
+        background: rgba(255,255,255,.035);
+        border: 1px solid rgba(255,255,255,.08);
+        backdrop-filter: blur(12px);
+      }
+
+      .gridline {
+        background-image:
+          linear-gradient(to right, rgba(255,255,255,.05) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(255,255,255,.05) 1px, transparent 1px);
+        background-size: 42px 42px;
+      }
+
+      .noise::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        opacity: .03;
+        background-image:
+          linear-gradient(rgba(255,255,255,.8) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,.8) 1px, transparent 1px);
+        background-size: 44px 44px;
+        mask-image: linear-gradient(180deg, black, transparent 80%);
+      }
+
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(255,255,255,0.1);
+        border-radius: 10px;
+      }
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: rgba(255,255,255,0.2);
+      }
+
+      ::selection {
+        background: rgba(249, 115, 22, 0.3);
+        color: #fff;
+      }
+    `}</style>
+  );
+};
+
+const extractRenderableHtml = (content: string): string | null => {
+    if (!content) return null;
+
+    const trimmed = content.trim();
+    if (!trimmed || trimmed.startsWith("```") || trimmed.startsWith("&lt;")) return null;
+
+    const htmlStart = trimmed.search(/<\s*[a-z][\w:-]*(\s[^>]*)?>/i);
+    if (htmlStart < 0) return null;
+
+    const candidate = trimmed.slice(htmlStart).trim();
+    const hasHtmlShape = /<\s*[a-z][\w:-]*(\s[^>]*)?>[\s\S]*<\s*\/\s*[a-z][\w:-]*\s*>/i.test(candidate);
+    return hasHtmlShape ? candidate : null;
+};
+
+const normalizeWrapperThemeClasses = (html: string): string => {
+    if (!html) return html;
+
+    return html
+        // Remove common wrapper theme combos that conflict with custom theme translators.
+        .replace(/\bbg-white\s+dark:bg-[^\s"']+/gi, 'bg-transparent')
+        .replace(/\bdark:bg-[^\s"']+\s+bg-white\b/gi, 'bg-transparent')
+        .replace(/\bbg-black\s+dark:bg-[^\s"']+/gi, 'bg-transparent')
+        .replace(/\bdark:bg-[^\s"']+\s+bg-black\b/gi, 'bg-transparent');
+};
+const LivePreviewMock = () => {
     return (
         <></>
     );
@@ -54,16 +157,11 @@ const ChatContent = () => {
 
     // Stili CSS-in-JS (Tailwind)
     const styles = {
-        // Aggiunto overflow-x-hidden per evitare scroll orizzontali indesiderati
-        wrapper: `flex flex-col h-screen w-full overflow-hidden relative transition-colors duration-300 ${isDark ? "bg-neutral-950" : ""}`,
-        headerText: `flex justify-between items-center w-full text-md px-4 pt-4 font-medium mb-2 transition-colors ${isDark ? "text-neutral-300" : "text-neutral-700"}`,
-
-        // Main è un flex container orizzontale
-        main: `flex-1 flex overflow-hidden overflow-x-hidden relative w-full min-w-0`,
-
-        // Footer: fisso in basso, ma gestito con width dinamiche
-        footer: `flex-shrink-0 w-full pt-0 pb-4 transition-colors duration-300 z-10 ${isDark ? "bg-neutral-950" : ""}`,
-        disclaimer: `text-center text-[10px] mt-2 ${isDark ? "text-neutral-600" : "text-neutral-600"}`
+        wrapper: `flex flex-col h-screen w-full overflow-hidden relative transition-all duration-500 ${isDark ? "bg-[#07070a] text-[#f4f1ea] font-['Manrope']" : "bg-white"}`,
+        headerText: `flex justify-between items-center w-full text-sm px-6 pt-4 font-semibold mb-2 transition-colors z-20 ${isDark ? "text-white/90" : "text-neutral-700"}`,
+        main: `flex-1 flex overflow-hidden relative w-full min-w-0 z-10`,
+        footer: `flex-shrink-0 w-full pt-0 pb-6 transition-colors duration-300 z-20 ${isDark ? "bg-transparent" : "bg-white"}`,
+        disclaimer: `text-center text-[10px] mt-3 opacity-40 ${isDark ? "text-white" : "text-neutral-500"}`
     };
 
     const scrollToBottom = (force = false) => {
@@ -72,7 +170,9 @@ const ChatContent = () => {
         }
 
         if (messagesEndRef.current && !isUserScrolledUp.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: force ? "auto" : "smooth" });
+            requestAnimationFrame(() => {
+                messagesEndRef.current?.scrollIntoView({ behavior: force ? "auto" : "smooth" });
+            });
         }
     };
 
@@ -156,7 +256,19 @@ const ChatContent = () => {
         : `w-full px-4`; // Scrollbar resta sul bordo destro del contenitore
 
     return (
-        <div className={styles.wrapper}>
+        <div className={`${styles.wrapper} ${isDark ? 'noise' : ''} flex flex-col min-w-0`}>
+            <ChatStyles isDark={isDark} />
+            
+            {isDark && (
+                <>
+                    <div className="absolute inset-0 gridline opacity-[0.15] pointer-events-none" />
+                    <div className="absolute -top-24 -left-24 h-[400px] w-[400px] rounded-full bg-orange-500/[0.08] blur-[80px] pointer-events-none" />
+                    <div className="absolute top-1/4 -right-24 h-[300px] w-[300px] rounded-full bg-orange-600/[0.04] blur-[70px] pointer-events-none" />
+                    <div className="absolute bottom-1/4 left-1/3 h-[250px] w-[250px] rounded-full bg-orange-500/[0.04] blur-[80px] pointer-events-none" />
+                    <div className="absolute top-1/2 right-1/4 h-48 w-48 rounded-full bg-white/[0.02] blur-3xl pointer-events-none" />
+                </>
+            )}
+
             {/* Toggle Switch */}
             <input type="checkbox" id="live-preview-toggle" className="hidden" checked={isLivePreview} onChange={() => setIsLivePreview(!isLivePreview)} />
             <label
@@ -203,16 +315,36 @@ const ChatContent = () => {
                     >
                         {messageHistory.length !== 0 ? (
                             <div className={`space-y-6 ${chatContentClass}`}>
-                                {messageHistory.map((msg, index) => (
-                                    msg.role === 'user' ?
-                                        <UserMessage key={index} i={index} htmlContent={msg.content} /> :
-                                        <BotMessage key={index} i={index} usage={msg.usage} model={msg.model} suggestedQuestions={msg.suggestedQuestions} logs={msg.logs} isComplete={msg.isComplete} reasoning={msg.reasoning} onSuggestedClick={(q) => sendMessage(q, "normal", "fast")}>
-                                            {msg.content === "Elaborazione in corso..." || msg.content === "Avvio della richiesta..." 
+                                {messageHistory.map((msg, index) => {
+                                    const hasStructuredUI = /<ui-component\s+type="[^"]+">/i.test(msg.content);
+                                    const renderMode = msg.renderMode || 'markdown';
+                                    const extractedHtml = extractRenderableHtml(msg.content);
+                                    const canRenderHtml = Boolean((renderMode === 'html' || (!msg.renderMode && extractedHtml)) && extractedHtml);
+                                    const normalizedHtml = canRenderHtml ? normalizeWrapperThemeClasses(extractedHtml || '') : '';
+                                    const safeHtml = canRenderHtml
+                                        ? DOMPurify.sanitize(normalizedHtml, {
+                                            ADD_TAGS: ['svg', 'path', 'g', 'rect', 'circle', 'line', 'polyline', 'polygon', 'button', 'span', 'section', 'article'],
+                                            ADD_ATTR: ['class', 'style', 'viewBox', 'd', 'fill', 'xmlns', 'width', 'height', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'x', 'y', 'rx', 'ry', 'cx', 'cy', 'r']
+                                        })
+                                        : '';
+                                    
+                                    return (
+                                        msg.role === 'user' ? (
+                                            <UserMessage key={index} i={index} htmlContent={msg.content} />
+                                        ) : (
+                                            <BotMessage key={index} i={index} usage={msg.usage} model={msg.model} suggestedQuestions={msg.suggestedQuestions} logs={msg.logs} isComplete={msg.isComplete} reasoning={msg.reasoning} onSuggestedClick={(q) => sendMessage(q, "normal", "fast")}>
+                                                {msg.content === "Elaborazione in corso..." || msg.content === "Avvio della richiesta..." 
                                                     ? <p className="text-neutral-500 italic text-sm">{msg.content}</p> 
-                                                    : <MarkdownRender text={msg.content} />
+                                                    : hasStructuredUI
+                                                        ? <GenerativeUIRenderer text={msg.content} />
+                                                        : canRenderHtml
+                                                            ? <div className="genui-html" dangerouslySetInnerHTML={{ __html: safeHtml }} />
+                                                        : <MarkdownRender text={msg.content} />
                                                 }
-                                        </BotMessage>
-                                ))}
+                                            </BotMessage>
+                                        )
+                                    );
+                                })}
                                 {loading && <BotLoading />}
                                 <div ref={messagesEndRef} />
                             </div>
@@ -226,7 +358,7 @@ const ChatContent = () => {
 
                 {isLivePreview && (
                     <section className={`w-2/3 min-w-0 h-full p-4 overflow-x-hidden overflow-y-auto ${isDark ? "bg-neutral-900" : "bg-neutral-50"}`}>
-                        <LivePreviewMock isDark={isDark} />
+                        <LivePreviewMock />
                     </section>
                 )}
 

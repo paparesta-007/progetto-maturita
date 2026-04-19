@@ -33,7 +33,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
-    const [theme, setTheme] = useState("light");
+    const [theme, setTheme] = useState(() => {
+        if (typeof window !== "undefined") {
+            const stored = localStorage.getItem("theme");
+            if (stored === "dark" || stored === "light") return stored;
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                return "dark";
+            }
+        }
+        return "light";
+    });
     // Stati delle istruzioni
     const [tone, setTone] = useState("default");
     const [allowedCustomInstructions, setAllowedCustomInstructions] = useState(true);
@@ -41,6 +50,22 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [systemPrompt, setSystemPrompt] = useState("");
     const [personalInfo, setPersonalInfo] = useState({ name: "", job: "", hobbies: "" });
     const [stylePreferences, setStylePreferences] = useState({})
+
+    // Theme initialization is now handled by the state initializer above.
+
+    useEffect(() => {
+        const root = window.document.documentElement;
+        localStorage.setItem("theme", theme);
+
+        if (theme === 'dark') {
+            root.classList.add('dark');
+            root.setAttribute('data-theme', 'dark');
+        } else {
+            root.classList.remove('dark');
+            root.setAttribute('data-theme', 'light');
+        }
+    }, [theme]);
+
     // 1. EFFETTO PER L'AUTENTICAZIONE
     useEffect(() => {
         const initAuth = async () => {

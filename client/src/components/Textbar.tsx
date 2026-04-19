@@ -72,21 +72,21 @@ const Textbar = () => {
 
     // Stili dinamici per la barra
     const styles = {
-        container: `w-full max-w-2xl border rounded-2xl p-2 flex flex-col gap-2 transition-all duration-300 ${isDark
-            ? "bg-neutral-900 border-neutral-800 shadow-[0_0_20px_0_rgba(0,0,0,0.4)]"
-            : "bg-white/80 border-neutral-300/80 shadow-[0_2px_24px_0_rgba(0,0,0,0.10)]"
+        container: `w-full max-w-2xl rounded-[1.5rem] p-3 flex flex-col gap-2 transition-all duration-300 ${isDark
+            ? "glass border-white/10 shadow-2xl"
+            : "bg-white border border-neutral-200 shadow-[0_2px_24px_0_rgba(0,0,0,0.10)]"
             }`,
-        input: ` flex-1 p-3 focus:outline-none bg-transparent resize-none
+        input: ` flex-1 p-2 focus:outline-none bg-transparent resize-none
                 ${isDark
-                ? "text-white placeholder-neutral-500 bg-neutral-900"
+                ? "text-white placeholder-white/40"
                 : "text-neutral-900 placeholder-neutral-400 bg-[#f7f6f2]"}
                 w-full min-w-[200px]
                 py-2
                 max-h-[15rem] overflow-y-auto`,
-        sendBtn: `p-2.5 rounded-xl transition-all active:scale-95 flex items-center justify-center ${isDark ? "bg-white text-neutral-900 hover:bg-neutral-200" : "bg-neutral-900 text-white hover:bg-neutral-800"
+        sendBtn: `p-2.5 rounded-xl transition-all active:scale-95 flex items-center justify-center ${isDark ? "bg-orange-500 text-black hover:bg-orange-400" : "bg-neutral-900 text-white hover:bg-neutral-800"
             }`,
-        iconBtn: `transition-colors ${isDark ? "text-neutral-500 hover:text-neutral-200" : "text-neutral-600 hover:text-neutral-800"}`,
-        fileItem: `relative group flex items-center gap-2 border rounded-lg p-1.5 pr-8 ${isDark ? "bg-neutral-800 border-neutral-700" : "bg-white border-neutral-200"
+        iconBtn: `transition-colors ${isDark ? "text-white/40 hover:text-white" : "text-neutral-600 hover:text-neutral-800"}`,
+        fileItem: `relative group flex items-center gap-2 border rounded-lg p-1.5 pr-8 ${isDark ? "bg-white/5 border-white/10" : "bg-white border-neutral-200"
             }`
     };
 

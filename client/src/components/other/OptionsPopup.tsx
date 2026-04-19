@@ -10,6 +10,9 @@ import {
     ShieldCheckIcon,
     CpuIcon,
     SlidersHorizontalIcon,
+    SparkleIcon,
+    ToggleLeftIcon,
+    ToggleRightIcon,
 } from "@phosphor-icons/react";
 import { useChat } from "../../context/ChatContext";
 import { useAuth } from "../../context/AuthContext";
@@ -38,7 +41,7 @@ const slideVariants = {
 };
 
 const OptionsPopup: React.FC = () => {
-    const { model, setModel, isStreamTextEnabled, setIsStreamTextEnabled } = useChat();
+    const { model, setModel, isStreamTextEnabled, setIsStreamTextEnabled, isBetterView, setIsBetterView } = useChat();
     const { theme } = useAuth();
     const isDark = theme === "dark";
 
@@ -260,6 +263,21 @@ const OptionsPopup: React.FC = () => {
                                         </span>
                                     </button>
                                             
+                                     <button
+                                        type="button"
+                                        className={rowBase}
+                                        onClick={() => setIsBetterView((p) => !p)}
+                                    >
+                                        <SparkleIcon size={14} className={`${isBetterView ? 'text-orange-500' : 'text-neutral-600'} flex-shrink-0`} weight={isBetterView ? "fill" : "regular"} />
+                                        <span className="flex-1">Better View</span>
+                                        <div className="flex-shrink-0">
+                                            {isBetterView ? (
+                                                <ToggleRightIcon size={24} weight="fill" className="text-orange-500" />
+                                            ) : (
+                                                <ToggleLeftIcon size={24} className="text-neutral-500" />
+                                            )}
+                                        </div>
+                                    </button>
                                     <div className="pb-1" />
                                 </motion.div>
                             )}

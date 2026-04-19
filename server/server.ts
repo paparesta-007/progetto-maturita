@@ -67,6 +67,22 @@ interface ClientLogEntry {
 }
 const clientLogs: ClientLogEntry[] = [];
 const MAX_CLIENT_LOGS = 100;
+type BetterViewRenderMode = 'html' | 'markdown';
+
+function isCodeOrDebugIntent(message: string): boolean {
+    if (!message || typeof message !== 'string') return false;
+
+    const normalized = message.toLowerCase();
+    const codeSignals = [
+        /```[\s\S]*?```/,
+        /\b(debug|bug|errore|error|stack trace|traceback|exception|fix|refactor|compile|build failed)\b/,
+        /\b(function|class|interface|import|export|const|let|var|return|async|await|sql|query|regex)\b/,
+        /\bjavascript|typescript|python|java|c\+\+|c#|php|go|rust|html|css|react|node\b/,
+        /\bwrite code|scrivi codice|generate code|genera codice|implement|implementa\b/
+    ];
+
+    return codeSignals.some((rx) => rx.test(normalized));
+}
 
 // Monkey-patch console to capture internal logs
 const originalConsoleLog = console.log;
@@ -260,10 +276,11 @@ app.use((req: express.Request, res: express.Response, next: express.NextFunction
 
 app.post("/api/completion/chat", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
     try {
-        const { message, history, modelName, systemPromptUser, personalInfo, tone, allowedCustomInstructions, reasoning } = req.body;
+        const { message, history, modelName, systemPromptUser, personalInfo, tone, allowedCustomInstructions, reasoning, isBetterView } = req.body;
 
         const selectedModel = modelName ? modelName : "google/gemini-2.0-flash-001";
-        const systemPrompt = getSystemPrompt({ selectedModel, systemPromptUser, personalInfo, tone, allowedCustomInstructions } as any);
+        const betterViewRenderMode: BetterViewRenderMode = isBetterView && !isCodeOrDebugIntent(message || "") ? 'html' : 'markdown';
+        const systemPrompt = getSystemPrompt({ selectedModel, systemPromptUser, personalInfo, tone, allowedCustomInstructions, isBetterView, betterViewRenderMode } as any);
 
         // Mappa i valori del client ai livelli di reasoning di OpenRouter
         const reasoningEffortMap: Record<string, string> = {
@@ -349,6 +366,7 @@ app.post("/api/completion/chat", async function (req: express.Request, res: expr
 
         res.send({
             text,
+            renderMode: betterViewRenderMode,
             usage,
             suggestedQuestions: [], // Saranno caricate dal client separatamente per non bloccare il salvataggio
             reasoning: reasoningContent,
@@ -515,8 +533,10 @@ async function getSuggestedQuestion(question: string, answer: string): Promise<s
 app.post("/api/streamingOutput", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
     try {
 
-        const { message, history, modelName, systemPromptUser, personalInfo, tone, allowedCustomInstructions, reasoning } = req.body;
+        const { message, history, modelName, systemPromptUser, personalInfo,
+            tone, allowedCustomInstructions, reasoning, isBetterView } = req.body;
         const selectedModel = modelName ? modelName : "google/gemini-2.0-flash-001";
+        const betterViewRenderMode: BetterViewRenderMode = isBetterView && !isCodeOrDebugIntent(message || "") ? 'html' : 'markdown';
 
         // Mappa i valori del client ai livelli di reasoning di OpenRouter
         console.log("Received reasoning level from client:", reasoning);
@@ -535,7 +555,9 @@ app.post("/api/streamingOutput", async function (req: express.Request, res: expr
             systemPromptUser,
             personalInfo,
             tone,
-            allowedCustomInstructions
+            allowedCustomInstructions,
+            isBetterView,
+            betterViewRenderMode
         } as any);
 
         let userContent: any = message;
@@ -585,6 +607,7 @@ app.post("/api/streamingOutput", async function (req: express.Request, res: expr
         res.setHeader('Transfer-Encoding', 'chunked');
         res.setHeader('X-Accel-Buffering', 'no');
         res.flushHeaders();
+        res.write(JSON.stringify({ type: "meta", renderMode: betterViewRenderMode }) + "\n");
 
         // 3. Lettura e parsing manuale del flusso SSE → NDJSON per il client
         const reader = response.body.getReader();
@@ -809,7 +832,7 @@ app.post("/api/conversations/create", async (req: express.Request, res: express.
 // Crea un nuovo messaggio in una conversazione
 app.post("/api/conversations/messages/create", async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     try {
-        const { conversation_id, sender, content, usage, model, reasoning_text, user_id } = req.body;
+        const { conversation_id, sender, content, usage, model, render_mode, reasoning_text, user_id } = req.body;
         if (!conversation_id) throw new Error("conversation_id mancante");
 
         // Dobbiamo avere l'user_id per passarlo ai log se presente nella session, ma potremmo non averlo nel body... passiamo 'unknown'
@@ -823,6 +846,7 @@ app.post("/api/conversations/messages/create", async (req: express.Request, res:
                 content: content,
                 usage: usage,
                 model: model,
+                render_mode: render_mode === 'html' ? 'html' : 'markdown',
                 reasoning_text: reasoning_text,
             });
 

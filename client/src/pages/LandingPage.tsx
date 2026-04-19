@@ -1,893 +1,990 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { 
-    FileText, 
-    Zap, 
-    MessageSquare,
-    Sparkles,
-    Shield,
-    Github,
-    ExternalLink,
-    ChevronRight,
-    ChevronDown,
-    Bot,
-    BookOpen,
-    Plus,
-    Minus
+import {
+  ArrowRight,
+  Bot,
+  BookOpen,
+  ChevronDown,
+  ChevronRight,
+  FileText,
+  Github,
+  MessageSquare,
+  Minus,
+  Plus,
+  Sparkles,
+  Shield,
+  Zap,
+  PanelTopOpen,
+  Layers3,
+  ShieldCheck,
+  Cpu,
+  Brain,
+  FileSearch,
+  CircleDot,
+  ExternalLink,
 } from 'lucide-react';
 
-/* --- Effects & Utilities --- */
-
-type TypewriterTextProps = {
-    text: string;
-    delay?: number;
-    className?: string;
+/* -------------------------------------------------------
+   Motion helpers
+------------------------------------------------------- */
+const fadeUp = {
+  hidden: { opacity: 0, y: 22, filter: 'blur(8px)' },
+  show: (i = 0) => ({
+    opacity: 1,
+    y: 0,
+    filter: 'blur(0px)',
+    transition: { duration: 0.75, delay: i * 0.08, ease: [0.22, 1, 0.36, 1] },
+  }),
 };
 
-const TypewriterText = ({ text, delay = 0, className = "" }: TypewriterTextProps) => {
-    const [display, setDisplay] = useState("");
-    
-    useEffect(() => {
-        let current = 0;
-        const timer = setTimeout(() => {
-            const interval = setInterval(() => {
-                if (current <= text.length) {
-                    setDisplay(text.slice(0, current));
-                    current++;
-                } else {
-                    clearInterval(interval);
-                }
-            }, 50);
-            return () => clearInterval(interval);
-        }, delay);
-        return () => clearTimeout(timer);
-    }, [text, delay]);
-    
-    return <span className={className}>{display}<span className="animate-pulse">_</span></span>;
+const slideIn = {
+  hidden: { opacity: 0, x: -18 },
+  show: (i = 0) => ({
+    opacity: 1,
+    x: 0,
+    transition: { duration: 0.65, delay: i * 0.08, ease: [0.22, 1, 0.36, 1] },
+  }),
 };
 
-/* --- Core Styles --- */
-const SystemStyles = () => (
+/* -------------------------------------------------------
+   Small utilities
+------------------------------------------------------- */
+function Typewriter({ text, delay = 0, className = '' }: { text: string; delay?: number; className?: string }) {
+  const [display, setDisplay] = useState('');
+
+  useEffect(() => {
+    let current = 0;
+    let interval: ReturnType<typeof setInterval> | null = null;
+    const start = setTimeout(() => {
+      interval = setInterval(() => {
+        if (current <= text.length) {
+          setDisplay(text.slice(0, current));
+          current += 1;
+        } else if (interval) {
+          clearInterval(interval);
+        }
+      }, 28);
+    }, delay);
+
+    return () => {
+      clearTimeout(start);
+      if (interval) clearInterval(interval);
+    };
+  }, [text, delay]);
+
+  return (
+    <span className={className}>
+      {display}
+      <span className="animate-pulse">▍</span>
+    </span>
+  );
+}
+
+function useScrolled(threshold = 16) {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > threshold);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, [threshold]);
+  return scrolled;
+}
+
+/* -------------------------------------------------------
+   Styles
+------------------------------------------------------- */
+function SystemStyles() {
+  return (
     <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Inter:wght@400;500;600;800&display=swap');
-        
-        :root {
-            --bg: #fafaf9;
-            --fg: #1c1917;
-            --accent: #f97316;
-            --accent-light: #fff7ed;
-            --border: #e7e5e4;
-            --muted: #78716c;
-        }
-        
-        body {
-            background: var(--bg);
-            color: var(--fg);
-            font-family: 'Inter', sans-serif;
-        }
-        
-        .font-mono {
-            font-family: 'JetBrains Mono', monospace;
-        }
-        
-        .brutalist-border {
-            border: 1.5px solid var(--fg);
-        }
-        
-        .brutalist-shadow {
-            box-shadow: 4px 4px 0px 0px var(--fg);
-            transition: all 0.2s ease;
-        }
-        
-        .brutalist-shadow:hover {
-            box-shadow: 6px 6px 0px 0px var(--fg);
-            transform: translate(-2px, -2px);
-        }
-        
-        .brutalist-shadow-sm {
-            box-shadow: 2px 2px 0px 0px var(--fg);
-        }
-        
-        .text-gradient {
-            background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        
-        .grid-pattern {
-            background-size: 40px 40px;
-            background-image: 
-                linear-gradient(to right, rgba(28, 25, 23, 0.05) 1px, transparent 1px),
-                linear-gradient(to bottom, rgba(28, 25, 23, 0.05) 1px, transparent 1px);
-        }
-        
-        .bento-card {
-            background: white;
-            border: 1.5px solid var(--border);
-            transition: all 0.3s ease;
-        }
-        
-        .bento-card:hover {
-            border-color: var(--fg);
-            box-shadow: 4px 4px 0px 0px var(--fg);
-            transform: translate(-2px, -2px);
-        }
-        
-        @keyframes float {
-            0%, 100% { transform: translateY(0px); }
-            50% { transform: translateY(-10px); }
-        }
-        
-        .animate-float {
-            animation: float 6s ease-in-out infinite;
-        }
-        
-        @keyframes pulse-ring {
-            0% { transform: scale(0.8); opacity: 0.5; }
-            100% { transform: scale(1.3); opacity: 0; }
-        }
-        
-        .pulse-ring::before {
-            content: '';
-            position: absolute;
-            inset: -4px;
-            border-radius: inherit;
-            border: 2px solid var(--accent);
-            animation: pulse-ring 2s cubic-bezier(0.215, 0.61, 0.355, 1) infinite;
-        }
+      @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
+
+      :root {
+        --bg: #07070a;
+        --bg2: #0d0e14;
+        --panel: rgba(255,255,255,.04);
+        --panel2: rgba(255,255,255,.06);
+        --fg: #f4f1ea;
+        --muted: rgba(244,241,234,.68);
+        --line: rgba(255,255,255,.10);
+        --line2: rgba(255,255,255,.16);
+        --accent: #f97316;
+        --accent2: #fb923c;
+        --good: #22c55e;
+        --shadow: 0 20px 80px rgba(0,0,0,.42);
+      }
+
+      html { scroll-behavior: smooth; }
+      body {
+        background:
+          radial-gradient(circle at 15% 20%, rgba(249,115,22,.12), transparent 24%),
+          radial-gradient(circle at 80% 15%, rgba(255,255,255,.05), transparent 18%),
+          radial-gradient(circle at 70% 80%, rgba(249,115,22,.10), transparent 20%),
+          linear-gradient(180deg, var(--bg), var(--bg2));
+        color: var(--fg);
+        font-family: 'Manrope', sans-serif;
+      }
+
+      .font-mono { font-family: 'IBM Plex Mono', monospace; }
+
+      .noise::before {
+        content: '';
+        position: fixed;
+        inset: 0;
+        pointer-events: none;
+        opacity: .055;
+        mix-blend-mode: overlay;
+        background-image:
+          linear-gradient(rgba(255,255,255,.8) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(255,255,255,.8) 1px, transparent 1px);
+        background-size: 44px 44px;
+        mask-image: linear-gradient(180deg, black, transparent 80%);
+      }
+
+      .glass {
+        background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow);
+        backdrop-filter: blur(18px);
+      }
+
+      .glass-soft {
+        background: rgba(255,255,255,.035);
+        border: 1px solid rgba(255,255,255,.08);
+        backdrop-filter: blur(12px);
+      }
+
+      .skinny-border {
+        border: 1px solid rgba(255,255,255,.10);
+      }
+
+      .accent-glow {
+        position: relative;
+      }
+      .accent-glow::after {
+        content: '';
+        position: absolute;
+        inset: -1px;
+        border-radius: inherit;
+        background: linear-gradient(135deg, rgba(249,115,22,.9), rgba(255,255,255,0));
+        filter: blur(18px);
+        opacity: .18;
+        z-index: -1;
+      }
+
+      .text-accent {
+        background: linear-gradient(135deg, #fff 0%, #ffd6b0 25%, #fb923c 66%, #f97316 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .gridline {
+        background-image:
+          linear-gradient(to right, rgba(255,255,255,.05) 1px, transparent 1px),
+          linear-gradient(to bottom, rgba(255,255,255,.05) 1px, transparent 1px);
+        background-size: 42px 42px;
+      }
+
+      .chip {
+        border: 1px solid rgba(255,255,255,.12);
+        background: rgba(255,255,255,.04);
+      }
+
+      .lift {
+        transition: transform .25s ease, border-color .25s ease, background .25s ease, box-shadow .25s ease;
+      }
+      .lift:hover {
+        transform: translateY(-3px);
+        border-color: rgba(249,115,22,.38);
+        box-shadow: 0 18px 50px rgba(0,0,0,.28);
+      }
+
+      .scrollbar-hide::-webkit-scrollbar { display: none; }
+      .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
+
+      @keyframes drift {
+        0%, 100% { transform: translateY(0px) translateX(0px); }
+        50% { transform: translateY(-10px) translateX(2px); }
+      }
+      .drift { animation: drift 8s ease-in-out infinite; }
+
+      @keyframes pulseRing {
+        0% { transform: scale(.85); opacity: .6; }
+        100% { transform: scale(1.35); opacity: 0; }
+      }
+      .pulse-ring::before {
+        content: '';
+        position: absolute;
+        inset: -6px;
+        border-radius: inherit;
+        border: 1.5px solid rgba(249,115,22,.5);
+        animation: pulseRing 2.1s cubic-bezier(.2,.8,.2,1) infinite;
+      }
     `}</style>
-);
+  );
+}
 
-/* --- Components --- */
+/* -------------------------------------------------------
+   Data
+------------------------------------------------------- */
+const featureDeck = [
+  {
+    icon: MessageSquare,
+    title: 'Chat multi-modello',
+    text: 'Un hub unico per passare tra modelli diversi senza rompere il contesto.',
+    tone: 'from-white/10 to-white/5',
+  },
+  {
+    icon: FileText,
+    title: 'PDF intelligence',
+    text: 'Caricamento documenti, ricerca semantica e risposte ancorate al contenuto.',
+    tone: 'from-orange-500/12 to-white/5',
+  },
+  {
+    icon: Zap,
+    title: 'Streaming immediato',
+    text: 'Risposte token-by-token per dare la sensazione di sistema vivo.',
+    tone: 'from-emerald-500/12 to-white/5',
+  },
+  {
+    icon: BookOpen,
+    title: 'Output strutturati',
+    text: 'Flashcard, quiz e sintesi generate con schemi coerenti e leggibili.',
+    tone: 'from-violet-500/12 to-white/5',
+  },
+  {
+    icon: Shield,
+    title: 'Accesso protetto',
+    text: 'Autenticazione sicura e route riservate per mantenere ordine e controllo.',
+    tone: 'from-sky-500/12 to-white/5',
+  },
+];
 
-const TopNav = () => {
-    const [scrolled, setScrolled] = useState(false);
-    const [openMenu, setOpenMenu] = useState<'features' | 'resources' | null>(null);
-    const featureLinks = [
-        { label: 'Features', href: '#features' },
-        { label: 'Models', href: '#models' },
-        { label: 'Capabilities', href: '#capabilities' },
-    ];
-    const resourceLinks = [
-        { label: 'About', href: '#about' },
-        { label: 'Help Tickets', href: '/help' },
-        { label: 'Roadmap', href: '/roadmap' },
-        { label: 'Resources', href: '/resources' },
-        { label: 'Changelog', href: '/changelog' },
-    ];
-    
-    useEffect(() => {
-        const handleScroll = () => setScrolled(window.scrollY > 20);
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, []);
+const modelCaps = [
+  { name: 'GPT-4o', provider: 'OpenAI' },
+  { name: 'Claude 3.5', provider: 'Anthropic' },
+  { name: 'Llama 3', provider: 'Meta' },
+  { name: 'DeepSeek', provider: 'DeepSeek' },
+  { name: 'Gemini', provider: 'Google' },
+  { name: 'Grok', provider: 'xAI' },
+];
 
-    useEffect(() => {
-        const onMouseDown = (event: MouseEvent) => {
-            const target = event.target as HTMLElement;
-            if (!target.closest('[data-nav-dropdown]')) {
-                setOpenMenu(null);
-            }
-        };
+const workflow = [
+  {
+    step: '01',
+    title: 'Ingest',
+    description: 'Carichi PDF o apri una conversazione con il modello preferito.',
+    icon: PanelTopOpen,
+  },
+  {
+    step: '02',
+    title: 'Interpret',
+    description: 'Il sistema estrae passaggi utili e li riporta dentro il contesto.',
+    icon: FileSearch,
+  },
+  {
+    step: '03',
+    title: 'Package',
+    description: 'Trasformi le idee in schede, quiz e materiali pronti allo studio.',
+    icon: Layers3,
+  },
+];
 
-        document.addEventListener('mousedown', onMouseDown);
-        return () => document.removeEventListener('mousedown', onMouseDown);
-    }, []);
+const faqs = [
+  {
+    q: 'Serve un modello specifico?',
+    a: 'No. L’interfaccia è pensata per orchestrare più provider in modo uniforme.',
+  },
+  {
+    q: 'I PDF sono davvero centrali?',
+    a: 'Sì, il progetto ruota attorno alla lettura e al riuso del contenuto documentale.',
+  },
+  {
+    q: 'Posso tenere la UI leggera?',
+    a: 'Sì: il layout è modulare e puoi rimuovere o sostituire blocchi senza rompere il resto.',
+  },
+  {
+    q: 'È pensata per un landing page o dashboard?',
+    a: 'Funziona come landing, ma il linguaggio visivo richiama un prodotto operativo reale.',
+  },
+];
 
-    const toggleMenu = (menu: 'features' | 'resources') => {
-        setOpenMenu((current) => (current === menu ? null : menu));
+/* -------------------------------------------------------
+   Header
+------------------------------------------------------- */
+function TopNav() {
+  const scrolled = useScrolled(14);
+  const [open, setOpen] = useState<null | 'product' | 'resources'>(null);
+
+  useEffect(() => {
+    const onDown = (ev: MouseEvent) => {
+      const target = ev.target as HTMLElement;
+      if (!target.closest('[data-dropdown]')) setOpen(null);
     };
-    
-    return (
-        <header className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${scrolled ? 'bg-stone-50/90 backdrop-blur-md border-b border-stone-200' : ''}`}>
-            <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-orange-500 brutalist-shadow-sm flex items-center justify-center">
-                        <Sparkles size={18} className="text-white" />
-                    </div>
-                    <span className="font-mono font-bold text-lg tracking-tight">Smart AI</span>
-                    <span className="hidden sm:inline-block px-2 py-0.5 bg-stone-200 text-stone-600 text-[10px] font-mono uppercase rounded-full">
-                        v2.0
-                    </span>
-                </div>
-                
-                <nav className="hidden md:flex items-center justify-center flex-1">
-                    <ul className="flex items-center gap-8 text-sm font-medium text-stone-700">
-                        <li className="relative" data-nav-dropdown>
-                            <button
-                                onClick={() => toggleMenu('features')}
-                                aria-expanded={openMenu === 'features'}
-                                aria-haspopup="menu"
-                                className="inline-flex items-center gap-1.5 hover:text-orange-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded-sm transition-colors"
-                            >
-                                Features
-                                <ChevronDown size={14} className={`transition-transform duration-300 ${openMenu === 'features' ? 'rotate-180' : ''}`} />
-                            </button>
-                            <AnimatePresence>
-                                {openMenu === 'features' && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 8 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: 8 }}
-                                        transition={{ duration: 0.18 }}
-                                        className="absolute top-full left-1/2 -translate-x-1/2 mt-2 min-w-[180px] bg-white border border-stone-200 rounded-lg p-1.5 shadow-lg"
-                                    >
-                                        {featureLinks.map((item) => (
-                                            <a
-                                                key={item.href}
-                                                href={item.href}
-                                                onClick={() => setOpenMenu(null)}
-                                                className="block px-3 py-2 text-stone-700 hover:bg-stone-100 rounded-md"
-                                            >
-                                                {item.label}
-                                            </a>
-                                        ))}
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </li>
+    document.addEventListener('mousedown', onDown);
+    return () => document.removeEventListener('mousedown', onDown);
+  }, []);
 
-                        <li className="relative" data-nav-dropdown>
-                            <button
-                                onClick={() => toggleMenu('resources')}
-                                aria-expanded={openMenu === 'resources'}
-                                aria-haspopup="menu"
-                                className="inline-flex items-center gap-1.5 hover:text-orange-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded-sm transition-colors"
-                            >
-                                Resources
-                                <ChevronDown size={14} className={`transition-transform duration-300 ${openMenu === 'resources' ? 'rotate-180' : ''}`} />
-                            </button>
-                            <AnimatePresence>
-                                {openMenu === 'resources' && (
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 8 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        exit={{ opacity: 0, y: 8 }}
-                                        transition={{ duration: 0.18 }}
-                                        className="absolute top-full left-1/2 -translate-x-1/2 mt-2 min-w-[190px] bg-white border border-stone-200 rounded-lg p-1.5 shadow-lg"
-                                    >
-                                        {resourceLinks.map((item) => (
-                                            item.href.startsWith('#') ? (
-                                                <a
-                                                    key={item.href}
-                                                    href={item.href}
-                                                    onClick={() => setOpenMenu(null)}
-                                                    className="block px-3 py-2 text-stone-700 hover:bg-stone-100 rounded-md"
-                                                >
-                                                    {item.label}
-                                                </a>
-                                            ) : (
-                                                <Link
-                                                    key={item.href}
-                                                    to={item.href}
-                                                    onClick={() => setOpenMenu(null)}
-                                                    className="block px-3 py-2 text-stone-700 hover:bg-stone-100 rounded-md"
-                                                >
-                                                    {item.label}
-                                                </Link>
-                                            )
-                                        ))}
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </li>
+  const menu = {
+    product: [
+      { label: 'Overview', href: '#hero' },
+      { label: 'Features', href: '#features' },
+      { label: 'Workflow', href: '#workflow' },
+    ],
+    resources: [
+      { label: 'FAQ', href: '#faq' },
+      { label: 'About', href: '#about' },
+      { label: 'GitHub', href: 'https://github.com/paparesta-007/progetto-maturita' },
+    ],
+  } as const;
 
-                        <li>
-                            <a href="#faq" className="hover:text-orange-600 transition-colors">Pricing</a>
-                        </li>
-                    </ul>
-                </nav>
-                
-                <div className="flex items-center gap-4">
-                    <button 
-                        onClick={()=>window.open("https://github.com/paparesta-007/progetto-maturita","_blank")}
-                        aria-label="View source code on GitHub"
-                        className="p-2 hover:bg-stone-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded-lg transition-all group"
-                    >
-                        <Github size={20} className="text-stone-600 group-hover:text-stone-900 transition-colors" />
-                    </button>
-                    <Link
-                        to="/login"
-                        className="font-mono text-sm bg-stone-900 text-white px-4 py-2 brutalist-shadow hover:bg-orange-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-orange-500 transition-colors"
-                    >
-                        Login
-                    </Link>
-                </div>
-            </div>
-        </header>
-    );
-};
+  const toggle = (k: 'product' | 'resources') => setOpen((cur) => (cur === k ? null : k));
 
-const Hero = () => {
-    return (
-        <section className="pt-32 pb-20 px-6 grid-pattern">
-            <div className="max-w-6xl mx-auto">
-                <div className="grid lg:grid-cols-2 gap-12 items-center">
-                    {/* Left Content */}
-                    <div>
-                        <motion.div 
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="inline-flex items-center gap-2 px-3 py-1 bg-orange-100 border border-orange-200 rounded-full text-orange-700 text-xs font-mono font-medium mb-6"
-                        >
-                            <span className="w-1.5 h-1.5 bg-orange-500 rounded-full animate-pulse" />
-                            Progetto di Maturità 2025
-                        </motion.div>
-                        
-                        <motion.h1 
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.1 }}
-                            className="text-5xl md:text-7xl font-black tracking-tighter mb-6 leading-[0.9]"
-                        >
-                            Multi-Model
-                            <span className="block text-gradient">AI Interface</span>
-                        </motion.h1>
-                        
-                        <motion.p 
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.2 }}
-                            className="text-lg text-stone-600 font-mono leading-relaxed mb-8 max-w-lg"
-                        >
-                            A full-stack AI chat application with real-time streaming, 
-                            PDF document intelligence, and multi-provider model support.
-                            <span className="block mt-2 text-sm text-stone-400">
-                                Built by Tommaso Paparesta
-                            </span>
-                        </motion.p>
-                        
-                        <motion.div 
-                            initial={{ opacity: 0, y: 20 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: 0.3 }}
-                            className="flex flex-wrap gap-4"
-                        >
-                            <Link to="/login" className="bg-orange-500 text-white px-6 py-3 font-mono text-sm brutalist-shadow hover:bg-orange-600 flex items-center gap-2">
-                                <ExternalLink size={16} />
-                                Login
-                            </Link>
-                            <button 
-                                onClick={()=>window.open("https://github.com/paparesta-007/progetto-maturita","_blank")}
-                            className="bg-white border-2 border-stone-900 px-6 py-3 font-mono text-sm brutalist-shadow hover:bg-stone-100 flex items-center gap-2">
-                                <Github size={16} />
-                                Source Code
-                            </button>
-                        </motion.div>
-                    </div>
-                    
-                    {/* Right Visual - Chat Interface Mockup */}
-                    <motion.div 
-                        initial={{ opacity: 0, scale: 0.95 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        transition={{ delay: 0.4 }}
-                        className="relative"
-                    >
-                        <div className="bg-white brutalist-border brutalist-shadow rounded-lg overflow-hidden">
-                            {/* Chat Header */}
-                            <div className="bg-stone-100 border-b border-stone-200 p-4 flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-3 h-3 rounded-full bg-red-400" />
-                                    <div className="w-3 h-3 rounded-full bg-amber-400" />
-                                    <div className="w-3 h-3 rounded-full bg-green-400" />
-                                </div>
-                                <span className="font-mono text-xs text-stone-500">gpt-4o-mini • Streaming</span>
-                                <div className="w-4" />
-                            </div>
-                            
-                            {/* Chat Content */}
-                            <div className="p-6 space-y-4 h-80 overflow-hidden bg-white">
-                                <div className="flex gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-stone-200 flex items-center justify-center flex-shrink-0">
-                                        <span className="text-xs font-bold">U</span>
-                                    </div>
-                                    <div className="bg-stone-100 rounded-2xl rounded-tl-none px-4 py-2 text-sm max-w-[80%]">
-                                        Analyze this PDF and create flashcards about neural networks
-                                    </div>
-                                </div>
-                                
-                                <div className="flex gap-3">
-                                    <div className="w-8 h-8 rounded-full bg-orange-100 flex items-center justify-center flex-shrink-0">
-                                        <Bot size={16} className="text-orange-600" />
-                                    </div>
-                                    <div className="bg-white border border-stone-200 rounded-2xl rounded-tl-none px-4 py-3 text-sm max-w-[90%] shadow-sm">
-                                        <div className="flex items-center gap-2 mb-2 text-xs text-stone-400 font-mono">
-                                            <FileText size={12} />
-                                            <span>Processing neural_networks.pdf...</span>
-                                        </div>
-                                        <TypewriterText 
-                                            text="I'll analyze the PDF and generate structured flashcards for you. Based on the document, here are the key concepts:" 
-                                            className="text-stone-700"
-                                        />
-                                    </div>
-                                </div>
-                                
-                                <div className="flex gap-3 pl-11">
-                                    <div className="grid grid-cols-2 gap-2 w-full max-w-[90%]">
-                                        <div className="bg-orange-50 border border-orange-200 p-3 rounded-lg">
-                                            <div className="text-[10px] uppercase font-bold text-orange-600 mb-1">Q: Activation Function</div>
-                                            <div className="text-xs text-stone-600">What introduces non-linearity?</div>
-                                        </div>
-                                        <div className="bg-blue-50 border border-blue-200 p-3 rounded-lg">
-                                            <div className="text-[10px] uppercase font-bold text-blue-600 mb-1">Q: Backpropagation</div>
-                                            <div className="text-xs text-stone-600">Algorithm for weight updates?</div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            {/* Input */}
-                            <div className="border-t border-stone-200 p-4 bg-stone-50">
-                                <div className="flex items-center gap-2 bg-white border border-stone-300 rounded-lg px-4 py-2">
-                                    <span className="text-stone-400 text-sm flex-1">Type a message...</span>
-                                    <div className="flex items-center gap-2">
-                                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-                                        <span className="text-[10px] font-mono text-stone-400">Ready</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                        
-                        {/* Floating Elements */}
-                        <motion.div 
-                            animate={{ y: [0, -10, 0] }}
-                            transition={{ duration: 4, repeat: Infinity }}
-                            className="absolute -top-4 -right-4 bg-white brutalist-border brutalist-shadow-sm px-3 py-2 rounded-lg flex items-center gap-2"
-                        >
-                            <div className="w-2 h-2 bg-green-500 rounded-full" />
-                            <span className="text-xs font-mono">Latency: 45ms</span>
-                        </motion.div>
-                        
-                        <motion.div 
-                            animate={{ y: [0, 10, 0] }}
-                            transition={{ duration: 5, repeat: Infinity, delay: 1 }}
-                            className="absolute -bottom-4 -left-4 bg-stone-900 text-white brutalist-border brutalist-shadow-sm px-3 py-2 rounded-lg flex items-center gap-2"
-                        >
-                            <Zap size={14} className="text-orange-400" />
-                            <span className="text-xs font-mono">OpenRouter</span>
-                        </motion.div>
-                    </motion.div>
-                </div>
-            </div>
-        </section>
-    );
-};
-
-const FeaturesBento = () => {
-    const features = [
-        {
-            id: "chat",
-            icon: MessageSquare,
-            title: "Multi-Model Chat",
-            description: "Seamlessly switch between GPT-4, Claude, Llama, Deepseek, and 20+ models via OpenRouter unified API.",
-            className: "md:col-span-2",
-            color: "bg-blue-50 border-blue-200"
-        },
-        {
-            id: "pdf",
-            icon: FileText,
-            title: "PDF Intelligence",
-            description: "RAG-powered document analysis with semantic search and automatic chunking.",
-            className: "",
-            color: "bg-orange-50 border-orange-200"
-        },
-        {
-            id: "stream",
-            icon: Zap,
-            title: "Real-time Streaming",
-            description: "Token-by-token SSE streaming for instant feedback.",
-            className: "",
-            color: "bg-green-50 border-green-200"
-        },
-        {
-            id: "structured",
-            icon: BookOpen,
-            title: "Structured Output",
-            description: "Generate flashcards & quizzes with Zod schema validation.",
-            className: "md:col-span-2",
-            color: "bg-purple-50 border-purple-200"
-        },
-        {
-            id: "auth",
-            icon: Shield,
-            title: "Secure Auth",
-            description: "Email/password authentication with Supabase Auth and protected routes.",
-            className: "",
-            color: "bg-stone-100 border-stone-300"
-        }
-    ];
-    
-    return (
-        <section id="features" className="py-24 px-6 bg-white">
-            <div className="max-w-6xl mx-auto">
-                <div className="mb-12">
-                    <span className="font-mono text-xs uppercase tracking-widest text-orange-600 mb-2 block">
-                        Capabilities
-                    </span>
-                    <h2 className="text-4xl font-black tracking-tight">
-                        Feature <span className="text-gradient">Registry</span>
-                    </h2>
-                </div>
-                
-                <div className="grid md:grid-cols-3 gap-6">
-                    {features.map((feature, i) => (
-                        <motion.div
-                            key={feature.id}
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            transition={{ delay: i * 0.1 }}
-                            viewport={{ once: true }}
-                            className={`bento-card rounded-xl p-6 ${feature.className} ${feature.color} group cursor-pointer`}
-                        >
-                            <div className="flex items-start justify-between mb-4">
-                                <div className={`p-3 bg-white rounded-lg border border-current opacity-80 group-hover:scale-110 transition-transform`}>
-                                    <feature.icon size={24} className="text-stone-800" />
-                                </div>
-                                <span className="font-mono text-[10px] opacity-50">0{i + 1}</span>
-                            </div>
-                            <h3 className="text-xl font-bold mb-2 font-mono">{feature.title}</h3>
-                            <p className="text-sm text-stone-600 leading-relaxed">
-                                {feature.description}
-                            </p>
-                        </motion.div>
-                    ))}
-                </div>
-            </div>
-        </section>
-    );
-};
-
-const ModelShowcase = () => {
-    const models = [
-        { name: "GPT-4o", provider: "OpenAI", color: "bg-green-100", iconUrl: "https://cdn.simpleicons.org/openai/black" },
-        { name: "Claude 3.5", provider: "Anthropic", color: "bg-orange-100", iconUrl: "https://cdn.simpleicons.org/anthropic/black" },
-        { name: "Llama 3", provider: "Meta", color: "bg-blue-100", iconUrl: "https://cdn.simpleicons.org/meta/blue" },
-        { name: "Deepseek", provider: "Deepseek", color: "bg-purple-100" },
-        { name: "Gemini Pro", provider: "Google", color: "bg-yellow-100", iconUrl: "https://upload.wikimedia.org/wikipedia/commons/8/8a/Google_Gemini_logo.svg" },
-        { name: "Grok", provider: "xAI", color: "bg-stone-200", iconUrl: "https://cdn.simpleicons.org/x/black" }
-    ];
-    
-    return (
-        <section id="models" className="py-24 px-6 bg-stone-50 border-y border-stone-200">
-            <div className="max-w-6xl mx-auto">
-                <div className="text-center mb-16">
-                    <h2 className="text-3xl font-black tracking-tight mb-4">
-                        Supported <span className="text-gradient">Providers</span>
-                    </h2>
-                    <p className="text-stone-600 font-mono text-sm max-w-lg mx-auto">
-                        Unified interface for the world's leading AI models via OpenRouter integration.
-                        Switch models mid-conversation without losing context.
-                    </p>
-                </div>
-                
-                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    {models.map((model, i) => (
-                        <motion.div
-                            key={model.name}
-                            initial={{ opacity: 0, scale: 0.9 }}
-                            whileInView={{ opacity: 1, scale: 1 }}
-                            transition={{ delay: i * 0.05 }}
-                            viewport={{ once: true }}
-                            className="bg-white brutalist-border brutalist-shadow-sm p-4 rounded-lg text-center hover:shadow-md transition-shadow"
-                        >
-                            <div className={`w-12 h-12 ${model.color} rounded-full mx-auto mb-3 flex items-center justify-center font-bold text-lg overflow-hidden`}>
-                                {model.iconUrl ? (
-                                    <img 
-                                        src={model.iconUrl} 
-                                        alt={`${model.provider} logo`}
-                                        className="w-6 h-6 object-contain"
-                                        onError={(e) => {
-                                            e.currentTarget.style.display = 'none';
-                                            const parent = e.currentTarget.parentElement;
-                                            if (parent) parent.innerText = model.name[0];
-                                        }}
-                                    />
-                                ) : (
-                                    model.name[0]
-                                )}
-                            </div>
-                            <div className="font-bold text-sm mb-1">{model.name}</div>
-                            <div className="text-[10px] font-mono text-stone-500 uppercase">{model.provider}</div>
-                        </motion.div>
-                    ))}
-                </div>
-                
-                <div className="mt-12 text-center">
-                    <div className="inline-flex items-center gap-4 bg-white brutalist-border px-6 py-3 rounded-full">
-                        <span className="text-sm font-mono text-stone-600">+50 providers available</span>
-                        <ChevronRight size={16} className="text-orange-500" />
-                    </div>
-                </div>
-            </div>
-        </section>
-    );
-};
-
-const ProductCapabilities = () => {
-    const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({});
-
-    const toggleCategory = (category: string) => {
-        setExpandedCategories(prev => ({ ...prev, [category]: !prev[category] }));
-    };
-
-    const stack = [
-        { category: "AI Chat", items: ["Model switch in one click", "Conversation memory", "Streaming responses", "Prompt shortcuts"] },
-        { category: "Documents", items: ["PDF upload and parsing", "Semantic retrieval", "Focused document chat", "Context-aware answers"] },
-        { category: "Productivity", items: ["Calendar companion", "Artifacts area", "Quiz generation", "Flashcard workflows"] },
-        { category: "Support", items: ["Integrated help tickets", "User support history", "Status tracking", "Fast issue reporting"] }
-    ];
-    
-    return (
-        <section id="capabilities" className="py-24 px-6 bg-white">
-            <div className="max-w-6xl mx-auto">
-                <div className="grid md:grid-cols-2 gap-12 items-start">
-                    <div>
-                        <span className="font-mono text-xs uppercase tracking-widest text-orange-600 mb-2 block">
-                            Product
-                        </span>
-                        <h2 className="text-4xl font-black tracking-tight mb-6">
-                            Webapp <span className="text-gradient">Features</span>
-                        </h2>
-                        <p className="text-stone-600 font-mono text-sm leading-relaxed mb-8">
-                            Explore what Smart AI can do out of the box for students and creators.
-                            These are the practical tools available in the app experience today.
-                        </p>
-                        
-                        <div className="space-y-4">
-                            <div className="flex items-center gap-3 text-sm">
-                                <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
-                                    <div className="w-2 h-2 bg-green-500 rounded-full" />
-                                </div>
-                                <span className="font-mono">Build study material from your conversations in seconds</span>
-                            </div>
-                            <div className="flex items-center gap-3 text-sm">
-                                <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
-                                    <div className="w-2 h-2 bg-green-500 rounded-full" />
-                                </div>
-                                <span className="font-mono">Keep learning workflows centralized in one workspace</span>
-                            </div>
-                            <div className="flex items-center gap-3 text-sm">
-                                <div className="w-6 h-6 rounded-full bg-green-100 flex items-center justify-center">
-                                    <div className="w-2 h-2 bg-green-500 rounded-full" />
-                                </div>
-                                <span className="font-mono">Get direct help through in-app support tickets</span>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {stack.map((section) => {
-                            const isExpanded = expandedCategories[section.category];
-                            const visibleItems = isExpanded ? section.items : section.items.slice(0, 2);
-                            const hasMore = section.items.length > 2;
-
-                            return (
-                                <div key={section.category} className="bento-card p-6 rounded-xl bg-stone-50 border-stone-200 flex flex-col">
-                                    <h3 className="font-mono text-xs uppercase tracking-widest text-stone-500 mb-4">
-                                        {section.category}
-                                    </h3>
-                                    <ul id={`capabilities-${section.category}-list`} className="space-y-2 flex-grow">
-                                        <AnimatePresence initial={false}>
-                                            {visibleItems.map((item) => (
-                                                <motion.li 
-                                                    key={item}
-                                                    initial={{ opacity: 0, height: 0 }}
-                                                    animate={{ opacity: 1, height: 'auto' }}
-                                                    exit={{ opacity: 0, height: 0 }}
-                                                    transition={{ duration: 0.2 }}
-                                                    className="text-sm font-medium flex items-start gap-2 overflow-hidden"
-                                                >
-                                                    <ChevronRight size={14} className="text-orange-500 mt-1 flex-shrink-0" />
-                                                    <span>{item}</span>
-                                                </motion.li>
-                                            ))}
-                                        </AnimatePresence>
-                                    </ul>
-                                    {hasMore && (
-                                        <button
-                                            onClick={() => toggleCategory(section.category)}
-                                            aria-expanded={isExpanded}
-                                            aria-controls={`capabilities-${section.category}-list`}
-                                            className="mt-4 text-xs font-mono text-stone-500 hover:text-orange-600 flex items-center gap-1 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 rounded px-1 -ml-1 w-fit transition-colors"
-                                        >
-                                            {isExpanded ? 'Mostra meno' : `+ ${section.items.length - 2} altri`}
-                                            <ChevronDown size={14} className={`transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} />
-                                        </button>
-                                    )}
-                                </div>
-                            );
-                        })}
-                    </div>
-                </div>
-            </div>
-        </section>
-    );
-};
-
-const HowItWorks = () => {
-    const steps = [
-        {
-            number: "01",
-            title: "Upload & Chat",
-            description: "Drop your PDFs or start a conversation with any AI model. We chunk and index your documents automatically."
-        },
-        {
-            number: "02",
-            title: "Extract Knowledge",
-            description: "Ask questions and let the AI pull relevant citations from your files, ensuring accurate, context-aware answers."
-        },
-        {
-            number: "03",
-            title: "Generate Material",
-            description: "With a single click, convert key insights into structured flashcards, quizzes, or summary artifacts for studying."
-        }
-    ];
-
-    return (
-        <section id="how-it-works" className="py-24 px-6 bg-stone-50 border-t border-stone-200">
-            <div className="max-w-6xl mx-auto">
-                <div className="text-center mb-16">
-                    <h2 className="text-3xl font-black tracking-tight mb-4">
-                        How it <span className="text-gradient">Works</span>
-                    </h2>
-                    <p className="text-stone-600 font-mono text-sm max-w-lg mx-auto">
-                        From raw documents to structured knowledge in three simple steps.
-                    </p>
-                </div>
-
-                <div className="grid md:grid-cols-3 gap-8 relative">
-                    <div className="hidden md:block absolute top-6 left-[15%] right-[15%] h-[2px] bg-stone-200 z-0" />
-
-                    {steps.map((step, i) => (
-                        <div key={i} className="relative z-10 flex flex-col items-center text-center">
-                            <div className="w-12 h-12 bg-white brutalist-border rounded-full flex items-center justify-center font-mono font-bold text-orange-500 mb-6 shadow-sm">
-                                {step.number}
-                            </div>
-                            <h3 className="text-lg font-bold mb-3">{step.title}</h3>
-                            <p className="text-sm text-stone-600 leading-relaxed max-w-xs">
-                                {step.description}
-                            </p>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        </section>
-    );
-};
-
-const FAQ = () => {
-    const [openIndex, setOpenIndex] = useState<number | null>(null);
-
-    const faqs = [
-        { q: "Is it completely free to use?", a: "Yes, this is an open-source high school project. The platform itself is free, but you will need your own API keys for the AI providers you choose to use." },
-        { q: "Which models are supported?", a: "We support over 20+ models through our OpenRouter integration, including GPT-4o, Claude 3.5 Sonnet, Llama 3, and various Mixtral variants." },
-        { q: "Are my documents secure?", a: "Your documents are securely processed and stored on Supabase. We only send relevant snippets to the AI models when you explicitly ask questions about them." },
-        { q: "Can I self-host this project?", a: "Absolutely! The entire source code is available on GitHub with instructions on how to set up your own instance using Docker, Supabase, and Node." }
-    ];
-
-    return (
-        <section id="faq" className="py-24 px-6 bg-white border-t border-stone-200">
-            <div className="max-w-3xl mx-auto">
-                <div className="text-center mb-12">
-                    <h2 className="text-3xl font-black tracking-tight mb-4">
-                        Frequently Asked <span className="text-gradient">Questions</span>
-                    </h2>
-                </div>
-
-                <div className="space-y-4">
-                    {faqs.map((faq, i) => (
-                        <div key={i} className="bento-card rounded-lg overflow-hidden bg-white">
-                            <button
-                                onClick={() => setOpenIndex(openIndex === i ? null : i)}
-                                aria-expanded={openIndex === i}
-                                aria-controls={`faq-answer-${i}`}
-                                className="w-full px-6 py-4 flex items-center justify-between text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-500 transition-colors hover:bg-stone-50"
-                            >
-                                <span className="font-medium pr-4">{faq.q}</span>
-                                {openIndex === i ? (
-                                    <Minus size={18} className="text-orange-500 flex-shrink-0" />
-                                ) : (
-                                    <Plus size={18} className="text-stone-400 flex-shrink-0" />
-                                )}
-                            </button>
-                            <AnimatePresence>
-                                {openIndex === i && (
-                                    <motion.div
-                                        id={`faq-answer-${i}`}
-                                        initial={{ height: 0, opacity: 0 }}
-                                        animate={{ height: 'auto', opacity: 1 }}
-                                        exit={{ height: 0, opacity: 0 }}
-                                        transition={{ duration: 0.2 }}
-                                        className="overflow-hidden"
-                                    >
-                                        <div className="px-6 pb-4 text-sm text-stone-600 leading-relaxed border-t border-stone-100 pt-2">
-                                            {faq.a}
-                                        </div>
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        </section>
-    );
-};
-
-const About = () => {
-    return (
-        <section id="about" className="py-24 px-6 bg-stone-900 text-stone-100">
-            <div className="max-w-4xl mx-auto text-center">
-                <div className="w-20 h-20 bg-orange-500 rounded-full mx-auto mb-6 flex items-center justify-center text-2xl font-bold text-white brutalist-shadow">
-                    TP
-                </div>
-                <h2 className="text-3xl font-black tracking-tight mb-4">
-                    Tommaso Paparesta
-                </h2>
-                <p className="text-stone-400 font-mono text-sm mb-6">
-                    Progetto di Maturità • A.S. 2024/2025
-                </p>
-                <p className="text-lg leading-relaxed text-stone-300 mb-8 max-w-2xl mx-auto">
-                    Smart AI represents the culmination of my high school journey in computer science. 
-                    This capstone project explores the practical applications of Large Language Models 
-                    in educational contexts, with a focus on document analysis and structured learning tools.
-                </p>
-                <div className="flex justify-center gap-4">
-                    <button className="px-6 py-3 bg-stone-800 border border-stone-700 rounded-lg font-mono text-sm hover:bg-stone-700 transition-colors flex items-center gap-2">
-                        <Github size={16} />
-                        View on GitHub
-                    </button>
-                    <button className="px-6 py-3 bg-orange-500 text-white rounded-lg font-mono text-sm hover:bg-orange-600 transition-colors brutalist-shadow">
-                        Contact
-                    </button>
-                </div>
-            </div>
-        </section>
-    );
-};
-
-const Footer = () => {
-    return (
-        <footer className="bg-stone-100 border-t border-stone-200 py-12 px-6">
-            <div className="max-w-6xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
+  return (
+    <header
+      className={`fixed top-0 inset-x-0 z-50 transition-all duration-300 ${scrolled ? 'pt-3' : 'pt-5'}`}
+    >
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className={`glass rounded-2xl px-4 py-3 ${scrolled ? 'shadow-2xl' : ''}`}>
+          <div className="flex items-center justify-between gap-4">
+            <Link to="/" className="flex items-center gap-3 group">
+              <div className="relative h-10 w-10 rounded-xl bg-gradient-to-br from-orange-500 to-orange-300 text-black grid place-items-center shadow-lg shadow-orange-950/20">
+                <Sparkles size={18} />
+              </div>
+              <div>
                 <div className="flex items-center gap-2">
-                    <Sparkles size={18} className="text-orange-500" />
-                    <span className="font-mono font-bold">Smart AI</span>
-                    <span className="text-stone-400 text-sm">• 2025</span>
+                  <span className="font-semibold tracking-tight">Smart AI</span>
+                  <span className="hidden sm:inline-flex text-[10px] uppercase tracking-[0.22em] px-2 py-1 rounded-full chip text-white/70">
+                    v2.0
+                  </span>
                 </div>
-                
-                <div className="flex items-center gap-8 text-sm text-stone-600 font-mono">
-                    <a href="#" className="hover:text-orange-600 transition-colors">Documentation</a>
-                    <a href="#" className="hover:text-orange-600 transition-colors">API</a>
-                    <a href="#" className="hover:text-orange-600 transition-colors">Privacy</a>
-                </div>
-                
-                <div className="text-xs text-stone-400 font-mono">
-                    Multi-model assistant with documents, calendar, artifacts, and support
-                </div>
-            </div>
-        </footer>
-    );
-};
+                <div className="text-[11px] text-white/50 font-mono">multi-model learning OS</div>
+              </div>
+            </Link>
 
-export default function LandingPage() {
-    return (
-        <>
-            <SystemStyles />
-            <div className="min-h-screen bg-stone-50 selection:bg-orange-200 selection:text-orange-900">
-                <TopNav />
-                <main>
-                    <Hero />
-                    <FeaturesBento />
-                    <ModelShowcase />
-                    <ProductCapabilities />
-                    <HowItWorks />
-                    <FAQ />
-                    <About />
-                </main>
-                <Footer />
+            <nav className="hidden md:flex items-center gap-8 text-sm text-white/75">
+              <div className="relative" data-dropdown>
+                <button
+                  onClick={() => toggle('product')}
+                  className="inline-flex items-center gap-1 hover:text-white transition-colors"
+                >
+                  Product <ChevronDown size={14} className={`transition-transform ${open === 'product' ? 'rotate-180' : ''}`} />
+                </button>
+                <AnimatePresence>
+                  {open === 'product' && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                      className="absolute left-1/2 top-full mt-3 -translate-x-1/2 min-w-52 rounded-2xl glass p-2"
+                    >
+                      {menu.product.map((item) => (
+                        <a
+                          key={item.label}
+                          href={item.href}
+                          onClick={() => setOpen(null)}
+                          className="flex items-center justify-between rounded-xl px-3 py-2 text-sm text-white/80 hover:bg-white/7 hover:text-white transition-colors"
+                        >
+                          {item.label} <ChevronRight size={14} className="opacity-50" />
+                        </a>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <a href="#features" className="hover:text-white transition-colors">Features</a>
+              <a href="#workflow" className="hover:text-white transition-colors">Workflow</a>
+              <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
+
+              <div className="relative" data-dropdown>
+                <button
+                  onClick={() => toggle('resources')}
+                  className="inline-flex items-center gap-1 hover:text-white transition-colors"
+                >
+                  Resources <ChevronDown size={14} className={`transition-transform ${open === 'resources' ? 'rotate-180' : ''}`} />
+                </button>
+                <AnimatePresence>
+                  {open === 'resources' && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                      className="absolute left-1/2 top-full mt-3 -translate-x-1/2 min-w-52 rounded-2xl glass p-2"
+                    >
+                      {menu.resources.map((item) =>
+                        item.href.startsWith('http') ? (
+                          <a
+                            key={item.label}
+                            href={item.href}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="flex items-center justify-between rounded-xl px-3 py-2 text-sm text-white/80 hover:bg-white/7 hover:text-white transition-colors"
+                          >
+                            {item.label} <ExternalLink size={14} className="opacity-50" />
+                          </a>
+                        ) : (
+                          <a
+                            key={item.label}
+                            href={item.href}
+                            className="flex items-center justify-between rounded-xl px-3 py-2 text-sm text-white/80 hover:bg-white/7 hover:text-white transition-colors"
+                            onClick={() => setOpen(null)}
+                          >
+                            {item.label} <ChevronRight size={14} className="opacity-50" />
+                          </a>
+                        ),
+                      )}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </nav>
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => window.open('https://github.com/paparesta-007/progetto-maturita', '_blank')}
+                className="hidden sm:inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm text-white/75 hover:text-white hover:bg-white/6 transition-colors"
+                aria-label="View source code on GitHub"
+              >
+                <Github size={18} /> Source
+              </button>
+              <Link
+                to="/login"
+                className="inline-flex items-center gap-2 rounded-xl bg-white text-black px-4 py-2 text-sm font-semibold hover:bg-orange-400 transition-colors"
+              >
+                Login <ArrowRight size={16} />
+              </Link>
             </div>
-        </>
-    );
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+/* -------------------------------------------------------
+   Hero
+------------------------------------------------------- */
+function Hero() {
+  return (
+    <section id="hero" className="relative pt-32 pb-16 sm:pt-36 sm:pb-24 overflow-hidden">
+      <div className="absolute inset-0 gridline opacity-30" />
+      <div className="absolute top-24 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+      <div className="absolute -top-24 -left-24 h-80 w-80 rounded-full bg-orange-500/10 blur-3xl" />
+      <div className="absolute top-24 right-0 h-64 w-64 rounded-full bg-white/5 blur-3xl" />
+
+      <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid lg:grid-cols-[1.1fr_.9fr] gap-8 items-center">
+          <div>
+            <motion.div variants={fadeUp} initial="hidden" animate="show" custom={0} className="inline-flex items-center gap-2 rounded-full chip px-3 py-1.5 text-[11px] uppercase tracking-[0.24em] text-white/70">
+              <CircleDot size={10} className="text-orange-400" /> Progetto di maturità 2025
+            </motion.div>
+
+            <motion.h1
+              variants={fadeUp}
+              initial="hidden"
+              animate="show"
+              custom={1}
+              className="mt-5 text-5xl sm:text-6xl lg:text-8xl font-extrabold tracking-[-0.06em] leading-[0.9]"
+            >
+              <span className="block">A workstation for</span>
+              <span className="block text-accent">AI, PDFs and study flow.</span>
+            </motion.h1>
+
+            <motion.p
+              variants={fadeUp}
+              initial="hidden"
+              animate="show"
+              custom={2}
+              className="mt-6 max-w-2xl text-base sm:text-lg text-white/65 leading-relaxed"
+            >
+              Una landing ridisegnata come un sistema operativo editoriale: più spaziosa, più cinematografica, più credibile.
+              L’idea è far sembrare il prodotto già vivo, non una demo generica.
+            </motion.p>
+
+            <motion.div
+              variants={fadeUp}
+              initial="hidden"
+              animate="show"
+              custom={3}
+              className="mt-8 flex flex-wrap items-center gap-3"
+            >
+              <Link
+                to="/login"
+                className="inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-5 py-3 text-sm font-semibold text-black hover:bg-orange-400 transition-colors accent-glow"
+              >
+                Entra nel sistema <ArrowRight size={16} />
+              </Link>
+              <button
+                onClick={() => window.open('https://github.com/paparesta-007/progetto-maturita', '_blank')}
+                className="inline-flex items-center gap-2 rounded-2xl chip px-5 py-3 text-sm font-semibold text-white/85 hover:bg-white/8 transition-colors"
+              >
+                <Github size={16} /> Source code
+              </button>
+            </motion.div>
+
+            <motion.div
+              variants={fadeUp}
+              initial="hidden"
+              animate="show"
+              custom={4}
+              className="mt-10 flex flex-wrap gap-3"
+            >
+              {[
+                'Streaming SSE',
+                'RAG su PDF',
+                'OpenRouter',
+                'Flashcard engine',
+              ].map((tag) => (
+                <span key={tag} className="chip rounded-full px-3 py-1.5 text-[11px] tracking-[0.18em] uppercase text-white/65">
+                  {tag}
+                </span>
+              ))}
+            </motion.div>
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 18, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.8, delay: 0.25, ease: [0.22, 1, 0.36, 1] }}
+            className="relative"
+          >
+            <div className="glass rounded-[2rem] p-4 sm:p-5 overflow-hidden">
+              <div className="flex items-center justify-between border-b border-white/8 pb-4">
+                <div className="flex items-center gap-2">
+                  <div className="h-3 w-3 rounded-full bg-red-400/90" />
+                  <div className="h-3 w-3 rounded-full bg-amber-400/90" />
+                  <div className="h-3 w-3 rounded-full bg-emerald-400/90" />
+                </div>
+                <div className="font-mono text-[11px] text-white/50">smart-ai://session/live</div>
+                <div className="h-3 w-3 rounded-full bg-orange-400/90 pulse-ring relative" />
+              </div>
+
+              <div className="mt-4 flex flex-col gap-4">
+                {/* Section 1: Conversation Layer (Full Width) */}
+                <div className="rounded-[1.5rem] border border-white/8 bg-white/[0.035] p-4 sm:p-5">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <div className="font-semibold">Conversation Layer</div>
+                      <div className="text-[11px] text-white/45 font-mono">model: gpt-4o-mini • streaming</div>
+                    </div>
+                    <div className="chip rounded-full px-3 py-1 text-[10px] uppercase tracking-[0.2em] text-white/65">Live</div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div className="flex gap-3">
+                      <div className="h-10 w-10 rounded-2xl bg-white/10 grid place-items-center text-sm font-bold">U</div>
+                      <div className="flex-1 rounded-2xl rounded-tl-sm bg-white/6 px-4 py-3 text-sm text-white/80 border border-white/6">
+                        Analyze this PDF and make flashcards about neural networks.
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3">
+                      <div className="h-10 w-10 rounded-2xl bg-orange-500/15 grid place-items-center text-orange-300 border border-orange-500/20">
+                        <Bot size={18} />
+                      </div>
+                      <div className="flex-1 rounded-2xl rounded-tl-sm bg-black/20 px-4 py-3 text-sm border border-white/8">
+                        <div className="mb-2 flex items-center gap-2 text-[11px] text-white/40 font-mono">
+                          <FileText size={12} /> neural_networks.pdf
+                        </div>
+                        <Typewriter
+                          text="I’m extracting the key ideas and shaping them into a compact study set, with concepts arranged by importance."
+                          className="text-white/78"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 pl-13 sm:pl-13">
+                      <div className="rounded-2xl border border-orange-500/20 bg-orange-500/8 p-3">
+                        <div className="text-[10px] uppercase tracking-[0.22em] text-orange-300/90 mb-2">Flashcard</div>
+                        <div className="text-sm text-white/82">What introduces non-linearity?</div>
+                      </div>
+                      <div className="rounded-2xl border border-sky-500/20 bg-sky-500/8 p-3">
+                        <div className="text-[10px] uppercase tracking-[0.22em] text-sky-300/90 mb-2">Quiz</div>
+                        <div className="text-sm text-white/82">Which algorithm updates the weights?</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Bottom Row: System Summary (2/5) + Provider Switch (3/5) */}
+                <div className="grid gap-4 lg:grid-cols-[2fr_3fr]">
+                  {/* Section 2: System Summary */}
+                  <div className="rounded-[1.5rem] border border-white/8 bg-white/[0.03] p-4 flex flex-col justify-between">
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div>
+                          <div className="font-semibold text-sm">System Summary</div>
+                          <div className="text-[10px] text-white/45 font-mono">what makes it feel real</div>
+                        </div>
+                        <div className="h-8 w-8 rounded-xl bg-orange-500/10 grid place-items-center text-orange-300 border border-orange-500/20">
+                          <Brain size={14} />
+                        </div>
+                      </div>
+
+                      <div className="space-y-2">
+                        {[
+                          ['Latency', '45 ms'],
+                          ['Context', 'multi-model'],
+                          ['Docs', 'PDF + RAG'],
+                          ['Output', 'structured'],
+                        ].map(([k, v]) => (
+                          <div key={k} className="flex items-center justify-between rounded-xl bg-white/[0.04] border border-white/8 px-3 py-1.5">
+                            <span className="text-[11px] text-white/55">{k}</span>
+                            <span className="text-[11px] font-semibold">{v}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Section 3: Provider Switch */}
+                  <div className="rounded-[1.5rem] border border-white/8 bg-white/[0.03] p-4">
+                    <div className="flex items-center gap-2 text-[10px] uppercase tracking-[0.22em] text-white/45 font-mono mb-3">
+                      <Zap size={11} className="text-orange-400" /> Provider switch
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      {modelCaps.slice(0, 4).map((m) => (
+                        <div key={m.name} className="rounded-xl bg-white/[0.04] border border-white/7 px-3 py-1.5">
+                          <div className="text-xs font-semibold">{m.name}</div>
+                          <div className="text-[10px] text-white/45 font-mono">{m.provider}</div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+
+            </div>
+
+            <motion.div
+              animate={{ y: [0, -8, 0] }}
+              transition={{ duration: 5.5, repeat: Infinity, ease: 'easeInOut' }}
+              className="absolute -top-4 right-4 glass-soft rounded-2xl px-4 py-3 shadow-2xl"
+            >
+              <div className="text-[10px] uppercase tracking-[0.24em] text-white/45 font-mono mb-1">Status</div>
+              <div className="flex items-center gap-2 text-sm">
+                <div className="h-2.5 w-2.5 rounded-full bg-emerald-400" />
+                Ready to answer
+              </div>
+            </motion.div>
+
+            <motion.div
+              animate={{ y: [0, 10, 0] }}
+              transition={{ duration: 6, repeat: Infinity, ease: 'easeInOut', delay: 0.7 }}
+              className="absolute -bottom-4 -left-3 glass-soft rounded-2xl px-4 py-3 shadow-2xl"
+            >
+              <div className="text-[10px] uppercase tracking-[0.24em] text-white/45 font-mono mb-1">Build</div>
+              <div className="flex items-center gap-2 text-sm">
+                <ShieldCheck size={15} className="text-orange-300" />
+                Auth + docs + support
+              </div>
+            </motion.div>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* -------------------------------------------------------
+   Feature deck
+------------------------------------------------------- */
+function Features() {
+  return (
+    <section id="features" className="relative py-20 sm:py-28">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid lg:grid-cols-[.72fr_1.28fr] gap-8 items-end mb-10">
+          <div>
+            <div className="font-mono text-[11px] uppercase tracking-[0.28em] text-orange-300/90 mb-3">Capabilities</div>
+            <h2 className="text-3xl sm:text-5xl font-extrabold tracking-[-0.05em] leading-tight">
+              Non come una lista di feature.
+              <span className="block text-white/55">Più come una tavola di controllo.</span>
+            </h2>
+          </div>
+          <p className="max-w-2xl text-white/60 leading-relaxed">
+            Ogni blocco ha un ruolo diverso: alcuni portano fiducia, altri mostrano potenza, altri ancora danno la sensazione di un sistema pensato davvero per lavorare.
+          </p>
+        </div>
+
+        <div className="grid md:grid-cols-12 gap-4">
+          {featureDeck.map((f, i) => {
+            const wide = i === 0 || i === 3;
+            return (
+              <motion.article
+                key={f.title}
+                variants={fadeUp}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, margin: '-80px' }}
+                custom={i}
+                className={`${wide ? 'md:col-span-7' : 'md:col-span-5'} rounded-[1.75rem] p-6 sm:p-7 glass lift overflow-hidden relative`}
+              >
+                <div className={`absolute inset-0 bg-gradient-to-br ${f.tone} opacity-100 pointer-events-none`} />
+                <div className="relative">
+                  <div className="flex items-start justify-between gap-4 mb-8">
+                    <div className="h-12 w-12 rounded-2xl bg-black/20 border border-white/8 grid place-items-center text-orange-300">
+                      <f.icon size={22} />
+                    </div>
+                    <div className="font-mono text-[10px] uppercase tracking-[0.24em] text-white/35">
+                      0{i + 1}
+                    </div>
+                  </div>
+                  <h3 className="text-2xl font-bold tracking-[-0.04em] mb-3">{f.title}</h3>
+                  <p className="text-white/64 leading-relaxed max-w-xl">{f.text}</p>
+                </div>
+              </motion.article>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* -------------------------------------------------------
+   Providers strip
+------------------------------------------------------- */
+function Providers() {
+  return (
+    <section className="py-8 sm:py-14">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="glass rounded-[2rem] p-5 sm:p-7">
+          <div className="flex flex-col md:flex-row md:items-end md:justify-between gap-4 mb-6">
+            <div>
+              <div className="font-mono text-[11px] uppercase tracking-[0.26em] text-white/45 mb-2">Supported models</div>
+              <h3 className="text-2xl sm:text-3xl font-bold tracking-[-0.04em]">Multi-provider, one interface.</h3>
+            </div>
+            <div className="text-sm text-white/55 max-w-xl">
+              Una stessa interazione, molti motori diversi: l’utente vede un solo prodotto, ma dietro c’è un set di provider intercambiabili.
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+            {modelCaps.map((m, i) => (
+              <motion.div
+                key={m.name}
+                variants={slideIn}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true }}
+                custom={i}
+                className="rounded-2xl border border-white/8 bg-white/[0.03] p-4 lift"
+              >
+                <div className="h-12 w-12 rounded-2xl bg-white/8 border border-white/8 grid place-items-center mb-3">
+                  <Cpu size={18} className="text-orange-300" />
+                </div>
+                <div className="font-semibold leading-tight">{m.name}</div>
+                <div className="text-[11px] mt-1 text-white/45 font-mono uppercase tracking-[0.18em]">{m.provider}</div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* -------------------------------------------------------
+   Workflow
+------------------------------------------------------- */
+function WorkflowSection() {
+  return (
+    <section id="workflow" className="py-20 sm:py-28">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="grid lg:grid-cols-[1fr_1fr] gap-10 items-start">
+          <div className="sticky top-24">
+            <div className="font-mono text-[11px] uppercase tracking-[0.28em] text-orange-300/90 mb-3">Workflow</div>
+            <h2 className="text-3xl sm:text-5xl font-extrabold tracking-[-0.05em] leading-tight mb-5">
+              Tre mosse.
+              <span className="block text-white/55">Zero fronzoli, solo progressione.</span>
+            </h2>
+            <p className="text-white/60 leading-relaxed max-w-xl">
+              Il layout guida l’occhio in modo netto: prima l’ingresso, poi l’interpretazione, infine la trasformazione del contenuto in materiale utile.
+            </p>
+          </div>
+
+          <div className="space-y-4">
+            {workflow.map((item, i) => (
+              <motion.div
+                key={item.step}
+                variants={fadeUp}
+                initial="hidden"
+                whileInView="show"
+                viewport={{ once: true, margin: '-60px' }}
+                custom={i}
+                className="glass rounded-[1.75rem] p-5 sm:p-6 lift"
+              >
+                <div className="flex items-start gap-4">
+                  <div className="relative h-14 w-14 rounded-2xl bg-orange-500/12 border border-orange-500/20 grid place-items-center text-orange-300 shrink-0">
+                    <item.icon size={20} />
+                    <span className="absolute -bottom-2 -right-2 rounded-full bg-black/70 border border-white/10 px-2 py-0.5 text-[10px] font-mono text-white/65">
+                      {item.step}
+                    </span>
+                  </div>
+                  <div className="min-w-0">
+                    <div className="text-xl font-bold tracking-[-0.03em] mb-2">{item.title}</div>
+                    <p className="text-white/62 leading-relaxed max-w-2xl">{item.description}</p>
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* -------------------------------------------------------
+   FAQ
+------------------------------------------------------- */
+function FAQ() {
+  const [open, setOpen] = useState<number | null>(0);
+  return (
+    <section id="faq" className="py-20 sm:py-28">
+      <div className="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
+        <div className="text-center mb-10">
+          <div className="font-mono text-[11px] uppercase tracking-[0.28em] text-orange-300/90 mb-3">FAQ</div>
+          <h2 className="text-3xl sm:text-5xl font-extrabold tracking-[-0.05em]">Domande tipiche, risposta pulita.</h2>
+        </div>
+
+        <div className="space-y-3">
+          {faqs.map((faq, i) => {
+            const isOpen = open === i;
+            return (
+              <div key={faq.q} className="glass rounded-[1.5rem] overflow-hidden">
+                <button
+                  onClick={() => setOpen(isOpen ? null : i)}
+                  className="w-full flex items-center justify-between gap-4 px-5 sm:px-6 py-5 text-left hover:bg-white/[0.02] transition-colors"
+                  aria-expanded={isOpen}
+                >
+                  <span className="font-semibold tracking-[-0.02em]">{faq.q}</span>
+                  {isOpen ? <Minus size={18} className="text-orange-300 shrink-0" /> : <Plus size={18} className="text-white/45 shrink-0" />}
+                </button>
+                <AnimatePresence initial={false}>
+                  {isOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.22 }}
+                      className="overflow-hidden"
+                    >
+                      <div className="px-5 sm:px-6 pb-5 text-white/62 leading-relaxed border-t border-white/8 pt-4">
+                        {faq.a}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* -------------------------------------------------------
+   About / Footer
+------------------------------------------------------- */
+function About() {
+  return (
+    <section id="about" className="py-20 sm:py-28">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="glass rounded-[2rem] p-6 sm:p-10 lg:p-12 overflow-hidden relative">
+          <div className="absolute inset-0 bg-gradient-to-br from-orange-500/8 via-transparent to-white/5 pointer-events-none" />
+          <div className="relative grid lg:grid-cols-[.9fr_1.1fr] gap-8 items-center">
+            <div>
+              <div className="h-20 w-20 rounded-[1.75rem] bg-gradient-to-br from-orange-500 to-orange-300 text-black grid place-items-center font-extrabold text-xl shadow-lg shadow-orange-950/20 mb-6">
+                TP
+              </div>
+              <div className="font-mono text-[11px] uppercase tracking-[0.28em] text-orange-300/90 mb-3">Author</div>
+              <h3 className="text-3xl sm:text-4xl font-extrabold tracking-[-0.05em]">Tommaso Paparesta</h3>
+              <p className="mt-3 text-white/58 max-w-xl leading-relaxed">
+                Un progetto di maturità che racconta AI, documenti e interfacce come un prodotto vero, non come una presentazione scolastica.
+              </p>
+            </div>
+
+            <div className="grid sm:grid-cols-2 gap-3">
+              {[
+                ['Open-source', 'GitHub first'],
+                ['Study-oriented', 'PDF + flashcards'],
+                ['Secure auth', 'Protected routes'],
+                ['Live feel', 'Streaming responses'],
+              ].map(([title, subtitle]) => (
+                <div key={title} className="rounded-2xl border border-white/8 bg-white/[0.04] p-4">
+                  <div className="font-semibold">{title}</div>
+                  <div className="text-sm text-white/50 mt-1 font-mono">{subtitle}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="relative mt-8 flex flex-wrap gap-3">
+            <button
+              onClick={() => window.open('https://github.com/paparesta-007/progetto-maturita', '_blank')}
+              className="inline-flex items-center gap-2 rounded-2xl chip px-4 py-3 text-sm text-white/78 hover:bg-white/8 transition-colors"
+            >
+              <Github size={16} /> GitHub
+            </button>
+            <Link
+              to="/login"
+              className="inline-flex items-center gap-2 rounded-2xl bg-orange-500 px-4 py-3 text-sm font-semibold text-black hover:bg-orange-400 transition-colors"
+            >
+              Open app <ArrowRight size={16} />
+            </Link>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function Footer() {
+  return (
+    <footer className="py-8 pb-12">
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-t border-white/8 pt-6 text-sm text-white/45">
+          <div className="flex items-center gap-2">
+            <Sparkles size={16} className="text-orange-300" />
+            <span className="font-semibold text-white/70">Smart AI</span>
+            <span className="font-mono text-[11px] uppercase tracking-[0.2em]">2025</span>
+          </div>
+          <div className="flex flex-wrap gap-5 font-mono text-[11px] uppercase tracking-[0.18em]">
+            <a href="#features" className="hover:text-white transition-colors">Features</a>
+            <a href="#workflow" className="hover:text-white transition-colors">Workflow</a>
+            <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
+            <a href="#about" className="hover:text-white transition-colors">About</a>
+          </div>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+/* -------------------------------------------------------
+   Page
+------------------------------------------------------- */
+export default function LandingPage() {
+  return (
+    <>
+      <SystemStyles />
+      <div className="noise min-h-screen selection:bg-orange-400 selection:text-black">
+        <TopNav />
+        <main>
+          <Hero />
+          <Features />
+          <Providers />
+          <WorkflowSection />
+          <FAQ />
+          <About />
+        </main>
+        <Footer />
+      </div>
+    </>
+  );
 }

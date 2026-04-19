@@ -19,7 +19,7 @@ const BotLogsTimeline = ({ logs, isDark, isComplete }: { logs: string[], isDark:
     const filteredLogs = logs.filter(l => l.trim() !== "");
 
     return (
-        <div className={`mb-4 w-full rounded-xl overflow-hidden border transition-colors duration-300 ${isDark ? 'bg-black/20 border-white/5' : 'bg-white/50 border-black/5'}`}>
+        <div className={`mb-4 w-full rounded-xl overflow-hidden border transition-colors duration-300 ${isDark ? 'glass-soft border-white/5' : 'bg-white/50 border-black/5'}`}>
             <button 
                 onClick={() => setIsOpen(!isOpen)}
                 className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium cursor-pointer transition-colors ${isDark ? 'text-neutral-400 hover:text-neutral-200 hover:bg-white/5' : 'text-neutral-500 hover:text-neutral-700 hover:bg-black/5'}`}
@@ -105,7 +105,7 @@ const ReasoningTimeline = ({ reasoning, isDark, isStreaming }: { reasoning: stri
     return (
         <div className={`mb-4 w-full rounded-xl overflow-hidden border transition-colors duration-300 ${
             isDark 
-                ? 'bg-purple-950/20 border-purple-500/10' 
+                ? 'glass-soft border-orange-500/10' 
                 : 'bg-purple-50/50 border-purple-200/40'
         }`}>
             <button 
@@ -217,7 +217,7 @@ const BotMessageStyles = () => (
     `}</style>
 );
 
-const BotMessage = ({ i, children, usage, model, suggestedQuestions, logs, isComplete, reasoning, onSuggestedClick }: { i: number; children: React.ReactNode; usage?: any; model?: any; suggestedQuestions?: string[]; logs?: string[]; isComplete?: boolean; reasoning?: string | null; onSuggestedClick?: (question: string) => void }) => {
+const BotMessage = React.memo(({ i, children, usage, model, suggestedQuestions, logs, isComplete, reasoning, onSuggestedClick }: { i: number; children: React.ReactNode; usage?: any; model?: any; suggestedQuestions?: string[]; logs?: string[]; isComplete?: boolean; reasoning?: string | null; onSuggestedClick?: (question: string) => void }) => {
     // Aggiungi un fallback sicuro per useAuth nel caso il contesto sia vuoto
     const auth = useAuth();
     const theme = auth?.theme || 'light';
@@ -258,18 +258,18 @@ const BotMessage = ({ i, children, usage, model, suggestedQuestions, logs, isCom
         // Avatar
         avatar: `relative flex-shrink-0`,
         avatarInner: `w-8 h-8 rounded-xl flex items-center justify-center transition-all duration-300 ${isDark
-            ? "bg-white/[0.06] text-neutral-600 ring-1 ring-white/[0.04]"
+            ? "bg-gradient-to-br from-orange-500/20 to-orange-300/10 text-orange-400 ring-1 ring-orange-500/20"
             : "bg-neutral-100 text-neutral-500 ring-1 ring-black/[0.03]"
             }`,
-        avatarGlow: `absolute inset-0 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${isDark ? "bg-white/[0.03]" : "bg-black/[0.02]"
+        avatarGlow: `absolute inset-0 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${isDark ? "bg-orange-500/20" : "bg-black/[0.02]"
             }`,
 
         // Message Bubble
-        bubble: `relative rounded-2xl rounded-tl-lg p-5 flex-1 renderChat transition-all duration-300 max-w-full md:max-w-[85%] lg:max-w-[90%] ${isDark
-            ? "text-neutral-200 bg-white/[0.03] ring-1 ring-white/[0.04]"
+        bubble: `relative rounded-2xl rounded-tl-sm p-5 flex-1 renderChat transition-all duration-300 max-w-full md:max-w-[85%] lg:max-w-[90%] ${isDark
+            ? "text-white/90 glass ring-1 ring-white/10"
             : "text-neutral-700"
             } 
-            ${fontFamily === "domine" ? "f-domine" : fontFamily === "comic-neue" ? "f-comic" : fontFamily === "overlock" ? "f-overlock" : fontFamily === "poppins" ? "f-poppins" : ""}`, // FIX: Usa la variabile calcolata in modo sicuro
+            ${fontFamily === "domine" ? "f-domine" : fontFamily === "comic-neue" ? "f-comic" : fontFamily === "overlock" ? "f-overlock" : fontFamily === "poppins" ? "f-poppins" : ""}`,
 
         // Action Bar
         actionBar: `flex items-center gap-1 mt-2 transition-all duration-300`,
@@ -486,6 +486,6 @@ const BotMessage = ({ i, children, usage, model, suggestedQuestions, logs, isCom
             </motion.div>
         </>
     );
-};
+});
 
 export default BotMessage;

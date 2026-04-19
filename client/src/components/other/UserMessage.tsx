@@ -5,7 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import Tooltip from "./Tooltip";
 import selectUserDetails from "../../services/supabase/User/SelectuserDetails";
 
-const UserMessage = ({ i, htmlContent, tokens = 0 }: { i: number; htmlContent: string; tokens?: number }) => {
+const UserMessage = React.memo(({ i, htmlContent, tokens = 0 }: { i: number; htmlContent: string; tokens?: number }) => {
     const { user, theme } = useAuth() || { user: { id: null }, theme: 'light' };
     const [userDetails, setUserDetails] = useState<{ full_name: string | null; avatar_url: string | null } | null>(null);
     const [copied, setCopied] = useState(false);
@@ -42,7 +42,7 @@ const UserMessage = ({ i, htmlContent, tokens = 0 }: { i: number; htmlContent: s
         // Avatar
         avatar: `relative flex-shrink-0`,
         avatarInner: `w-8 h-8 rounded-xl flex items-center justify-center overflow-hidden transition-all duration-300 ${isDark
-                ? "bg-neutral-800 text-neutral-200 ring-1 ring-white/[0.04]"
+                ? "bg-white/10 text-white ring-1 ring-white/10 shadow-lg"
                 : "bg-neutral-200 text-neutral-600 ring-1 ring-black/[0.03]"
             }`,
         avatarGlow: `absolute inset-0 rounded-xl blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-500 ${isDark ? "bg-indigo-500/20" : "bg-indigo-500/10"
@@ -50,7 +50,7 @@ const UserMessage = ({ i, htmlContent, tokens = 0 }: { i: number; htmlContent: s
 
         // Message Bubble
         bubble: `relative max-w-full md:max-w-[85%] lg:max-w-[90%] rounded-2xl rounded-tr-sm p-4 text-sm leading-relaxed transition-all duration-300 ${isDark
-                ? "text-neutral-100 bg-neutral-800/50 ring-1 ring-white/[0.06]"
+                ? "text-white/90 glass-soft ring-1 ring-white/5"
                 : "text-black bg-[#e3dacc]"
             }`,
 
@@ -152,6 +152,6 @@ const UserMessage = ({ i, htmlContent, tokens = 0 }: { i: number; htmlContent: s
             </div>
         </motion.div>
     );
-};
+});
 
 export default UserMessage;

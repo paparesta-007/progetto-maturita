@@ -13,7 +13,7 @@ import {
     MessageSquare,
     Sparkles,
     XCircle,
-    Zap,
+    Zap
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import VectorCanvas from './components/VectorCanvas';
