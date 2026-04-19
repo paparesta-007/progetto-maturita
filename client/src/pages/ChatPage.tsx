@@ -6,12 +6,12 @@ import BotLoading from "../components/other/BotLoading";
 import PromptStarter from "../components/PromptStarter";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, useParams } from "react-router-dom";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useApp } from "../context/AppContext";
 import MarkdownRender from "../library/markdownRender";
 import GenerativeUIRenderer from "../components/generativeUI/GenerativeUIRenderer";
 import "katex/dist/katex.min.css";
-import {GhostIcon} from "@phosphor-icons/react"
+import { GhostIcon } from "@phosphor-icons/react";
 import DOMPurify from "dompurify";
 import { Sparkles } from "lucide-react";
 
@@ -66,8 +66,7 @@ const ChatStyles = ({ isDark }: { isDark: boolean }) => {
         position: fixed;
         inset: 0;
         pointer-events: none;
-        opacity: .055;
-        mix-blend-mode: overlay;
+        opacity: .03;
         background-image:
           linear-gradient(rgba(255,255,255,.8) 1px, transparent 1px),
           linear-gradient(90deg, rgba(255,255,255,.8) 1px, transparent 1px);
@@ -87,6 +86,11 @@ const ChatStyles = ({ isDark }: { isDark: boolean }) => {
       }
       .custom-scrollbar::-webkit-scrollbar-thumb:hover {
         background: rgba(255,255,255,0.2);
+      }
+
+      ::selection {
+        background: rgba(249, 115, 22, 0.3);
+        color: #fff;
       }
     `}</style>
   );
@@ -166,7 +170,9 @@ const ChatContent = () => {
         }
 
         if (messagesEndRef.current && !isUserScrolledUp.current) {
-            messagesEndRef.current.scrollIntoView({ behavior: force ? "auto" : "smooth" });
+            requestAnimationFrame(() => {
+                messagesEndRef.current?.scrollIntoView({ behavior: force ? "auto" : "smooth" });
+            });
         }
     };
 
@@ -255,9 +261,11 @@ const ChatContent = () => {
             
             {isDark && (
                 <>
-                    <div className="absolute inset-0 gridline opacity-20 pointer-events-none" />
-                    <div className="absolute -top-24 -left-24 h-80 w-80 rounded-full bg-orange-500/5 blur-3xl pointer-events-none" />
-                    <div className="absolute top-1/2 right-0 h-64 w-64 rounded-full bg-white/5 blur-3xl pointer-events-none" />
+                    <div className="absolute inset-0 gridline opacity-[0.15] pointer-events-none" />
+                    <div className="absolute -top-24 -left-24 h-[400px] w-[400px] rounded-full bg-orange-500/[0.08] blur-[80px] pointer-events-none" />
+                    <div className="absolute top-1/4 -right-24 h-[300px] w-[300px] rounded-full bg-orange-600/[0.04] blur-[70px] pointer-events-none" />
+                    <div className="absolute bottom-1/4 left-1/3 h-[250px] w-[250px] rounded-full bg-orange-500/[0.04] blur-[80px] pointer-events-none" />
+                    <div className="absolute top-1/2 right-1/4 h-48 w-48 rounded-full bg-white/[0.02] blur-3xl pointer-events-none" />
                 </>
             )}
 

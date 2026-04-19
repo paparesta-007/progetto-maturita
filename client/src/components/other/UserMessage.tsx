@@ -5,7 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import Tooltip from "./Tooltip";
 import selectUserDetails from "../../services/supabase/User/SelectuserDetails";
 
-const UserMessage = ({ i, htmlContent, tokens = 0 }: { i: number; htmlContent: string; tokens?: number }) => {
+const UserMessage = React.memo(({ i, htmlContent, tokens = 0 }: { i: number; htmlContent: string; tokens?: number }) => {
     const { user, theme } = useAuth() || { user: { id: null }, theme: 'light' };
     const [userDetails, setUserDetails] = useState<{ full_name: string | null; avatar_url: string | null } | null>(null);
     const [copied, setCopied] = useState(false);
@@ -152,6 +152,6 @@ const UserMessage = ({ i, htmlContent, tokens = 0 }: { i: number; htmlContent: s
             </div>
         </motion.div>
     );
-};
+});
 
 export default UserMessage;

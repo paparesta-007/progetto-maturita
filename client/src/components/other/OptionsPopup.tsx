@@ -10,6 +10,9 @@ import {
     ShieldCheckIcon,
     CpuIcon,
     SlidersHorizontalIcon,
+    SparkleIcon,
+    ToggleLeftIcon,
+    ToggleRightIcon,
 } from "@phosphor-icons/react";
 import { useChat } from "../../context/ChatContext";
 import { useAuth } from "../../context/AuthContext";
@@ -265,25 +268,15 @@ const OptionsPopup: React.FC = () => {
                                         className={rowBase}
                                         onClick={() => setIsBetterView((p) => !p)}
                                     >
-                                        <CpuIcon size={14} className="text-neutral-600 flex-shrink-0" />
+                                        <SparkleIcon size={14} className={`${isBetterView ? 'text-orange-500' : 'text-neutral-600'} flex-shrink-0`} weight={isBetterView ? "fill" : "regular"} />
                                         <span className="flex-1">Better View</span>
-                                        <span className={`w-4 h-4 flex items-center justify-center rounded border transition-colors flex-shrink-0 ${
-                                            isBetterView
-                                                ? isDark
-                                                    ? "bg-neutral-100 border-neutral-100"
-                                                    : "bg-neutral-900 border-neutral-900"
-                                                : isDark
-                                                    ? "border-neutral-600"
-                                                    : "border-neutral-300"
-                                        }`}>
-                                            {isBetterView && (
-                                                <CheckIcon
-                                                    size={10}
-                                                    weight="bold"
-                                                    className={isDark ? "text-neutral-900" : "text-white"}
-                                                />
+                                        <div className="flex-shrink-0">
+                                            {isBetterView ? (
+                                                <ToggleRightIcon size={24} weight="fill" className="text-orange-500" />
+                                            ) : (
+                                                <ToggleLeftIcon size={24} className="text-neutral-500" />
                                             )}
-                                        </span>
+                                        </div>
                                     </button>
                                     <div className="pb-1" />
                                 </motion.div>

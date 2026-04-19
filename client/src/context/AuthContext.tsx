@@ -33,7 +33,16 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [user, setUser] = useState<User | null>(null);
     const [session, setSession] = useState<Session | null>(null);
     const [loading, setLoading] = useState(true);
-    const [theme, setTheme] = useState("light");
+    const [theme, setTheme] = useState(() => {
+        if (typeof window !== "undefined") {
+            const stored = localStorage.getItem("theme");
+            if (stored === "dark" || stored === "light") return stored;
+            if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                return "dark";
+            }
+        }
+        return "light";
+    });
     // Stati delle istruzioni
     const [tone, setTone] = useState("default");
     const [allowedCustomInstructions, setAllowedCustomInstructions] = useState(true);
@@ -42,18 +51,7 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     const [personalInfo, setPersonalInfo] = useState({ name: "", job: "", hobbies: "" });
     const [stylePreferences, setStylePreferences] = useState({})
 
-    // Keep theme initialization and DOM sync global, not tied to specific UI components.
-    useEffect(() => {
-        const storedTheme = localStorage.getItem("theme");
-        if (storedTheme === "dark" || storedTheme === "light") {
-            setTheme(storedTheme);
-            return;
-        }
-
-        if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            setTheme("dark");
-        }
-    }, []);
+    // Theme initialization is now handled by the state initializer above.
 
     useEffect(() => {
         const root = window.document.documentElement;

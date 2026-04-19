@@ -217,7 +217,7 @@ const BotMessageStyles = () => (
     `}</style>
 );
 
-const BotMessage = ({ i, children, usage, model, suggestedQuestions, logs, isComplete, reasoning, onSuggestedClick }: { i: number; children: React.ReactNode; usage?: any; model?: any; suggestedQuestions?: string[]; logs?: string[]; isComplete?: boolean; reasoning?: string | null; onSuggestedClick?: (question: string) => void }) => {
+const BotMessage = React.memo(({ i, children, usage, model, suggestedQuestions, logs, isComplete, reasoning, onSuggestedClick }: { i: number; children: React.ReactNode; usage?: any; model?: any; suggestedQuestions?: string[]; logs?: string[]; isComplete?: boolean; reasoning?: string | null; onSuggestedClick?: (question: string) => void }) => {
     // Aggiungi un fallback sicuro per useAuth nel caso il contesto sia vuoto
     const auth = useAuth();
     const theme = auth?.theme || 'light';
@@ -486,6 +486,6 @@ const BotMessage = ({ i, children, usage, model, suggestedQuestions, logs, isCom
             </motion.div>
         </>
     );
-};
+});
 
 export default BotMessage;
