@@ -198,7 +198,7 @@ The backend uses Supabase with the following core entities and relationships:
 erDiagram
     AUTH_USERS ||--o{ CONVERSATIONS : owns
     CONVERSATIONS ||--o{ MESSAGES : contains
-    AUTH_USERS ||--o{ DOCUMENTS : uploads_chunks
+    AUTH_USERS ||--o{ DOCUMENTS : uploads
     AUTH_USERS ||--o{ SUPPORT_TICKETS : opens
 
     AUTH_USERS {
@@ -247,7 +247,7 @@ erDiagram
     }
 ```
 
-> Note: `documents` stores embedded text chunks; logical `document_id` grouping is kept in `metadata.document_id`.
+> Note: `documents` stores embedded text chunks. In `metadata` (JSONB), the backend saves fields such as `document_id`, `source`, `title`, `category`, `order`, and optional `sectionHeading`.
 
 ---
 
