@@ -190,18 +190,93 @@ npm run server   # Backend only
 
 ---
 
-## 🔌 API Endpoints
+## 🗺️ Entity-Relationship Map (Mermaid)
 
-| Method | Endpoint | Description |
+The backend uses Supabase with the following core entities and relationships:
+
+```mermaid
+erDiagram
+    AUTH_USERS ||--o{ CONVERSATIONS : owns
+    CONVERSATIONS ||--o{ MESSAGES : contains
+    AUTH_USERS ||--o{ DOCUMENTS : uploads
+    AUTH_USERS ||--o{ SUPPORT_TICKETS : opens
+
+    AUTH_USERS {
+        uuid id PK
+    }
+
+    CONVERSATIONS {
+        uuid id PK
+        uuid user_id FK
+        text title
+        timestamptz created_at
+        timestamptz updated_at
+    }
+
+    MESSAGES {
+        uuid id PK
+        uuid conversation_id FK
+        text sender
+        text content
+        json usage
+        text model
+        text reasoning_text
+        timestamptz created_at
+    }
+
+    DOCUMENTS {
+        uuid id PK
+        uuid user_id FK
+        text content
+        vector embedding
+        jsonb metadata
+        timestamptz created_at
+    }
+
+    SUPPORT_TICKETS {
+        uuid id PK
+        uuid user_id FK
+        text email
+        text problem_type
+        text subject
+        text message
+        text status
+        text admin_reply
+        timestamptz created_at
+        timestamptz updated_at
+    }
+```
+
+> Note: `documents` stores embedded text chunks. In `metadata` (JSONB), the backend saves fields such as `document_id`, `source`, `title`, `category`, `order`, and optional `sectionHeading`.
+
+---
+
+## 🔌 Complete Server Routes Table
+
+All routes currently defined in `server/server.ts`:
+
+| Method | Route | Purpose |
 |---|---|---|
-| `GET` | `/api/gemini/generate` | Generate a simple text completion via Google Gemini |
-| `GET` | `/api/gemini/structured-output` | Generate flashcards/quizzes with structured output |
-| `POST` | `/api/gemini/chat/stream` | Stream a chat response via Google Gemini |
-| `POST` | `/api/completion/chat` | Chat completion via OpenRouter (with metrics) |
-| `POST` | `/api/streamingOutput` | Stream a chat response via OpenRouter |
-| `POST` | `/api/gemini/getTitleConversation` | Auto-generate a conversation title |
-| `POST` | `/api/documents/ingest` | Upload and ingest a PDF (chunking → embedding → vector DB) |
-| `POST` | `/api/chat/ask-pdf` | Ask a question grounded in uploaded documents (RAG) |
+| `POST` | `/api/completion/chat` | Non-streaming chat completion (OpenRouter) with metrics |
+| `POST` | `/api/gemini/getTitleConversation` | Generate a short conversation title |
+| `POST` | `/api/getSuggestedQuestion` | Generate suggested follow-up questions |
+| `POST` | `/api/streamingOutput` | Streaming chat completion endpoint |
+| `POST` | `/api/documents/ingest` | Upload PDF, chunk text, embed, and store in Supabase |
+| `POST` | `/api/conversations/create` | Create a conversation |
+| `POST` | `/api/conversations/messages/create` | Create a message in a conversation |
+| `GET` | `/api/conversations/list` | List conversations for a user |
+| `GET` | `/api/conversations/messages` | List messages of a conversation |
+| `DELETE` | `/api/conversations/delete` | Delete a conversation |
+| `PATCH` | `/api/conversations/update-title` | Update conversation title |
+| `POST` | `/api/chat/ask-pdf` | Ask questions over ingested PDF chunks (RAG) |
+| `POST` | `/api/quiz/generate` | Generate a 10-question quiz from a topic/text |
+| `POST` | `/api/support/getUserTickets` | Retrieve support tickets for a user |
+| `POST` | `/api/support/submit` | Submit a support ticket |
+| `GET` | `/logs` | Serve log viewer page (`static/log.html`) |
+| `POST` | `/logs` | Receive and store frontend/client logs |
+| `GET` | `/api/client-logs` | Return in-memory client logs |
+| `GET` | `/api/logs` | Return in-memory server audit logs |
+| `DELETE` | `/api/logs` | Clear in-memory server + client logs |
 
 ---
 
