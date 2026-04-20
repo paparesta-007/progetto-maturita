@@ -19,13 +19,13 @@ import {
     clearAllLogs
 } from "./middleware/logging.js";
 import { OPENROUTER_KEY, PORT, SUPABASE_KEY, SUPABASE_URL } from "./config/enviroments.js";
+import chatRoutes from "./routes/chat.js";
 
 import { ingestDocument, askPdf } from "./services/documentService.js";
 
 import { embed, generateText, streamText } from 'ai';
 import { google } from '@ai-sdk/google';
 import { generateObject } from 'ai';
-import getSystemPrompt from "./static/systemPrompt.js"; // Funzione per generare un prompt di sistema dettagliato e specifico per il modello selezionato. Definita in client/src/library/systemPrompt.ts
 import { z } from 'zod';
 import path from "path";
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
@@ -37,23 +37,6 @@ const upload = multer({ storage: multer.memoryStorage() });
 const port: number = PORT;
 let paginaErr: string = "";
 const app: express.Express = express();
-
-type BetterViewRenderMode = 'html' | 'markdown';
-
-function isCodeOrDebugIntent(message: string): boolean {
-    if (!message || typeof message !== 'string') return false;
-
-    const normalized = message.toLowerCase();
-    const codeSignals = [
-        /```[\s\S]*?```/,
-        /\b(debug|bug|errore|error|stack trace|traceback|exception|fix|refactor|compile|build failed)\b/,
-        /\b(function|class|interface|import|export|const|let|var|return|async|await|sql|query|regex)\b/,
-        /\bjavascript|typescript|python|java|c\+\+|c#|php|go|rust|html|css|react|node\b/,
-        /\bwrite code|scrivi codice|generate code|genera codice|implement|implementa\b/
-    ];
-
-    return codeSignals.some((rx) => rx.test(normalized));
-}
 
 // ────────────────────────────────────────────────────────────────
 // SETUP: Logging & Error Handlers
@@ -109,112 +92,8 @@ app.use(express.json({ limit: "10mb" }));
 // Middleware di logging per ogni richiesta
 app.use(httpLoggingMiddleware);
 
-app.post("/api/completion/chat", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
-    try {
-        const { message, history, modelName, systemPromptUser, personalInfo, tone, allowedCustomInstructions, reasoning, isBetterView } = req.body;
-
-        const selectedModel = modelName ? modelName : "google/gemini-2.0-flash-001";
-        const betterViewRenderMode: BetterViewRenderMode = isBetterView && !isCodeOrDebugIntent(message || "") ? 'html' : 'markdown';
-        const systemPrompt = getSystemPrompt({ selectedModel, systemPromptUser, personalInfo, tone, allowedCustomInstructions, isBetterView, betterViewRenderMode } as any);
-
-        // Mappa i valori del client ai livelli di reasoning di OpenRouter
-        const reasoningEffortMap: Record<string, string> = {
-            fast: "minimal",
-            standard: "medium",
-            accurate: "high"
-        };
-        const reasoningEffort = reasoning ? reasoningEffortMap[reasoning] || "medium" : "medium";
-
-        let userContent: any = message;
-        if (req.body.attachedFiles && req.body.attachedFiles.length > 0) {
-            userContent = [{ type: "text", text: message || "Immagine in allegato" }];
-            req.body.attachedFiles.forEach((f: any) => {
-                if (f.type === "image_url") {
-                    userContent.push({
-                        type: "image_url",
-                        image_url: { url: f.url }
-                    });
-                }
-            });
-        }
-
-        // Costruiamo i messaggi nello standard API: System prompt all'inizio
-        const messages = [
-            { role: 'system', content: systemPrompt },
-            ...history,
-            { role: 'user', content: userContent }
-        ];
-
-        // 1. START Timer 
-        const startTime = Date.now();
-
-        // Chiamata diretta all'API di OpenRouter
-        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${process.env.VITE_OPENROUTER_API_KEY}`,
-                "Content-Type": "application/json",
-                "HTTP-Referer": "http://localhost:3000/completion",
-                "X-Title": "NomeTuaApp"
-            },
-            body: JSON.stringify({
-                model: selectedModel,
-                messages: messages,
-                stream: false,
-                reasoning: { effort: reasoningEffort }
-            })
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`OpenRouter API Error: ${response.status} - ${errorText}`);
-        }
-
-        const data = await response.json();
-
-        // Estrazione testo e mapping dell'usage per mantenere compatibilità col frontend
-        const text = data.choices[0]?.message?.content || "";
-        const reasoningContent = data.choices[0]?.message?.reasoning || null;
-        const usage = {
-            ...data.usage,
-            prompt_tokens: data.usage?.prompt_tokens || 0,
-            completion_tokens: data.usage?.completion_tokens || 0,
-            total_tokens: data.usage?.total_tokens || 0,
-            cost: data.usage?.cost || data.cost || 0
-        };
-
-        // 2. STOP Timer
-        const endTime = Date.now();
-
-        // 3. Calcoli Metriche
-        const latencyMs = endTime - startTime;
-        const latencySec = latencyMs / 1000;
-
-        const throughput = latencySec > 0 && usage.outputTokens
-            ? (usage.outputTokens / latencySec)
-            : 0;
-
-        console.log("******TEST COMPLETATO: METRICHE******");
-        console.log("Usage:", usage);
-        console.log(`Latenza: ${latencyMs} ms, Throughput: ${throughput.toFixed(2)} t/s`);
-        if (reasoningContent) console.log(`Reasoning presente: ${reasoningContent.length} caratteri`);
-
-        res.send({
-            text,
-            renderMode: betterViewRenderMode,
-            usage,
-            suggestedQuestions: [], // Saranno caricate dal client separatamente per non bloccare il salvataggio
-            reasoning: reasoningContent,
-            metrics: {
-                latencyMs: Math.round(latencyMs),
-                throughput: parseFloat(throughput.toFixed(2))
-            }
-        });
-
-    } catch (error) {
-        next(error);
-    }
-});
+// Route chat (sendMessage / sendStreamedMessage)
+app.use(chatRoutes);
 app.post("/api/gemini/getTitleConversation", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
     try {
         const { message } = req.body;
@@ -364,151 +243,6 @@ async function getSuggestedQuestion(question: string, answer: string): Promise<s
     }
 }
 
-
-app.post("/api/streamingOutput", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
-    try {
-
-        const { message, history, modelName, systemPromptUser, personalInfo,
-            tone, allowedCustomInstructions, reasoning, isBetterView } = req.body;
-        const selectedModel = modelName ? modelName : "google/gemini-2.0-flash-001";
-        const betterViewRenderMode: BetterViewRenderMode = isBetterView && !isCodeOrDebugIntent(message || "") ? 'html' : 'markdown';
-
-        // Mappa i valori del client ai livelli di reasoning di OpenRouter
-        console.log("Received reasoning level from client:", reasoning);
-        const reasoningEffortMap: Record<string, string> = {
-            fast: "minimal",
-            standard: "medium",
-            accurate: "high"
-        };
-        const reasoningEffort = reasoning ? reasoningEffortMap[reasoning] || "medium" : "medium";
-
-        const delay = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
-        console.log("Custom User Instruction:", systemPromptUser);
-
-        const systemPrompt = getSystemPrompt({
-            selectedModel,
-            systemPromptUser,
-            personalInfo,
-            tone,
-            allowedCustomInstructions,
-            isBetterView,
-            betterViewRenderMode
-        } as any);
-
-        let userContent: any = message;
-        if (req.body.attachedFiles && req.body.attachedFiles.length > 0) {
-            userContent = [{ type: "text", text: message || "Immagine in allegato" }];
-            req.body.attachedFiles.forEach((f: any) => {
-                if (f.type === "image_url") {
-                    userContent.push({
-                        type: "image_url",
-                        image_url: { url: f.url }
-                    });
-                }
-            });
-        }
-
-        const messages = [
-            { role: 'system', content: systemPrompt },
-            ...history,
-            { role: 'user', content: userContent }
-        ];
-
-        // 1. Chiamata API Streaming
-        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${process.env.VITE_OPENROUTER_API_KEY}`,
-                "Content-Type": "application/json",
-                "HTTP-Referer": "http://localhost:3000/streamingOutput",
-                "X-Title": "NomeTuaApp"
-            },
-            body: JSON.stringify({
-                model: selectedModel,
-                messages: messages,
-                stream: true,
-                stream_options: { include_usage: true },
-                reasoning: { effort: reasoningEffort, }
-            })
-        });
-
-        if (!response.ok || !response.body) {
-            const errorText = await response.text();
-            throw new Error(`OpenRouter Streaming Error: ${response.status} - ${errorText}`);
-        }
-
-        // 2. Imposta gli header della risposta per streaming (NDJSON dentro text/plain per compatibilità browser)
-        res.setHeader('Content-Type', 'text/plain; charset=utf-8');
-        res.setHeader('Transfer-Encoding', 'chunked');
-        res.setHeader('X-Accel-Buffering', 'no');
-        res.flushHeaders();
-        res.write(JSON.stringify({ type: "meta", renderMode: betterViewRenderMode }) + "\n");
-
-        // 3. Lettura e parsing manuale del flusso SSE → NDJSON per il client
-        const reader = response.body.getReader();
-        const decoder = new TextDecoder("utf-8");
-        let buffer = "";
-
-        try {
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                buffer += decoder.decode(value, { stream: true });
-                const lines = buffer.split('\n');
-                buffer = lines.pop() || "";
-
-                for (const line of lines) {
-                    const trimmedLine = line.trim();
-                    if (trimmedLine.startsWith("data: ")) {
-                        const dataStr = trimmedLine.slice(6);
-                        if (dataStr === "[DONE]") continue;
-
-                        try {
-                            const parsed = JSON.parse(dataStr);
-                            const reasoningPart = parsed.choices?.[0]?.delta?.reasoning;
-                            const textPart = parsed.choices?.[0]?.delta?.content;
-                            const usagePart = parsed.usage;
-
-                            // Invia reasoning chunk in tempo reale
-                            if (reasoningPart) {
-                                res.write(JSON.stringify({ type: "reasoning", content: reasoningPart }) + "\n");
-                            }
-
-                            // Invia text chunk in tempo reale
-                            if (textPart) {
-                                res.write(JSON.stringify({ type: "text", content: textPart }) + "\n");
-                                await delay(3);
-                            }
-
-                            // Invia usage chunk
-                            if (usagePart && Object.keys(usagePart).length > 0) {
-                                res.write(JSON.stringify({ type: "usage", content: usagePart }) + "\n");
-                                console.log("OpenRouter Stream Usage:", usagePart);
-                            }
-                        } catch (parseError) {
-                            console.warn("⚠️ Errore nel parsing del chunk JSON:", parseError);
-                        }
-                    }
-                }
-            }
-        } catch (streamError) {
-            console.error("Errore durante lo streaming nativo:", streamError);
-        } finally {
-            res.end();
-        }
-
-        // 4. Gestione disconnessione client
-        res.on('close', () => {
-            console.log("Client disconnesso dalla stream.");
-            // NOTA: Se si disconnette, idealmente dovresti fare reader.cancel() per fermare OpenRouter, ma non blocca l'app
-            reader.cancel().catch(() => { });
-        });
-
-    } catch (error) {
-        next(error);
-    }
-});
 
 // ─── HELPER: Normalizza il testo estratto dal PDF prima del chunking ───
 

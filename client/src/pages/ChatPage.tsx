@@ -11,6 +11,7 @@ import { useApp } from "../context/AppContext";
 import MarkdownRender from "../library/markdownRender";
 import GenerativeUIRenderer from "../components/generativeUI/GenerativeUIRenderer";
 import "katex/dist/katex.min.css";
+import katex from "katex";
 import { GhostIcon } from "@phosphor-icons/react";
 import DOMPurify from "dompurify";
 
@@ -109,15 +110,47 @@ const extractRenderableHtml = (content: string): string | null => {
     return hasHtmlShape ? candidate : null;
 };
 
-const normalizeWrapperThemeClasses = (html: string): string => {
+const normalizeWrapperThemeClasses = (html: string, isDark: boolean): string => {
     if (!html) return html;
 
-    return html
+    let normalized = html
         // Remove common wrapper theme combos that conflict with custom theme translators.
         .replace(/\bbg-white\s+dark:bg-[^\s"']+/gi, 'bg-transparent')
         .replace(/\bdark:bg-[^\s"']+\s+bg-white\b/gi, 'bg-transparent')
         .replace(/\bbg-black\s+dark:bg-[^\s"']+/gi, 'bg-transparent')
         .replace(/\bdark:bg-[^\s"']+\s+bg-black\b/gi, 'bg-transparent');
+
+    if (isDark) {
+        normalized = normalized
+            .replace(/\bbg-white\b/gi, 'bg-transparent')
+            .replace(/\bbg-(neutral|gray|zinc)-(50|100)\b/gi, 'bg-transparent')
+            // Neutralize common inline white backgrounds produced by model HTML snippets.
+            .replace(/background-color\s*:\s*(#fff(?:fff)?|white|rgb\(255\s*,\s*255\s*,\s*255\))/gi, 'background-color: transparent')
+            .replace(/background\s*:\s*(#fff(?:fff)?|white|rgb\(255\s*,\s*255\s*,\s*255\))/gi, 'background: transparent');
+    }
+
+    return normalized;
+};
+
+const renderLatexInHtml = (html: string): string => {
+    if (!html) return html;
+
+    const renderFormula = (formula: string, displayMode: boolean) => {
+        try {
+            return katex.renderToString(formula.trim(), {
+                displayMode,
+                throwOnError: false,
+            });
+        } catch {
+            return displayMode ? `$$${formula}$$` : `$${formula}$`;
+        }
+    };
+
+    // Block math first, then inline math.
+    let output = html.replace(/\$\$([\s\S]+?)\$\$/g, (_match, formula) => renderFormula(formula, true));
+    output = output.replace(/\$([^$\n]+?)\$/g, (_match, formula) => renderFormula(formula, false));
+
+    return output;
 };
 const LivePreviewMock = () => {
     return (
@@ -319,11 +352,12 @@ const ChatContent = () => {
                                     const renderMode = msg.renderMode || 'markdown';
                                     const extractedHtml = extractRenderableHtml(msg.content);
                                     const canRenderHtml = Boolean((renderMode === 'html' || (!msg.renderMode && extractedHtml)) && extractedHtml);
-                                    const normalizedHtml = canRenderHtml ? normalizeWrapperThemeClasses(extractedHtml || '') : '';
+                                    const normalizedHtml = canRenderHtml ? normalizeWrapperThemeClasses(extractedHtml || '', isDark) : '';
+                                    const htmlWithLatex = canRenderHtml ? renderLatexInHtml(normalizedHtml) : '';
                                     const safeHtml = canRenderHtml
-                                        ? DOMPurify.sanitize(normalizedHtml, {
-                                            ADD_TAGS: ['svg', 'path', 'g', 'rect', 'circle', 'line', 'polyline', 'polygon', 'button', 'span', 'section', 'article'],
-                                            ADD_ATTR: ['class', 'style', 'viewBox', 'd', 'fill', 'xmlns', 'width', 'height', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'x', 'y', 'rx', 'ry', 'cx', 'cy', 'r']
+                                        ? DOMPurify.sanitize(htmlWithLatex, {
+                                            ADD_TAGS: ['svg', 'path', 'g', 'rect', 'circle', 'line', 'polyline', 'polygon', 'button', 'span', 'section', 'article', 'math', 'semantics', 'mrow', 'mn', 'mo', 'mi', 'msup', 'msub', 'mfrac', 'mtext', 'annotation', 'annotation-xml'],
+                                            ADD_ATTR: ['class', 'style', 'viewBox', 'd', 'fill', 'xmlns', 'width', 'height', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'x', 'y', 'rx', 'ry', 'cx', 'cy', 'r', 'encoding', 'aria-hidden']
                                         })
                                         : '';
                                     
