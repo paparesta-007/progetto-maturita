@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { href, Link } from 'react-router-dom';
 import {
   ArrowRight,
   Bot,
@@ -24,6 +24,7 @@ import {
   CircleDot,
   ExternalLink,
 } from 'lucide-react';
+import { label } from 'three/src/nodes/core/ContextNode.js';
 
 /* -------------------------------------------------------
    Motion helpers
@@ -146,7 +147,7 @@ function SystemStyles() {
         background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
         border: 1px solid var(--line);
         box-shadow: var(--shadow);
-        backdrop-filter: blur(18px);
+        backdrop-filter: blur(18px) !important;
       }
 
       .glass-soft {
@@ -336,6 +337,7 @@ function TopNav() {
       { label: 'FAQ', href: '#faq' },
       { label: 'About', href: '#about' },
       { label: 'GitHub', href: 'https://github.com/paparesta-007/progetto-maturita' },
+      { label: 'Help', href: '/help' },
     ],
   } as const;
 
@@ -711,7 +713,8 @@ function Features() {
 
         <div className="grid md:grid-cols-12 gap-4">
           {featureDeck.map((f, i) => {
-            const wide = i === 0 || i === 3;
+            // First two features share the first row (6+6), the remaining three share the second row (4+4+4)
+            const colClass = i <= 1 ? 'md:col-span-6' : 'md:col-span-4';
             return (
               <motion.article
                 key={f.title}
@@ -720,7 +723,7 @@ function Features() {
                 whileInView="show"
                 viewport={{ once: true, margin: '-80px' }}
                 custom={i}
-                className={`${wide ? 'md:col-span-7' : 'md:col-span-5'} rounded-[1.75rem] p-6 sm:p-7 glass lift overflow-hidden relative`}
+                className={`${colClass} rounded-[1.75rem] p-6 sm:p-7 glass lift overflow-hidden relative`}
               >
                 <div className={`absolute inset-0 bg-gradient-to-br ${f.tone} opacity-100 pointer-events-none`} />
                 <div className="relative">

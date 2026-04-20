@@ -34,6 +34,9 @@ interface ChatContextType {
 
     isBetterView: boolean;
     setIsBetterView: React.Dispatch<React.SetStateAction<boolean>>;
+
+    draftMessage: string;
+    setDraftMessage: React.Dispatch<React.SetStateAction<string>>;
 }
 
 // 1. Creazione del Context
@@ -53,6 +56,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const [currentConversationName, setCurrentConversationName] = useState<string | null>(null);
     const [isTemporaryConversation, setIsTemporaryConversation] = useState(false);
     const [isBetterView, setIsBetterView] = useState(true);
+    const [draftMessage, setDraftMessage] = useState("");
     const navigate = useNavigate();
 
     const fetchConversations = useCallback(async () => {
@@ -243,7 +247,9 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         setIsTemporaryConversation,
         updateConversationPosition,
         isBetterView,
-        setIsBetterView
+        setIsBetterView,
+        draftMessage,
+        setDraftMessage
     }), [
         sendMessage,
         messageHistory,
@@ -262,7 +268,9 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         setIsTemporaryConversation,
         updateConversationPosition,
         isBetterView,
-        setIsBetterView
+        setIsBetterView,
+        draftMessage,
+        setDraftMessage
     ]);
 
     return (

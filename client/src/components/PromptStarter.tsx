@@ -1,4 +1,4 @@
-import React, { useMemo } from "react";
+import { useMemo } from "react";
 import { useAuth } from "../context/AuthContext";
 import { AtomIcon, ChartAreaIcon, HistoryIcon, LaughIcon, Microchip, StarsIcon } from "lucide-react";
 import { BookIcon, DogIcon, DressIcon, EngineIcon, FilmStripIcon, GameControllerIcon, GraduationCapIcon, HeartbeatIcon, HeartIcon, HouseIcon, InstagramLogoIcon, KeyboardIcon, LightbulbIcon, MapPinAreaIcon, MoneyIcon, MusicNoteIcon, OpenAiLogoIcon, PaintBrushIcon, TentIcon, TreeIcon, TrendUpIcon, TrophyIcon, VideoCameraIcon } from "@phosphor-icons/react";
@@ -7,7 +7,7 @@ import { useChat } from "../context/ChatContext";
 const PromptStarter = () => {
     const { theme, user } = useAuth();
     const isDark = theme === 'dark';
-    const { isTemporaryConversation } = useChat();
+    const { isTemporaryConversation, setDraftMessage } = useChat();
     const getGreeting = () => {
         const hours = new Date().getHours();
         if (hours < 12) return "Buongiorno";
@@ -250,7 +250,7 @@ const PromptStarter = () => {
                 {!isTemporaryConversation ? (
                     <>
                         <h1 className={styles.title}>
-                            {getGreeting()}, {user?.full_name?.split(' ')[0] || 'Utente'}!
+                            {getGreeting()}, {(user as any)?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Utente'}!
                         </h1>
                         <p className={styles.subtitle}>
                             Come posso aiutarti oggi? Scegli un suggerimento o scrivi sotto.
@@ -275,6 +275,8 @@ const PromptStarter = () => {
                         <button
                             key={index}
                             className={styles.card}
+                            onClick={() => setDraftMessage(item.prompt)}
+                            aria-label={`Usa suggerimento ${item.title}`}
                         >
                             <div className={styles.iconWrapper}>
                                 {item.icon}
