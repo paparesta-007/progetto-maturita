@@ -149,14 +149,16 @@ const DocumentWizard = () => {
         if(data.success){
             console.log("Document ingested successfully:", data.message);
             // Salva PDF su supabase
-            if (formData.file && formData.file.name.toLowerCase().endsWith('.pdf') && data.documentId) {
+            if (formData.file && formData.file.name.toLowerCase().endsWith('.pdf') && data.documentId && user?.id) {
+                const storagePath = `${user.id}/${data.documentId}.pdf`;
                 const { error: uploadError } = await supabase.storage
                     .from('pdfs')
-                    .upload(`${data.documentId}.pdf`, formData.file, {
+                    .upload(storagePath, formData.file, {
                         upsert: true
                     });
                 if (uploadError) {
                     console.error("Errore salvataggio PDF su Supabase:", uploadError);
+                    console.warn("Il documento testuale e stato ingerito, ma il PDF non e stato caricato nello storage. La preview PDF non sara disponibile.");
                 } else {
                     console.log("PDF salvato correttamente in Supabase storage");
                 }
