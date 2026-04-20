@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { href, Link } from 'react-router-dom';
 import {
   ArrowRight,
   Bot,
@@ -24,6 +24,7 @@ import {
   CircleDot,
   ExternalLink,
 } from 'lucide-react';
+import { label } from 'three/src/nodes/core/ContextNode.js';
 
 /* -------------------------------------------------------
    Motion helpers
@@ -336,6 +337,7 @@ function TopNav() {
       { label: 'FAQ', href: '#faq' },
       { label: 'About', href: '#about' },
       { label: 'GitHub', href: 'https://github.com/paparesta-007/progetto-maturita' },
+      { label: 'Help', href: '/help' },
     ],
   } as const;
 

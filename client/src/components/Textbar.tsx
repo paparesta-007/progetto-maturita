@@ -70,6 +70,11 @@ const Textbar = () => {
     const [functionality, setFunctionality] = useState<string>("default");
     const [reasoning, setReasoning] = useState<string>("fast");
 
+    useEffect(() => {
+        if (!isChatPage) return;
+        setInputValue(chatCtx.draftMessage || "");
+    }, [isChatPage, chatCtx.draftMessage]);
+
     // Stili dinamici per la barra
     const styles = {
         container: `w-full max-w-2xl rounded-[1.5rem] p-3 flex flex-col gap-2 transition-all duration-300 ${isDark
@@ -130,6 +135,9 @@ const Textbar = () => {
         const maxHeight = lineHeight * maxLines;
 
         setInputValue(e.currentTarget.value);
+        if (isChatPage) {
+            chatCtx.setDraftMessage(e.currentTarget.value);
+        }
         if (!e.currentTarget.value.trim()) return;
         el.style.height = "auto";
         el.style.height = Math.min(el.scrollHeight, maxHeight) + "px";
@@ -137,6 +145,9 @@ const Textbar = () => {
 
     const resetTextarea = () => {
         setInputValue("");
+        if (isChatPage) {
+            chatCtx.setDraftMessage("");
+        }
         if (textareaRef.current) {
             textareaRef.current.style.height = "auto";
         }

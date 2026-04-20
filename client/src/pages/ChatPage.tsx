@@ -6,14 +6,13 @@ import BotLoading from "../components/other/BotLoading";
 import PromptStarter from "../components/PromptStarter";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, useParams } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 import { useApp } from "../context/AppContext";
 import MarkdownRender from "../library/markdownRender";
 import GenerativeUIRenderer from "../components/generativeUI/GenerativeUIRenderer";
 import "katex/dist/katex.min.css";
 import { GhostIcon } from "@phosphor-icons/react";
 import DOMPurify from "dompurify";
-import { Sparkles } from "lucide-react";
 
 /* -------------------------------------------------------
    System Styles (Shared from LandingPage)
@@ -256,7 +255,7 @@ const ChatContent = () => {
         : `w-full px-4`; // Scrollbar resta sul bordo destro del contenitore
 
     return (
-        <div className={`${styles.wrapper} ${isDark ? 'noise' : ''} flex flex-col min-w-0`}>
+        <div className={`${styles.wrapper} flex flex-col min-w-0`}>
             <ChatStyles isDark={isDark} />
             
             {isDark && (
