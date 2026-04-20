@@ -2,13 +2,25 @@
 // SUGGERIMENTO: Per progetti più grandi, considera di dividere le rotte in file separati
 // (ad es. una cartella 'routes') per migliorare la manutenibilità.
 
-import dotenv from "dotenv";
 // A) importing librerie
 import http from "http";
 import { fileURLToPath } from "url";
 import fs from "fs";
 import express from "express";
 import cors from "cors";
+import {
+    setupConsoleLogging,
+    setupGlobalErrorHandlers,
+    httpLoggingMiddleware,
+    logSupabaseAction,
+    addClientLog,
+    getAuditLogs,
+    getClientLogs,
+    clearAllLogs
+} from "./middleware/logging.js";
+import { OPENROUTER_KEY, PORT, SUPABASE_KEY, SUPABASE_URL } from "./config/enviroments.js";
+
+import { ingestDocument, askPdf } from "./services/documentService.js";
 
 import { embed, generateText, streamText } from 'ai';
 import { google } from '@ai-sdk/google';
@@ -21,52 +33,11 @@ import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import multer from 'multer';
 import { OpenRouter } from '@openrouter/sdk';
 import { createClient } from "@supabase/supabase-js";
-import { embedMany } from "ai";
-import { createOpenAI } from "@ai-sdk/openai";
-import { normalizeText, splitTextIntoChunks, validateChunks } from "./utils/textProcessing";
 const upload = multer({ storage: multer.memoryStorage() });
-import { PDFParse } from "pdf-parse";
-const port: number = 3000;
+const port: number = PORT;
 let paginaErr: string = "";
 const app: express.Express = express();
 
-interface ServerLogEntry {
-    type: 'HTTP' | 'SYSTEM';
-    timestamp: string;
-    date: string;
-    // Fields for HTTP
-    requestId?: string;
-    method?: string;
-    url?: string;
-    params?: any;
-    response?: any;
-    status?: number;
-    error?: boolean;
-    durationMs?: number;
-    clientIp?: string;
-    userAgent?: string;
-    // Fields for SYSTEM
-    level?: string;
-    message?: string;
-}
-
-const auditLogs: ServerLogEntry[] = [];
-const MAX_AUDIT_LOGS = 500;
-
-interface ClientLogEntry {
-    type: string;
-    message: string;
-    stack: string | null;
-    source: string | null;
-    lineno: number | null;
-    colno: number | null;
-    url: string;
-    timestamp: string;
-    clientIp: string;
-    userAgent: string;
-}
-const clientLogs: ClientLogEntry[] = [];
-const MAX_CLIENT_LOGS = 100;
 type BetterViewRenderMode = 'html' | 'markdown';
 
 function isCodeOrDebugIntent(message: string): boolean {
@@ -84,106 +55,30 @@ function isCodeOrDebugIntent(message: string): boolean {
     return codeSignals.some((rx) => rx.test(normalized));
 }
 
-// Monkey-patch console to capture internal logs
-const originalConsoleLog = console.log;
-const originalConsoleError = console.error;
-const originalConsoleWarn = console.warn;
-
-function addSystemLog(level: string, ...args: any[]) {
-    const message = args.map(arg => {
-        if (arg instanceof Error) {
-            return arg.stack || arg.message;
-        }
-        if (typeof arg === 'object' && arg !== null) {
-            try { return JSON.stringify(arg, null, 2); }
-            catch (e) { return String(arg); }
-        }
-        return String(arg);
-    }).join(' ');
-
-    const now = new Date();
-    const log: ServerLogEntry = {
-        type: 'SYSTEM',
-        level,
-        message,
-        date: now.toLocaleDateString('it-IT'),
-        timestamp: now.toLocaleTimeString('it-IT', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' })
-    };
-
-    auditLogs.unshift(log);
-    if (auditLogs.length > MAX_AUDIT_LOGS) auditLogs.pop();
-}
-
-console.log = (...args) => {
-    originalConsoleLog.apply(console, args);
-    addSystemLog('INFO', ...args);
-};
-console.error = (...args) => {
-    originalConsoleError.apply(console, args);
-    addSystemLog('ERROR', ...args);
-};
-console.warn = (...args) => {
-    originalConsoleWarn.apply(console, args);
-    addSystemLog('WARN', ...args);
-};
-
-// Global error handlers
-process.on('uncaughtException', (err) => {
-    addSystemLog('CRITICAL', 'Uncaught Exception:', err.message, err.stack);
-    originalConsoleError('CRITICAL: Uncaught Exception', err);
-});
-process.on('unhandledRejection', (reason, promise) => {
-    addSystemLog('CRITICAL', 'Unhandled Rejection at:', promise, 'reason:', reason);
-    originalConsoleError('CRITICAL: Unhandled Rejection', reason);
-});
+// ────────────────────────────────────────────────────────────────
+// SETUP: Logging & Error Handlers
+// ────────────────────────────────────────────────────────────────
+setupConsoleLogging();
+setupGlobalErrorHandlers();
 
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const openrouter = new OpenRouter({
-    apiKey: process.env.VITE_OPENROUTER_API_KEY,
+    apiKey: OPENROUTER_KEY,
 });
 
 // Configura la cartella static puntando a server/static
 app.use(express.static(path.join(__dirname, "static")));
 
-// Sostituisci la tua riga dotenv.config con questa:
-const envPath = path.resolve(__dirname, ".env");
-dotenv.config({ path: envPath });
-
-console.log("Percorso cercato per .env:", envPath);
-
-// Update dotenv configuration to load .env.local if it exists
-dotenv.config({ path: path.resolve(__dirname, ".env.local") });
 const openRouter = createOpenRouter({
-    apiKey: process.env.VITE_OPENROUTER_API_KEY,
+    apiKey: OPENROUTER_KEY,
 
 });
 
-const openrouterEmbeddings = createOpenAI({
-    apiKey: process.env.VITE_OPENROUTER_API_KEY, // La tua chiave OpenRouter
-    baseURL: "https://openrouter.ai/api/v1",
-});
-const supabaseUrl = process.env.SUPABASE_URL!;
-const supabaseKey = process.env.SUPABASE_SERVICE_KEY!;
+const supabaseUrl = SUPABASE_URL;
+const supabaseKey = SUPABASE_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
-
-async function logSupabaseAction(action: string, userId: string = "unknown") {
-    const maskedUserId = userId.length > 4 ? userId.substring(0, 4) + "****" : "****";
-    try {
-        await fetch("http://localhost:3000/logs", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                type: "SUPABASE_ACTION",
-                message: `Action: ${action} | User: ${maskedUserId}`,
-                url: "localhost:3000"
-            })
-        });
-    } catch (err) {
-        console.error("Error logging supabase action:", err);
-    }
-}
 
 try {
     const errorPagePath = path.join(__dirname, 'static', 'error.html');
@@ -212,67 +107,7 @@ app.use(cors());
 app.use(express.json({ limit: "10mb" }));
 
 // Middleware di logging per ogni richiesta
-app.use((req: express.Request, res: express.Response, next: express.NextFunction) => {
-    const start = Date.now();
-    let responseBody = '';
-
-    const originalWrite = res.write.bind(res);
-    const originalEnd = res.end.bind(res);
-
-    res.write = function (...args: any[]) {
-        if (args[0] && (typeof args[0] === 'string' || Buffer.isBuffer(args[0]))) {
-            responseBody += args[0].toString('utf8');
-        }
-        return (originalWrite as any)(...args);
-    };
-
-    res.end = function (...args: any[]) {
-        if (args[0] && (typeof args[0] === 'string' || Buffer.isBuffer(args[0]))) {
-            responseBody += args[0].toString('utf8');
-        }
-        return (originalEnd as any)(...args);
-    };
-
-    // Intercettiamo la fine della risposta per loggare lo stato
-    res.on('finish', () => {
-        // Evitiamo di loggare le chiamate agli endpoint di log stessi (evita loop e rumore)
-        const logEndpoints = ['/api/logs', '/api/client-logs', '/api/internal-logs'];
-        if (logEndpoints.some(e => req.originalUrl.startsWith(e))) {
-            return;
-        }
-
-        const duration = Date.now() - start;
-        let finalResponse: any = responseBody;
-        try { if (responseBody) finalResponse = JSON.parse(responseBody); } catch (e) { }
-
-        const now = new Date();
-        const clientIp = (req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown') as string;
-
-        const logEntry: ServerLogEntry = {
-            type: 'HTTP',
-            requestId: crypto.randomUUID(),
-            date: now.toLocaleDateString('it-IT'),
-            timestamp: now.toLocaleTimeString('it-IT', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
-            method: req.method,
-            url: req.originalUrl,
-            params: req.method === 'POST' || req.method === 'PUT' || req.method === 'PATCH' ? req.body : req.query,
-            response: finalResponse,
-            status: res.statusCode,
-            error: res.statusCode >= 400,
-            durationMs: duration,
-            clientIp: clientIp,
-            userAgent: req.headers['user-agent'] || 'unknown'
-        };
-
-        auditLogs.unshift(logEntry);
-        if (auditLogs.length > MAX_AUDIT_LOGS) {
-            auditLogs.pop();
-        }
-
-        // console.log(`[LOG] ${logEntry.method} ${logEntry.url} - Status: ${logEntry.status} (${duration}ms)`);
-    });
-    next();
-});
+app.use(httpLoggingMiddleware);
 
 app.post("/api/completion/chat", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
     try {
@@ -678,123 +513,7 @@ app.post("/api/streamingOutput", async function (req: express.Request, res: expr
 // ─── HELPER: Normalizza il testo estratto dal PDF prima del chunking ───
 
 // ROUTE: Ingestione Documenti (PDF -> Vector DB)
-app.post("/api/documents/ingest", upload.single("file"), async (req: express.Request, res: express.Response) => {
-    // NOTA: Ho rimosso 'next' per gestire la risposta direttamente qui ed evitare timeout
-    try {
-        console.log("📂 [1/6] Ricevuta richiesta ingestione...");
-
-        // 1. Validazione Input
-        if (!req.file) throw new Error("Nessun file caricato");
-
-        const { user_id, category, title } = req.body;
-        if (!user_id) throw new Error("User ID mancante");
-
-        console.log(`👤 [2/6] Utente: ${user_id}, File: ${req.file.originalname}`);
-        let text = "";
-        let parser = null;
-        try {
-            const dataBuffer = req.file.buffer;
-
-            // 1. Istanzia la classe passando il buffer nella proprietà 'data'
-            parser = new PDFParse({ data: dataBuffer });
-
-            // 2. Estrai il testo
-            const result = await parser.getText();
-            text = result.text;
-
-        } catch (pdfError: any) {
-            console.error("❌ Errore durante il parsing del PDF:", pdfError);
-            throw new Error("Il file PDF è corrotto o illegibile.");
-        } finally {
-            if (parser) {
-                await parser.destroy();
-            }
-        }
-
-        console.log(`📄 [3/6] Testo estratto: ${text.length} caratteri`);
-
-        // 2.5 Normalizza il testo prima del chunking
-        text = normalizeText(text);
-        console.log(`🧹 [3/6] Testo normalizzato: ${text.length} caratteri`);
-
-        // 3. Chunking (1500 chars ≈ 375 tokens, 300 overlap ≈ 20%)
-        const chunks = splitTextIntoChunks(text, 1500, 300, {
-            respectSentences: true,
-            respectParagraphs: true,
-            minChunkSize: 100
-        });
-        const date = new Date().toISOString();
-        const validation = validateChunks(chunks);
-        if (!validation.isValid) {
-            console.warn("⚠️  Detected gaps in chunks:", validation.gaps);
-        }
-
-        console.log(`🧩 [4/6] Generati ${chunks.length} chunks con validazione: ${validation.isValid ? '✅' : '❌'}`);
-        if (chunks.length === 0) throw new Error("Nessun testo estraibile dal PDF");
-
-        // 4. Generazione Embeddings
-        console.log("🤖 [5/6] Richiesta embedding a OpenRouter...");
-
-
-        // Prefisso contestuale arricchito con sezione heading
-        const filename = req.file?.originalname || 'sconosciuto';
-        const { embeddings } = await embedMany({
-            model: openrouterEmbeddings.embedding("openai/text-embedding-3-small"),
-            values: chunks.map(chunk => {
-                const heading = chunk.metadata.sectionHeading ? ` | Sezione: ${chunk.metadata.sectionHeading}` : '';
-                return `[Documento: ${filename}${heading}] ${chunk.content}`;
-            }),
-        });
-
-        console.log(`✨ [5/6] Ricevuti ${embeddings.length} vettori da OpenRouter`);
-        const docId = crypto.randomUUID();
-        // 5. Preparazione dati per Supabase
-        const documentsToInsert = chunks.map((chunkData) => ({
-            user_id: user_id,
-            content: chunkData.content,
-            embedding: embeddings[chunkData.metadata.order],
-            metadata: {
-                ...chunkData.metadata,
-                source: req.file?.originalname,
-                title: title,
-                category: category,
-                document_id: docId
-            },
-            document_id: docId,
-            created_at: date
-        }));
-
-        // 6. Salvataggio su Supabase
-        logSupabaseAction("insert_documents_chunks", user_id);
-        const { error } = await supabase
-            .from('documents')
-            .insert(documentsToInsert);
-
-        if (error) {
-            console.error("❌ Errore Supabase:", JSON.stringify(error, null, 2));
-            throw new Error(`Errore DB: ${error.message}`);
-        }
-
-        console.log("✅ [6/6] Salvataggio completato con successo!");
-
-        // Risposta finale
-        res.status(200).json({
-            success: true,
-            message: `Processati ${chunks.length} frammenti`,
-            filename: req.file.originalname,
-            documentId: docId
-        });
-
-    } catch (error: any) {
-        console.error("❌ ERRORE CRITICO NELLA ROTTA INGEST:", error);
-
-        // Rispondiamo esplicitamente con JSON per evitare "Unexpected end of JSON input" nel frontend
-        res.status(500).json({
-            success: false,
-            error: error.message || "Errore sconosciuto durante l'ingestione"
-        });
-    }
-});
+app.post("/api/documents/ingest", upload.single("file"), ingestDocument);
 
 
 // ============================================================
@@ -967,172 +686,7 @@ app.patch("/api/conversations/update-title", async (req: express.Request, res: e
     }
 });
 
-app.post("/api/chat/ask-pdf", async (req: express.Request, res: express.Response) => {
-    // Abilita lo streaming
-    res.setHeader("Content-Type", "application/x-ndjson");
-    res.setHeader("Transfer-Encoding", "chunked");
-
-    const sendLog = (msg: string) => {
-        console.log(msg);
-        res.write(JSON.stringify({ type: "log", content: msg }) + "\n");
-    };
-
-    try {
-        const { question, model, user_id, document_id, reasoning } = req.body;
-        const reasoningEffortMap: Record<string, string> = {
-            fast: "minimal",
-            standard: "medium",
-            accurate: "high"
-        };
-        const reasoningEffort = reasoning ? reasoningEffortMap[reasoning] || "medium" : "medium";
-        // Inizializziamo i timer
-        const startTime = Date.now();
-        let stepTime = startTime;
-
-        sendLog(`\n📥 [Fase 1/8] Nuova richiesta /ask-pdf ricevuta.`);
-        sendLog(`🔍 Dettagli: Domanda="${question}", Documento=${document_id}, Utente=${user_id}`);
-
-        // 1. Genera l'embedding della domanda
-        sendLog("🧠 [Fase 2/8] Generazione dell'embedding per la domanda in corso...");
-        const { embedding } = await embed({
-            model: openrouterEmbeddings.embedding("openai/text-embedding-3-small"),
-            value: `Ricerca nel documento: ${question}`,
-        });
-
-        let now = Date.now();
-        sendLog(`✅ [Fase 2/8] Embedding generato con successo. (+${now - stepTime}ms)`);
-        stepTime = now;
-
-        // 2. Chiama la funzione RPC su Supabase
-        sendLog("🔎 [Fase 3/8] Ricerca dei chunk semantici su Supabase in corso...");
-        logSupabaseAction("rpc_match_documents", user_id);
-        const { data: chunks, error } = await supabase
-            .rpc('match_documents', {
-                query_embedding: embedding,
-                match_threshold: 0.4,
-                match_count: 7,
-                filter_user_id: user_id,
-                selected_id: document_id
-            });
-
-        if (error) {
-            console.error("❌ [Errore Fase 3] Errore ricerca Supabase:", error);
-            throw new Error("Errore durante la ricerca nel DB");
-        }
-
-        now = Date.now();
-        sendLog(`✅ [Fase 3/8] Ricerca completata. Trovati ${chunks?.length || 0} chunk pertinenti. (+${now - stepTime}ms)`);
-        stepTime = now;
-
-        if (!chunks || chunks.length === 0) {
-            sendLog("⚠️ [Attenzione] Nessun chunk trovato. Interrompo e rispondo al client.");
-            res.write(JSON.stringify({
-                type: "result",
-                answer: "Mi dispiace, non ho trovato informazioni pertinenti nei documenti caricati.",
-                sources: [],
-                suggested_questions: []
-            }) + "\n");
-            return res.end();
-        }
-
-        sendLog("📄 [Fase 4/8] Costruzione del contesto dai chunk estratti...");
-        const contextText = chunks
-            .map((chunk: any) => {
-                const section = chunk.metadata?.sectionHeading ? `[Sezione: ${chunk.metadata.sectionHeading}]` : '';
-                return `--- FONTE: ${chunk.metadata.source} ${section} ---\n${chunk.content}`;
-            })
-            .join("\n\n");
-
-        now = Date.now();
-        sendLog(`✅ [Fase 4/8] Contesto creato (Lunghezza: ${contextText.length} caratteri). (+${now - stepTime}ms)`);
-        stepTime = now;
-
-        const systemPrompt = `
-        Sei un esperto Analista di Documenti. Il tuo compito è rispondere alle domande dell'utente basandoti ESCLUSIVAMENTE sul CONTESTO fornito qui sotto.
-
-        ### REGOLE RIGIDE DI RISPOSTA:
-        1.  **Fedeltà al Testo**: Rispondi solo utilizzando le informazioni presenti nel CONTESTO. Se la risposta non è contenuta nel testo, dichiara esplicitamente: "Mi dispiace, ma le informazioni fornite nei documenti non mi permettono di rispondere a questa domanda." Non utilizzare conoscenze esterne.
-        2.  **Formattazione Markdown**: Usa titolazioni (###), elenchi puntati e grassetti per rendere la risposta professionale e facile da leggere.
-        3.  **Formule Matematiche**: Ogni formula, simbolo matematico o equazione DEVE essere scritta in LaTeX utilizzando il delimitatore "$$" per i blocchi (es. $$E = mc^2$$) o "$" per le formule in linea (es. $x = 2$).
-        4.  **Lingua**: Rispondi sempre nella lingua della domanda dell'utente (predefinito: Italiano).
-
-        ### CONTESTO:
-        ${contextText}
-        `;
-
-        const selectedModel = model || "google/gemini-2.5-flash-lite";
-
-        let userContent: any = question;
-        if (req.body.attachedFiles && req.body.attachedFiles.length > 0) {
-            userContent = [{ type: "text", text: question || "Immagine in allegato" }];
-            req.body.attachedFiles.forEach((f: any) => {
-                if (f.type === "image_url") {
-                    userContent.push({
-                        type: "image_url",
-                        image_url: { url: f.url }
-                    });
-                }
-            });
-        }
-
-        // 3. Genera la RISPOSTA PRINCIPALE chiamando OpenRouter nativamente
-        sendLog(`🤖 [Fase 5/8] Chiamata a OpenRouter (Modello: ${selectedModel}) per la risposta principale... ${reasoningEffort}`);
-        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${process.env.VITE_OPENROUTER_API_KEY}`,
-                "Content-Type": "application/json",
-                "HTTP-Referer": "http://localhost:3000/ask-pdf",
-                "X-Title": "NomeTuaApp"
-            },
-            body: JSON.stringify({
-                model: selectedModel,
-                messages: [
-                    { role: 'system', content: systemPrompt },
-                    { role: 'user', content: userContent }
-                ],
-                stream: false,
-                reasoning: { effort: reasoningEffort }
-            })
-        });
-
-        if (!response.ok) {
-            const errorText = await response.text();
-            console.error(`❌ [Errore Fase 5] OpenRouter API Error: ${response.status} - ${errorText}`);
-            throw new Error(`OpenRouter API Error: ${response.status} - ${errorText}`);
-        }
-
-        const data = await response.json();
-        const text = data.choices[0]?.message?.content || "";
-
-        now = Date.now();
-        sendLog(`✅ [Fase 6/8] Risposta principale ricevuta da OpenRouter. (+${now - stepTime}ms)`);
-        stepTime = now;
-
-        sendLog("🧹 [Fase 8/8] Pulizia dei duplicati nelle fonti e invio della risposta finale al client...");
-        // Rimuoviamo i duplicati dalle fonti (caso in cui più chunk vengano dallo stesso PDF)
-        const uniqueSources = Array.from(new Set(chunks.map((c: any) => c.metadata.source)));
-
-        // 5. Rispondi al client con Risposta + Fonti (pulite) + Domande Suggerite
-        res.write(JSON.stringify({
-            type: "result",
-            answer: text,
-            sources: uniqueSources,
-            // suggested_questions: suggestedQuestions
-        }) + "\n");
-
-        now = Date.now();
-        sendLog(`🎉 [Successo] Risposta inviata al client correttamente! (+${now - stepTime}ms)`);
-        sendLog(`⏱️  [METRICHE] Tempo Totale /ask-pdf: ${now - startTime}ms\n`);
-        res.end();
-
-    } catch (error: any) {
-        console.error("\n❌ [ERRORE CRITICO] Errore non gestito in /ask-pdf:");
-        console.error(error);
-        res.write(JSON.stringify({ type: "error", error: error.message }) + "\n");
-        res.end();
-    }
-});
+app.post("/api/chat/ask-pdf", askPdf);
 
 
 app.post("/api/quiz/generate", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
@@ -1360,40 +914,33 @@ app.get("/logs", (req, res) => {
 // Endpoint per ricevere i log del client via POST
 app.post("/logs", (req, res) => {
     const clientIp = (req.ip || req.connection.remoteAddress || req.headers['x-forwarded-for'] || 'unknown') as string;
-    const log: ClientLogEntry = {
-        type: req.body.type || 'UNKNOWN',
-        message: req.body.message || '',
-        stack: req.body.stack || null,
-        source: req.body.source || null,
-        lineno: req.body.lineno || null,
-        colno: req.body.colno || null,
-        url: req.body.url || '',
-        timestamp: req.body.timestamp || new Date().toISOString(),
-        clientIp: clientIp,
-        userAgent: req.headers['user-agent'] || 'unknown'
-    };
-    clientLogs.unshift(log);
-    if (clientLogs.length > MAX_CLIENT_LOGS) {
-        clientLogs.pop();
-    }
+    addClientLog(
+        req.body.type || 'UNKNOWN',
+        req.body.message || '',
+        req.body.stack || null,
+        req.body.source || null,
+        req.body.lineno || null,
+        req.body.colno || null,
+        req.body.url || '',
+        clientIp,
+        req.headers['user-agent'] || 'unknown'
+    );
     res.status(200).send("OK");
 });
 
-
 // Endpoint API per i log del client (errori frontend)
 app.get("/api/client-logs", (req, res) => {
-    res.json(clientLogs);
+    res.json(getClientLogs());
 });
 
 // Endpoint API per l'Audit Log unificato (HTTP + SYSTEM)
 app.get("/api/logs", (req, res) => {
-    res.json(auditLogs);
+    res.json(getAuditLogs());
 });
 
 // Endpoint API per svuotare tutti i log (svuotamento in memory)
 app.delete("/api/logs", (req, res) => {
-    auditLogs.length = 0;
-    clientLogs.length = 0;
+    clearAllLogs();
     res.json({ success: true });
 });
 

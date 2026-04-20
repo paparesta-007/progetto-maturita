@@ -144,20 +144,36 @@ const DocumentPage = () => {
     // Fetch per preview PDF
     useEffect(() => {
         const checkPdfPreview = async () => {
-            if (!documentId) return;
+            if (!documentId || !user?.id) return;
             setPreviewLoading(true);
             setPdfPreviewUrl(null);
             
             try {
-                // Controlliamo se esiste il file
-                const { data, error } = await supabase.storage.from('pdfs').list('', {
-                    search: `${documentId}.pdf`
-                });
-                
-                if (data && data.length > 0) {
-                    const { data: { publicUrl } } = supabase.storage.from('pdfs').getPublicUrl(`${documentId}.pdf`);
-                    setPdfPreviewUrl(publicUrl);
+                const candidatePaths = [
+                    `${user.id}/${documentId}.pdf`,
+                    `${documentId}.pdf`,
+                ];
+
+                for (const storagePath of candidatePaths) {
+                    const { data: signedData, error } = await supabase.storage
+                        .from('pdfs')
+                        .createSignedUrl(storagePath, 60 * 15);
+
+                    if (!error && signedData?.signedUrl) {
+                        setPdfPreviewUrl(signedData.signedUrl);
+                        return;
+                    }
+
+                    if (error && error.message !== "Object not found") {
+                        console.error("Error generating PDF signed URL:", error);
+                    }
                 }
+
+                console.warn(
+                    "PDF preview not found in storage. Expected one of:",
+                    candidatePaths,
+                    "If this is an old document, re-upload the PDF or migrate storage objects to userId/documentId.pdf"
+                );
             } catch (err) {
                 console.error("Error loading PDF preview:", err);
             } finally {
@@ -165,7 +181,7 @@ const DocumentPage = () => {
             }
         };
         checkPdfPreview();
-    }, [documentId]);
+    }, [documentId, user?.id]);
 
     // useEffect per lo scroll
     useEffect(() => {
