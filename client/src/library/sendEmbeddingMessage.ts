@@ -2,6 +2,8 @@
 // import createConversation ...
 // import createMessage ...
 
+import supabase from "./supabaseclient";
+
 export const sendEmbeddingMessage = async (
     message: string,
     setMessageHistory: React.Dispatch<React.SetStateAction<any[]>>,
@@ -34,11 +36,17 @@ export const sendEmbeddingMessage = async (
     setLoading(true);
 
     try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+
         // 2. Chiamata al Backend in streaming (Endpoint RAG)
         console.log("modello del ask-pdf", model)
-        const response = await fetch("http://localhost:3000/api/chat/ask-pdf", {
+        const response = await fetch("http://localhost:3000/api/docs/ask-pdf", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
             body: JSON.stringify({ 
                 question: message,
                 model: typeof model === "string" ? model : (model?.name_id || "google/gemini-2.5-flash-lite"),

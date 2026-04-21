@@ -1,8 +1,16 @@
+import supabase from "../../../library/supabaseclient";
+
 const deleteConversation = async (userId: string, conversationId: string) => {
     try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+
         const response = await fetch("http://localhost:3000/api/conversations/delete", {
             method: "DELETE",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
             body: JSON.stringify({ user_id: userId, conversation_id: conversationId }),
         });
 

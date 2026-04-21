@@ -141,8 +141,14 @@ const DocumentWizard = () => {
         formDataToSubmit.append("embeddingModel", formData.embeddingModel);
         formDataToSubmit.append("description", formData.description);
 
-        const response=await fetch("http://localhost:3000/api/documents/ingest",{
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+
+        const response=await fetch("http://localhost:3000/api/docs/ingest",{
             method: "POST",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            },
             body: formDataToSubmit
         })
         const data = await response.json();

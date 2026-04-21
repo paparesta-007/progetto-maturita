@@ -1,6 +1,7 @@
 import express from "express";
 import getSystemPrompt from "../static/systemPrompt.js";
 import { OPENROUTER_KEY } from "../config/enviroments.js";
+import { requireAuth } from "../middleware/auth.js";
 
 const router = express.Router();
 
@@ -21,7 +22,7 @@ function isCodeOrDebugIntent(message: string): boolean {
 	return codeSignals.some((rx) => rx.test(normalized));
 }
 
-router.post("/api/completion/chat", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
+router.post("/api/completion/chat", requireAuth, async function (req: express.Request, res: express.Response, next: express.NextFunction) {
 	try {
 		const { message, history, modelName, systemPromptUser, personalInfo, tone, allowedCustomInstructions, reasoning, isBetterView } = req.body;
 
@@ -121,7 +122,7 @@ router.post("/api/completion/chat", async function (req: express.Request, res: e
 	}
 });
 
-router.post("/api/streamingOutput", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
+router.post("/api/streamingOutput", requireAuth, async function (req: express.Request, res: express.Response, next: express.NextFunction) {
 	try {
 
 		const { message, history, modelName, systemPromptUser, personalInfo,

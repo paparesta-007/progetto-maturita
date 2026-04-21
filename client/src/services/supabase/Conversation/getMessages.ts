@@ -1,6 +1,15 @@
+import supabase from "../../../library/supabaseclient";
+
 const getMessages = async (convId: string) => {
     try {
-        const response = await fetch(`http://localhost:3000/api/conversations/messages?conversation_id=${encodeURIComponent(convId)}`);
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+
+        const response = await fetch(`http://localhost:3000/api/conversations/messages?conversation_id=${encodeURIComponent(convId)}`, {
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
+        });
 
         if (!response.ok) {
             console.error("Errore nel recupero dei messaggi:", response.statusText);
