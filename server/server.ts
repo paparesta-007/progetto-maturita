@@ -20,8 +20,9 @@ import {
 } from "./middleware/logging.js";
 import { OPENROUTER_KEY, PORT, SUPABASE_KEY, SUPABASE_URL } from "./config/enviroments.js";
 import chatRoutes from "./routes/chat.js";
-
-import { ingestDocument, askPdf } from "./services/documentService.js";
+import supportRoutes from "./routes/support.js";
+import documentRoutes from "./routes/documents.js";
+import { supabase } from "./services/supabase.js";
 
 import { embed, generateText, streamText } from 'ai';
 import { google } from '@ai-sdk/google';
@@ -59,10 +60,6 @@ const openRouter = createOpenRouter({
 
 });
 
-const supabaseUrl = SUPABASE_URL;
-const supabaseKey = SUPABASE_KEY;
-const supabase = createClient(supabaseUrl, supabaseKey);
-
 try {
     const errorPagePath = path.join(__dirname, 'static', 'error.html');
     paginaErr = fs.readFileSync(errorPagePath, 'utf-8'); // o il tuo metodo di letturaf
@@ -94,6 +91,9 @@ app.use(httpLoggingMiddleware);
 
 // Route chat (sendMessage / sendStreamedMessage)
 app.use(chatRoutes);
+app.use("/api/support", supportRoutes);
+app.use("/api/docs", documentRoutes);
+
 app.post("/api/gemini/getTitleConversation", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
     try {
         const { message } = req.body;
@@ -245,10 +245,6 @@ async function getSuggestedQuestion(question: string, answer: string): Promise<s
 
 
 // ─── HELPER: Normalizza il testo estratto dal PDF prima del chunking ───
-
-// ROUTE: Ingestione Documenti (PDF -> Vector DB)
-app.post("/api/documents/ingest", upload.single("file"), ingestDocument);
-
 
 // ============================================================
 // ENDPOINT: Gestione Conversazioni e Messaggi (Supabase server-side)
@@ -420,8 +416,6 @@ app.patch("/api/conversations/update-title", async (req: express.Request, res: e
     }
 });
 
-app.post("/api/chat/ask-pdf", askPdf);
-
 
 app.post("/api/quiz/generate", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
     try {
@@ -567,66 +561,6 @@ app.post("/api/quiz/generate", async function (req: express.Request, res: expres
         return res.status(500).json({ error: "Errore interno del server", details: error.message });
     }
 });
-
-app.post("/api/support/getUserTickets", async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    try {
-        const { userId } = req.body;
-        if (!userId) throw new Error("userId mancante");
-
-        logSupabaseAction("select_support_tickets", userId);
-        const { data, error } = await supabase
-            .from("support_tickets")
-            .select("*")
-            .eq("user_id", userId)
-            .order("created_at", { ascending: false });
-
-        if (error) {
-            console.error("Errore recupero ticket di supporto:", error);
-            return res.status(500).json({ error: error.message });
-        }
-
-        res.json({ success: true, tickets: data });
-    } catch (error: any) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-});
-
-app.post("/api/support/submit", async (req: express.Request, res: express.Response, next: express.NextFunction) => {
-    try {
-        const { userId, email, problemType, subject, message } = req.body;
-        /*
-        -- Create support_tickets table
-        CREATE TABLE support_tickets (
-            id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-            user_id UUID REFERENCES auth.users(id),
-            email TEXT NOT NULL,
-            problem_type TEXT NOT NULL,
-            subject TEXT NOT NULL,
-            message TEXT NOT NULL,
-            status TEXT DEFAULT 'open', -- 'open', 'in-progress', 'resolved', 'closed'
-            admin_reply TEXT,
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
-            updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
-        );
-        */
-        const { data, error } = await supabase
-            .from('support_tickets')
-            .insert([
-                {
-                    user_id: userId,
-                    email: email,
-                    problem_type: problemType,
-                    subject: subject,
-                    message: message,
-                },
-            ])
-            .select();
-        if (error) throw error;
-        return res.status(200).json({ success: true, data });
-    } catch (error: any) {
-        res.status(500).json({ success: false, error: error.message });
-    }
-})
 
 
 
