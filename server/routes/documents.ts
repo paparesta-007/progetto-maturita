@@ -6,6 +6,7 @@ import { PDFParse } from "pdf-parse";
 import { supabase } from "../services/supabase.js";
 import { logSupabaseAction } from "../middleware/logging.js";
 import { OPENROUTER_KEY } from "../config/enviroments.js";
+import { requireAuth } from "../middleware/auth.js";
 import crypto from "crypto";
 import multer from 'multer';
 
@@ -28,7 +29,7 @@ const openrouterEmbeddings = createOpenAI({
 /**
  * Gestisce l'ingestione di un file PDF: estrazione testo, chunking, embedding e salvataggio su Supabase.
  */
-router.post("/ingest", upload.single('file'), async (req: express.Request, res: express.Response) => {
+router.post("/ingest", requireAuth, upload.single('file'), async (req: express.Request, res: express.Response) => {
     try {
         console.log("📂 [1/6] Ricevuta richiesta ingestione...");
 
@@ -137,7 +138,7 @@ router.post("/ingest", upload.single('file'), async (req: express.Request, res: 
 /**
  * Esegue una query RAG su un documento PDF precedentemente ingerito.
  */
-router.post("/ask-pdf", async (req: express.Request, res: express.Response) => {
+router.post("/ask-pdf", requireAuth, async (req: express.Request, res: express.Response) => {
     res.setHeader("Content-Type", "application/x-ndjson");
     res.setHeader("Transfer-Encoding", "chunked");
 

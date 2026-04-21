@@ -12,7 +12,7 @@ import MarkdownRender from "../library/markdownRender";
 import GenerativeUIRenderer from "../components/generativeUI/GenerativeUIRenderer";
 import "katex/dist/katex.min.css";
 import katex from "katex";
-import { GhostIcon } from "@phosphor-icons/react";
+import { GhostIcon ,ChartBarIcon} from "@phosphor-icons/react";
 import DOMPurify from "dompurify";
 
 /* -------------------------------------------------------
@@ -177,7 +177,7 @@ const ChatContent = () => {
         setMessageHistory,
         sendMessage,
     } = useChat();
-    
+    const [isUsageOpen, setIsUsageOpen] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
     const chatContainerRef = useRef<HTMLDivElement | null>(null);
     
@@ -326,6 +326,17 @@ const ChatContent = () => {
                     setMessageHistory([]);
                 }}>
                     <GhostIcon
+                        size={24} 
+                        weight={`${isTemporaryConversation ? "fill" : "regular"}`}
+                        className={`transition-all duration-300 ${isTemporaryConversation ? "opacity-100" : "opacity-50 hover:opacity-100"}`}
+                    />
+                </button>
+
+                <button onClick={() => {    
+                        setIsUsageOpen(prev => !prev);
+                }}>
+                    <ChartBarIcon
+
                         size={24} 
                         weight={`${isTemporaryConversation ? "fill" : "regular"}`}
                         className={`transition-all duration-300 ${isTemporaryConversation ? "opacity-100" : "opacity-50 hover:opacity-100"}`}

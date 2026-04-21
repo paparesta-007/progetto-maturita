@@ -1,6 +1,8 @@
 import createConversation from "../services/supabase/Conversation/createConversation";
 import createMessage from "../services/supabase/Conversation/createMessage";
 import { type NavigateFunction } from "react-router-dom";
+import supabase from "./supabaseclient";
+
 export interface ChatOptions {
     systemPrompt?: string;
     personalInfo?: any;
@@ -64,9 +66,15 @@ export const sendNormalMessage = async (
     try {
         setLoading(true);
 
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+
         const response = await fetch("http://localhost:3000/api/completion/chat", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
             body: JSON.stringify({
                 message,
                 history: historyForBackend,
@@ -118,13 +126,16 @@ export const sendNormalMessage = async (
             } else if (userId) {
                 let newTitle = "New Chat";
                 try {
-                    const titleRes = await fetch("http://localhost:3000/api/gemini/getTitleConversation", {
+                    const titleRes = await fetch("http://localhost:3000/api/conversations/getTitleConversation", {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" },
+                        headers: { 
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${token}`
+                        },
                         body: JSON.stringify({ message }),
                     });
                     const titleData = await titleRes.json();
-                    newTitle = titleData.text || "New Chat";
+                    newTitle = titleData.title || "New Chat";
                 } catch (e) {
                     console.warn("Fallimento generazione titolo, uso default");
                 }
@@ -144,9 +155,12 @@ export const sendNormalMessage = async (
         let finalSuggestedQuestions = suggestedQuestions;
         if (finalSuggestedQuestions.length === 0) {
             try {
-                const resSQ = await fetch("http://localhost:3000/api/getSuggestedQuestion", {
+                const resSQ = await fetch("http://localhost:3000/api/conversations/getSuggestedQuestion", {
                     method: "POST",
-                    headers: { "Content-Type": "application/json" },
+                    headers: { 
+                        "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`
+                    },
                     body: JSON.stringify({ message: message, response: responseText })
                 });
                 if (resSQ.ok) {
@@ -227,9 +241,15 @@ export const sendStreamedMessage = async (
             return;
         }
 
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+
         const response = await fetch("http://localhost:3000/api/streamingOutput", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
             body: JSON.stringify({
                 message,
                 history: historyForBackend,
@@ -337,13 +357,16 @@ export const sendStreamedMessage = async (
             } else if (userId) {
                 let newTitle = "New Chat";
                 try {
-                    const titleRes = await fetch("http://localhost:3000/api/gemini/getTitleConversation", {
+                    const titleRes = await fetch("http://localhost:3000/api/conversations/getTitleConversation", {
                         method: "POST",
-                        headers: { "Content-Type": "application/json" },
+                        headers: { 
+                            "Content-Type": "application/json",
+                            "Authorization": `Bearer ${token}`
+                        },
                         body: JSON.stringify({ message }),
                     });
                     const titleData = await titleRes.json();
-                    newTitle = titleData.text || "New Chat";
+                    newTitle = titleData.title || "New Chat";
                 } catch (e) {
                     console.warn("Fallimento generazione titolo, uso default");
                 }
@@ -362,9 +385,12 @@ export const sendStreamedMessage = async (
         // Fetch suggested questions after saving (so the message is secure even if this fails)
         let finalSuggestedQuestions: string[] = [];
         try {
-            const resSQ = await fetch("http://localhost:3000/api/getSuggestedQuestion", {
+            const resSQ = await fetch("http://localhost:3000/api/conversations/getSuggestedQuestion", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
                 body: JSON.stringify({ message: message, response: accumulatedText })
             });
             if (resSQ.ok) {
