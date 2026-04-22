@@ -6,7 +6,7 @@ import BotLoading from "../components/other/BotLoading";
 import PromptStarter from "../components/PromptStarter";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, useParams } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useApp } from "../context/AppContext";
 import MarkdownRender from "../library/markdownRender";
 import GenerativeUIRenderer from "../components/generativeUI/GenerativeUIRenderer";
@@ -158,6 +158,57 @@ const LivePreviewMock = () => {
         <></>
     );
 };
+
+const MessageItem = React.memo(({ msg, index, isDark, sendMessage }: { 
+    msg: any, 
+    index: number, 
+    isDark: boolean, 
+    sendMessage: (msg: string, f: string, r: string) => void 
+}) => {
+    const hasStructuredUI = useMemo(() => /<ui-component\s+type="[^"]+">/i.test(msg.content), [msg.content]);
+    const renderMode = msg.renderMode || 'markdown';
+    
+    const safeHtml = useMemo(() => {
+        const extractedHtml = extractRenderableHtml(msg.content);
+        const canRenderHtml = Boolean((renderMode === 'html' || (!msg.renderMode && extractedHtml)) && extractedHtml);
+        const actuallyRenderHtml = canRenderHtml && !hasStructuredUI;
+
+        if (!actuallyRenderHtml) return null;
+
+        const normalizedHtml = normalizeWrapperThemeClasses(extractedHtml || '', isDark);
+        const htmlWithLatex = renderLatexInHtml(normalizedHtml);
+        return DOMPurify.sanitize(htmlWithLatex, {
+            ADD_TAGS: ['svg', 'path', 'g', 'rect', 'circle', 'line', 'polyline', 'polygon', 'button', 'span', 'section', 'article', 'math', 'semantics', 'mrow', 'mn', 'mo', 'mi', 'msup', 'msub', 'mfrac', 'mtext', 'annotation', 'annotation-xml'],
+            ADD_ATTR: ['class', 'style', 'viewBox', 'd', 'fill', 'xmlns', 'width', 'height', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'x', 'y', 'rx', 'ry', 'cx', 'cy', 'r', 'encoding', 'aria-hidden']
+        });
+    }, [msg.content, msg.renderMode, hasStructuredUI, isDark]);
+
+    if (msg.role === 'user') {
+        return <UserMessage i={index} htmlContent={msg.content} />;
+    }
+
+    return (
+        <BotMessage 
+            i={index} 
+            usage={msg.usage} 
+            model={msg.model} 
+            suggestedQuestions={msg.suggestedQuestions} 
+            logs={msg.logs} 
+            isComplete={msg.isComplete} 
+            reasoning={msg.reasoning} 
+            onSuggestedClick={(q) => sendMessage(q, "normal", "fast")}
+        >
+            {msg.content === "Elaborazione in corso..." || msg.content === "Avvio della richiesta..." 
+                ? <p className="text-neutral-500 italic text-sm">{msg.content}</p> 
+                : hasStructuredUI
+                    ? <GenerativeUIRenderer text={msg.content} />
+                    : safeHtml
+                        ? <div className="genui-html" dangerouslySetInnerHTML={{ __html: safeHtml }} />
+                    : <MarkdownRender text={msg.content} />
+            }
+        </BotMessage>
+    );
+});
 
 const ChatContent = () => {
     const { user, theme } = useAuth();
@@ -363,41 +414,15 @@ const ChatContent = () => {
                     >
                         {messageHistory.length !== 0 ? (
                             <div className={`space-y-6 ${chatContentClass}`}>
-                                {messageHistory.map((msg, index) => {
-                                    const hasStructuredUI = /<ui-component\s+type="[^"]+">/i.test(msg.content);
-                                    const renderMode = msg.renderMode || 'markdown';
-                                    const extractedHtml = extractRenderableHtml(msg.content);
-                                    const canRenderHtml = Boolean((renderMode === 'html' || (!msg.renderMode && extractedHtml)) && extractedHtml);
-                                    
-                                    // Se abbiamo Structured UI, diamo priorità a quella ignorando eventuali fallback HTML
-                                    const actuallyRenderHtml = canRenderHtml && !hasStructuredUI;
-
-                                    const normalizedHtml = actuallyRenderHtml ? normalizeWrapperThemeClasses(extractedHtml || '', isDark) : '';
-                                    const htmlWithLatex = actuallyRenderHtml ? renderLatexInHtml(normalizedHtml) : '';
-                                    const safeHtml = actuallyRenderHtml
-                                        ? DOMPurify.sanitize(htmlWithLatex, {
-                                            ADD_TAGS: ['svg', 'path', 'g', 'rect', 'circle', 'line', 'polyline', 'polygon', 'button', 'span', 'section', 'article', 'math', 'semantics', 'mrow', 'mn', 'mo', 'mi', 'msup', 'msub', 'mfrac', 'mtext', 'annotation', 'annotation-xml'],
-                                            ADD_ATTR: ['class', 'style', 'viewBox', 'd', 'fill', 'xmlns', 'width', 'height', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'x', 'y', 'rx', 'ry', 'cx', 'cy', 'r', 'encoding', 'aria-hidden']
-                                        })
-                                        : '';
-                                    
-                                    return (
-                                        msg.role === 'user' ? (
-                                            <UserMessage key={index} i={index} htmlContent={msg.content} />
-                                        ) : (
-                                            <BotMessage key={index} i={index} usage={msg.usage} model={msg.model} suggestedQuestions={msg.suggestedQuestions} logs={msg.logs} isComplete={msg.isComplete} reasoning={msg.reasoning} onSuggestedClick={(q) => sendMessage(q, "normal", "fast")}>
-                                                {msg.content === "Elaborazione in corso..." || msg.content === "Avvio della richiesta..." 
-                                                    ? <p className="text-neutral-500 italic text-sm">{msg.content}</p> 
-                                                    : hasStructuredUI
-                                                        ? <GenerativeUIRenderer text={msg.content} />
-                                                        : actuallyRenderHtml
-                                                            ? <div className="genui-html" dangerouslySetInnerHTML={{ __html: safeHtml }} />
-                                                        : <MarkdownRender text={msg.content} />
-                                                }
-                                            </BotMessage>
-                                        )
-                                    );
-                                })}
+                                {messageHistory.map((msg, index) => (
+                                    <MessageItem 
+                                        key={index} 
+                                        msg={msg} 
+                                        index={index} 
+                                        isDark={isDark} 
+                                        sendMessage={sendMessage} 
+                                    />
+                                ))}
                                 {loading && <BotLoading />}
                                 <div ref={messagesEndRef} />
                             </div>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useMemo } from 'react';
 import { motion } from 'framer-motion';
 import * as PhosphorIcons from '@phosphor-icons/react';
 
@@ -23,34 +23,36 @@ export interface DynamicCanvasProps {
     data: {
         root: UIElement;
     };
+    isStreaming?: boolean;
 }
 
 // --- Helpers ---
 
+const MAPPING: Record<SemanticColor, { text: string; bg: string; border: string }> = {
+    primary: { text: 'text-neutral-900 dark:text-white', bg: 'bg-neutral-100 dark:bg-neutral-800', border: 'border-neutral-200 dark:border-neutral-700' },
+    accent:  { text: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-200 dark:border-blue-800/50' },
+    emerald: { text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20', border: 'border-emerald-200 dark:border-emerald-800/50' },
+    amber:   { text: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20', border: 'border-amber-200 dark:border-amber-800/50' },
+    rose:    { text: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-900/20', border: 'border-rose-200 dark:border-rose-800/50' },
+    violet:  { text: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50 dark:bg-violet-900/20', border: 'border-violet-200 dark:border-violet-800/50' },
+    cyan:    { text: 'text-cyan-600 dark:text-cyan-400', bg: 'bg-cyan-50 dark:bg-cyan-900/20', border: 'border-cyan-200 dark:border-cyan-800/50' },
+    neutral: { text: 'text-neutral-500 dark:text-neutral-400', bg: 'bg-neutral-50 dark:bg-neutral-800/40', border: 'border-neutral-200 dark:border-neutral-800' },
+};
+
 const getColorClasses = (color?: SemanticColor, variant: 'text' | 'bg' | 'border' = 'text') => {
-    const mapping: Record<SemanticColor, { text: string; bg: string; border: string }> = {
-        primary: { text: 'text-neutral-900 dark:text-white', bg: 'bg-neutral-100 dark:bg-neutral-800', border: 'border-neutral-200 dark:border-neutral-700' },
-        accent:  { text: 'text-blue-600 dark:text-blue-400', bg: 'bg-blue-50 dark:bg-blue-900/20', border: 'border-blue-200 dark:border-blue-800/50' },
-        emerald: { text: 'text-emerald-600 dark:text-emerald-400', bg: 'bg-emerald-50 dark:bg-emerald-900/20', border: 'border-emerald-200 dark:border-emerald-800/50' },
-        amber:   { text: 'text-amber-600 dark:text-amber-400', bg: 'bg-amber-50 dark:bg-amber-900/20', border: 'border-amber-200 dark:border-amber-800/50' },
-        rose:    { text: 'text-rose-600 dark:text-rose-400', bg: 'bg-rose-50 dark:bg-rose-900/20', border: 'border-rose-200 dark:border-rose-800/50' },
-        violet:  { text: 'text-violet-600 dark:text-violet-400', bg: 'bg-violet-50 dark:bg-violet-900/20', border: 'border-violet-200 dark:border-violet-800/50' },
-        cyan:    { text: 'text-cyan-600 dark:text-cyan-400', bg: 'bg-cyan-50 dark:bg-cyan-900/20', border: 'border-cyan-200 dark:border-cyan-800/50' },
-        neutral: { text: 'text-neutral-500 dark:text-neutral-400', bg: 'bg-neutral-50 dark:bg-neutral-800/40', border: 'border-neutral-200 dark:border-neutral-800' },
-    };
-    return mapping[color || 'primary'][variant];
+    return MAPPING[color || 'primary'][variant];
 };
 
 // --- Primitive Components ---
 
-const ElementRenderer: React.FC<{ element: UIElement; index: number }> = ({ element, index }) => {
+const ElementRenderer = React.memo(({ element, index, isStreaming }: { element: UIElement; index: number; isStreaming?: boolean }) => {
     const { type, props = {}, children = [] } = element;
 
-    const animation = {
-        initial: { opacity: 0, y: 10 },
+    const animation = useMemo(() => ({
+        initial: isStreaming ? false : { opacity: 0, y: 10 },
         animate: { opacity: 1, y: 0 },
-        transition: { delay: index * 0.05, duration: 0.4 }
-    };
+        transition: { delay: Math.min(index * 0.05, 0.5), duration: 0.3 }
+    }), [index, isStreaming]);
 
     switch (type) {
         case 'container': {
@@ -69,27 +71,23 @@ const ElementRenderer: React.FC<{ element: UIElement; index: number }> = ({ elem
             const effectiveDirection = isRootContainer ? 'col' : direction;
             const effectiveBorder = isRootContainer ? false : border;
             
-            const gapMap: Record<number, string> = { 0: 'gap-0', 1: 'gap-1', 2: 'gap-2', 3: 'gap-3', 4: 'gap-4', 6: 'gap-6', 8: 'gap-8' };
-            const padMap: Record<number, string> = { 0: 'p-0', 1: 'p-1', 2: 'p-2', 3: 'p-3', 4: 'p-4', 6: 'p-6', 8: 'p-8' };
-            const roundedMap: Record<string, string> = { 'none': 'rounded-none', 'sm': 'rounded-sm', 'md': 'rounded-md', 'lg': 'rounded-lg', 'xl': 'rounded-xl', '2xl': 'rounded-2xl', 'full': 'rounded-full' };
-
             const classes = [
                 'flex',
                 effectiveDirection === 'row' ? 'flex-row' : 'flex-col',
-                gapMap[gap] || 'gap-4',
-                padMap[padding] || 'p-4',
-                roundedMap[rounded] || 'rounded-xl',
+                `gap-${gap}`,
+                `p-${padding}`,
+                `rounded-${rounded}`,
                 align === 'center' ? 'items-center' : align === 'end' ? 'items-end' : 'items-start',
                 justify === 'center' ? 'justify-center' : justify === 'between' ? 'justify-between' : 'justify-start',
                 glass ? 'bg-transparent backdrop-blur-md' : '',
-                effectiveBorder ? 'border border-neutral-200' : '',
+                effectiveBorder ? 'border border-neutral-200 dark:border-neutral-800' : '',
                 props.className || ''
             ].join(' ');
 
             return (
                 <motion.div {...animation} className={classes}>
                     {children.map((child, i) => (
-                        <ElementRenderer key={i} element={child} index={i} />
+                        <ElementRenderer key={i} element={child} index={i} isStreaming={isStreaming} />
                     ))}
                 </motion.div>
             );
@@ -215,14 +213,14 @@ const ElementRenderer: React.FC<{ element: UIElement; index: number }> = ({ elem
         default:
             return null;
     }
-};
+});
 
-const DynamicCanvas: React.FC<DynamicCanvasProps> = ({ data }) => {
+const DynamicCanvas: React.FC<DynamicCanvasProps> = ({ data, isStreaming }) => {
     if (!data || !data.root) return null;
 
     return (
         <div className="w-full overflow-hidden">
-            <ElementRenderer element={data.root} index={0} />
+            <ElementRenderer element={data.root} index={0} isStreaming={isStreaming} />
         </div>
     );
 };

@@ -332,7 +332,7 @@ const BotMessage = React.memo(({ i, children, usage, model, suggestedQuestions, 
                         {/* ─── Message Bubble ─── */}
                         <div id={`bot-msg-${i}`} className={s.bubble}>
                             {reasoning && (
-                                <ReasoningTimeline reasoning={reasoning} isDark={isDark} isStreaming={!children || children === ''} />
+                                <ReasoningTimeline reasoning={reasoning} isDark={isDark} isStreaming={!isComplete} />
                             )}
                             {logs && logs.length > 0 && (
                                 <BotLogsTimeline logs={logs} isDark={isDark} isComplete={isComplete} />
