@@ -14,6 +14,7 @@ import { parseGenerativeUI, hasUIComponents } from '../../utils/parseGenerativeU
 
 // ── Component Registry ──
 import DynamicCanvas from './DynamicCanvas';
+import Sandbox from './Sandbox';
 
 interface GenerativeUIRendererProps {
     text: string;
@@ -24,8 +25,9 @@ interface GenerativeUIRendererProps {
  * Maps a componentType string (from the AI) to a React component.
  * Dynamic layout system is the primary visual renderer.
  */
-const COMPONENT_REGISTRY: Record<string, React.FC<{ data: any }>> = {
+const COMPONENT_REGISTRY: Record<string, React.FC<{ data: any; isStreaming?: boolean }>> = {
     'dynamic': DynamicCanvas,
+    'sandbox': Sandbox,
 };
 
 const GenerativeUIRenderer: React.FC<GenerativeUIRendererProps> = ({ text, isStreaming }) => {
@@ -53,7 +55,7 @@ const GenerativeUIRenderer: React.FC<GenerativeUIRendererProps> = ({ text, isStr
                     const Component = COMPONENT_REGISTRY[chunk.componentType];
 
                     if (Component) {
-                        return <Component key={`ui-${idx}`} data={chunk.data} />;
+                        return <Component key={`ui-${idx}`} data={chunk.data} isStreaming={isStreaming} />;
                     }
 
                     // Unknown component type → render a subtle warning

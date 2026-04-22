@@ -6,7 +6,7 @@ import BotLoading from "../components/other/BotLoading";
 import PromptStarter from "../components/PromptStarter";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, useParams } from "react-router-dom";
-import { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useApp } from "../context/AppContext";
 import MarkdownRender from "../library/markdownRender";
 import GenerativeUIRenderer from "../components/generativeUI/GenerativeUIRenderer";
@@ -14,6 +14,7 @@ import "katex/dist/katex.min.css";
 import katex from "katex";
 import { GhostIcon ,ChartBarIcon} from "@phosphor-icons/react";
 import DOMPurify from "dompurify";
+import UsageConversation from "../components/usageConversation";
 
 /* -------------------------------------------------------
    System Styles (Shared from LandingPage)
@@ -157,6 +158,57 @@ const LivePreviewMock = () => {
         <></>
     );
 };
+
+const MessageItem = React.memo(({ msg, index, isDark, sendMessage }: { 
+    msg: any, 
+    index: number, 
+    isDark: boolean, 
+    sendMessage: (msg: string, f: string, r: string) => void 
+}) => {
+    const hasStructuredUI = useMemo(() => /<ui-component\s+type="[^"]+">/i.test(msg.content), [msg.content]);
+    const renderMode = msg.renderMode || 'markdown';
+    
+    const safeHtml = useMemo(() => {
+        const extractedHtml = extractRenderableHtml(msg.content);
+        const canRenderHtml = Boolean((renderMode === 'html' || (!msg.renderMode && extractedHtml)) && extractedHtml);
+        const actuallyRenderHtml = canRenderHtml && !hasStructuredUI;
+
+        if (!actuallyRenderHtml) return null;
+
+        const normalizedHtml = normalizeWrapperThemeClasses(extractedHtml || '', isDark);
+        const htmlWithLatex = renderLatexInHtml(normalizedHtml);
+        return DOMPurify.sanitize(htmlWithLatex, {
+            ADD_TAGS: ['svg', 'path', 'g', 'rect', 'circle', 'line', 'polyline', 'polygon', 'button', 'span', 'section', 'article', 'math', 'semantics', 'mrow', 'mn', 'mo', 'mi', 'msup', 'msub', 'mfrac', 'mtext', 'annotation', 'annotation-xml'],
+            ADD_ATTR: ['class', 'style', 'viewBox', 'd', 'fill', 'xmlns', 'width', 'height', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'x', 'y', 'rx', 'ry', 'cx', 'cy', 'r', 'encoding', 'aria-hidden']
+        });
+    }, [msg.content, msg.renderMode, hasStructuredUI, isDark]);
+
+    if (msg.role === 'user') {
+        return <UserMessage i={index} htmlContent={msg.content} />;
+    }
+
+    return (
+        <BotMessage 
+            i={index} 
+            usage={msg.usage} 
+            model={msg.model} 
+            suggestedQuestions={msg.suggestedQuestions} 
+            logs={msg.logs} 
+            isComplete={msg.isComplete} 
+            reasoning={msg.reasoning} 
+            onSuggestedClick={(q) => sendMessage(q, "normal", "fast")}
+        >
+            {msg.content === "Elaborazione in corso..." || msg.content === "Avvio della richiesta..." 
+                ? <p className="text-neutral-500 italic text-sm">{msg.content}</p> 
+                : hasStructuredUI
+                    ? <GenerativeUIRenderer text={msg.content} />
+                    : safeHtml
+                        ? <div className="genui-html" dangerouslySetInnerHTML={{ __html: safeHtml }} />
+                    : <MarkdownRender text={msg.content} />
+            }
+        </BotMessage>
+    );
+});
 
 const ChatContent = () => {
     const { user, theme } = useAuth();
@@ -316,7 +368,8 @@ const ChatContent = () => {
 
             <h2 className={styles.headerText}>
                 {currentConversationName || (isDark ? "Nuova Chat" : "Chat")}
-                <button onClick={() => {    
+                <div className="flex items-center gap-2">
+                     <button onClick={() => {    
                     if (!isTemporaryConversation) {
                         navigate('/app/chat');
                     }
@@ -332,16 +385,19 @@ const ChatContent = () => {
                     />
                 </button>
 
-                <button onClick={() => {    
+                {currentConversationId && (
+                    <button onClick={() => {    
                         setIsUsageOpen(prev => !prev);
                 }}>
                     <ChartBarIcon
 
-                        size={24} 
-                        weight={`${isTemporaryConversation ? "fill" : "regular"}`}
-                        className={`transition-all duration-300 ${isTemporaryConversation ? "opacity-100" : "opacity-50 hover:opacity-100"}`}
-                    />
-                </button>
+                            size={24} 
+                            weight={`${isTemporaryConversation ? "fill" : "regular"}`}
+                            className={`transition-all duration-300 ${isTemporaryConversation ? "opacity-100" : "opacity-50 hover:opacity-100"}`}
+                        />
+                    </button>
+                )}
+                </div>
             </h2>
              
             {/* MAIN CONTENT */}
@@ -358,37 +414,15 @@ const ChatContent = () => {
                     >
                         {messageHistory.length !== 0 ? (
                             <div className={`space-y-6 ${chatContentClass}`}>
-                                {messageHistory.map((msg, index) => {
-                                    const hasStructuredUI = /<ui-component\s+type="[^"]+">/i.test(msg.content);
-                                    const renderMode = msg.renderMode || 'markdown';
-                                    const extractedHtml = extractRenderableHtml(msg.content);
-                                    const canRenderHtml = Boolean((renderMode === 'html' || (!msg.renderMode && extractedHtml)) && extractedHtml);
-                                    const normalizedHtml = canRenderHtml ? normalizeWrapperThemeClasses(extractedHtml || '', isDark) : '';
-                                    const htmlWithLatex = canRenderHtml ? renderLatexInHtml(normalizedHtml) : '';
-                                    const safeHtml = canRenderHtml
-                                        ? DOMPurify.sanitize(htmlWithLatex, {
-                                            ADD_TAGS: ['svg', 'path', 'g', 'rect', 'circle', 'line', 'polyline', 'polygon', 'button', 'span', 'section', 'article', 'math', 'semantics', 'mrow', 'mn', 'mo', 'mi', 'msup', 'msub', 'mfrac', 'mtext', 'annotation', 'annotation-xml'],
-                                            ADD_ATTR: ['class', 'style', 'viewBox', 'd', 'fill', 'xmlns', 'width', 'height', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'x', 'y', 'rx', 'ry', 'cx', 'cy', 'r', 'encoding', 'aria-hidden']
-                                        })
-                                        : '';
-                                    
-                                    return (
-                                        msg.role === 'user' ? (
-                                            <UserMessage key={index} i={index} htmlContent={msg.content} />
-                                        ) : (
-                                            <BotMessage key={index} i={index} usage={msg.usage} model={msg.model} suggestedQuestions={msg.suggestedQuestions} logs={msg.logs} isComplete={msg.isComplete} reasoning={msg.reasoning} onSuggestedClick={(q) => sendMessage(q, "normal", "fast")}>
-                                                {msg.content === "Elaborazione in corso..." || msg.content === "Avvio della richiesta..." 
-                                                    ? <p className="text-neutral-500 italic text-sm">{msg.content}</p> 
-                                                    : hasStructuredUI
-                                                        ? <GenerativeUIRenderer text={msg.content} />
-                                                        : canRenderHtml
-                                                            ? <div className="genui-html" dangerouslySetInnerHTML={{ __html: safeHtml }} />
-                                                        : <MarkdownRender text={msg.content} />
-                                                }
-                                            </BotMessage>
-                                        )
-                                    );
-                                })}
+                                {messageHistory.map((msg, index) => (
+                                    <MessageItem 
+                                        key={index} 
+                                        msg={msg} 
+                                        index={index} 
+                                        isDark={isDark} 
+                                        sendMessage={sendMessage} 
+                                    />
+                                ))}
                                 {loading && <BotLoading />}
                                 <div ref={messagesEndRef} />
                             </div>
@@ -408,7 +442,7 @@ const ChatContent = () => {
 
 
             </main>
-
+            {isUsageOpen && (<UsageConversation onClose={() => setIsUsageOpen(false)} />)}
             {/* FOOTER */}
             <footer className={styles.footer}>
                 {/* Il container interno del footer matcha esattamente le classi di larghezza della Chat */}

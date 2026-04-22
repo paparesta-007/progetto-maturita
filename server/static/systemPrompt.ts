@@ -86,8 +86,16 @@ const getSystemPrompt = ({
 - Wrapper backgrounds remain transparent (avoid \`bg-white dark:bg-*\` and \`bg-black dark:bg-*\` patterns).
 - Semantic badge example: \`<span class="px-2 py-0.5 text-[10px] uppercase font-bold tracking-wide rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Tag</span>\`.
 
-**8. Global Contract:**
-- Output must be one single root HTML block starting with \`<div\`.
+**8. Interactive Visualizations (Virtual DOM / Sandbox):**
+- For complex charts, custom UI, or interactive scripts, use the \`sandbox\` component.
+- **Format:** \`<ui-component type="sandbox">{"html": "...", "script": "...", "css": "..."}</ui-component>\`.
+- **Pre-installed CDNs:** Chart.js, Luxon, D3, Lucide, Tailwind. No need to include these manually.
+- Use Tailwind CSS within the \`html\` field for styling.
+- All scripts execute in a protected environment. Avoid external library imports unless specific.
+
+**9. Global Contract:**
+- Output must be one single root block: either a \`<div>\` (Raw HTML) or \`<ui-component>\` (Structured UI).
+- **Aesthetics:** The root \`<div>\` must be transparent. Use \`border-neutral-200 dark:border-neutral-700\` ONLY if creating a list of cards or a structured dashboard. For normal text flow, do NOT use a root border.
 - No markdown fences, no prefix/suffix text, no escaped HTML.
 - Use inline SVG icons with \`aria-hidden="true"\` when helpful.`;
         }

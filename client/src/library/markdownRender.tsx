@@ -12,7 +12,8 @@ const MarkdownRender = ({ text, isStreaming }: { text: string; isStreaming?: boo
     const [isLoading, setIsLoading] = useState<boolean>(true);
     const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const { theme } = useAuth();
-    const containerRef = useRef<HTMLDivElement>(null); // Riferimento al contenitore principale
+    const containerRef = useRef<HTMLDivElement>(null); 
+    const previousTextRef = useRef<string>("");
 
     // --- PIPELINE DI RENDERING ---
     const renderMarkdown = useCallback(async (rawText: string) => {
@@ -48,14 +49,12 @@ const MarkdownRender = ({ text, isStreaming }: { text: string; isStreaming?: boo
             for (const token of tokenList) {
                 if (token.type === 'code') {
                     const rawLang = token.lang || 'text';
-                    const lang = highlighter.getLoadedLanguages().includes(rawLang) ? rawLang : 'text';
+                    const langs = highlighter.getLoadedLanguages();
+                    const lang = (rawLang && langs.includes(rawLang)) ? rawLang : 'text';
                     token.type = 'html';
                     
-                    // Codifichiamo il testo per l'attributo data-code
-                    // encodeURIComponent è sicuro per mettere stringhe arbitrarie in attributi HTML
                     const codeContent = encodeURIComponent(token.text);
 
-                    // Generiamo l'HTML del bottone. Nota la classe 'copy-btn' e l'attributo 'data-code'
                     const copyButtonHtml = `
                         <button class="copy-btn flex items-center gap-1 text-xs text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200 transition-colors" data-code="${codeContent}">
                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="copy-icon"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
@@ -83,8 +82,6 @@ const MarkdownRender = ({ text, isStreaming }: { text: string; isStreaming?: boo
             rawHtml = rawHtml.replace(new RegExp(placeholder, 'g'), rendered);
         });
 
-        // IMPORTANTE: Aggiungi 'button' e 'svg', 'rect', 'path' ai tag permessi da DOMPurify
-        // e 'data-code' agli attributi permessi.
         return DOMPurify.sanitize(rawHtml, {
             ADD_TAGS: ['math', 'semantics', 'mrow', 'mn', 'mo', 'mi', 'msup', 'msub', 'mfrac', 'mtext', 'annotation', 'annotation-xml', 'svg', 'path', 'g', 'div', 'span', 'pre', 'code', 'button', 'rect'],
             ADD_ATTR: ['style', 'class', 'viewBox', 'd', 'fill', 'xmlns', 'width', 'height', 'data-language', 'data-code', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'x', 'y', 'rx', 'ry']
@@ -94,7 +91,9 @@ const MarkdownRender = ({ text, isStreaming }: { text: string; isStreaming?: boo
     useEffect(() => {
         let isCancelled = false;
         const executeRender = async () => {
-            if (!text) return;
+            if (!text || text === previousTextRef.current) return;
+            previousTextRef.current = text;
+
             try {
                 const html = await renderMarkdown(text);
                 if (!isCancelled) {
@@ -105,8 +104,13 @@ const MarkdownRender = ({ text, isStreaming }: { text: string; isStreaming?: boo
                 if (!isCancelled) setHtmlContent(text);
             }
         };
+
         if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-        const delay = isStreaming ? 50 : 0; 
+        
+        // Se sta streamando e il testo è corto, renderizziamo subito per reattività.
+        // Se il testo è lungo, usiamo un debounce più aggressivo.
+        const delay = isStreaming ? (text.length > 1000 ? 100 : 40) : 0; 
+
         debounceTimerRef.current = setTimeout(executeRender, delay);
         return () => {
             isCancelled = true;
