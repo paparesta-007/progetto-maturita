@@ -110,7 +110,7 @@ app.post("/api/quiz/generate", async function (req: express.Request, res: expres
 
         const modeToModelMap: Record<string, string> = {
             fast: "openai/gpt-oss-120b",
-            standard: "mistralai/mistral-small-2603b",
+            standard: "openai/gpt-oss-120b",
             accurate: "nvidia/nemotron-3-super-120b-a12b:free"
         };
 
@@ -124,7 +124,7 @@ app.post("/api/quiz/generate", async function (req: express.Request, res: expres
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
             method: "POST",
             headers: {
-                "Authorization": `Bearer ${process.env.VITE_OPENROUTER_API_KEY}`,
+                "Authorization": `Bearer ${OPENROUTER_KEY}`,
                 "Content-Type": "application/json",
                 "HTTP-Referer": "http://localhost:3000/quiz",
             },

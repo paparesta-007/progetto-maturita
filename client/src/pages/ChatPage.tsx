@@ -6,7 +6,7 @@ import BotLoading from "../components/other/BotLoading";
 import PromptStarter from "../components/PromptStarter";
 import { useAuth } from "../context/AuthContext";
 import { useNavigate, useParams } from "react-router-dom";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useApp } from "../context/AppContext";
 import MarkdownRender from "../library/markdownRender";
 import GenerativeUIRenderer from "../components/generativeUI/GenerativeUIRenderer";
@@ -14,6 +14,7 @@ import "katex/dist/katex.min.css";
 import katex from "katex";
 import { GhostIcon ,ChartBarIcon} from "@phosphor-icons/react";
 import DOMPurify from "dompurify";
+import UsageConversation from "../components/usageConversation";
 
 /* -------------------------------------------------------
    System Styles (Shared from LandingPage)
@@ -316,7 +317,8 @@ const ChatContent = () => {
 
             <h2 className={styles.headerText}>
                 {currentConversationName || (isDark ? "Nuova Chat" : "Chat")}
-                <button onClick={() => {    
+                <div className="flex items-center gap-2">
+                     <button onClick={() => {    
                     if (!isTemporaryConversation) {
                         navigate('/app/chat');
                     }
@@ -332,16 +334,19 @@ const ChatContent = () => {
                     />
                 </button>
 
-                <button onClick={() => {    
+                {currentConversationId && (
+                    <button onClick={() => {    
                         setIsUsageOpen(prev => !prev);
                 }}>
                     <ChartBarIcon
 
-                        size={24} 
-                        weight={`${isTemporaryConversation ? "fill" : "regular"}`}
-                        className={`transition-all duration-300 ${isTemporaryConversation ? "opacity-100" : "opacity-50 hover:opacity-100"}`}
-                    />
-                </button>
+                            size={24} 
+                            weight={`${isTemporaryConversation ? "fill" : "regular"}`}
+                            className={`transition-all duration-300 ${isTemporaryConversation ? "opacity-100" : "opacity-50 hover:opacity-100"}`}
+                        />
+                    </button>
+                )}
+                </div>
             </h2>
              
             {/* MAIN CONTENT */}
@@ -363,9 +368,13 @@ const ChatContent = () => {
                                     const renderMode = msg.renderMode || 'markdown';
                                     const extractedHtml = extractRenderableHtml(msg.content);
                                     const canRenderHtml = Boolean((renderMode === 'html' || (!msg.renderMode && extractedHtml)) && extractedHtml);
-                                    const normalizedHtml = canRenderHtml ? normalizeWrapperThemeClasses(extractedHtml || '', isDark) : '';
-                                    const htmlWithLatex = canRenderHtml ? renderLatexInHtml(normalizedHtml) : '';
-                                    const safeHtml = canRenderHtml
+                                    
+                                    // Se abbiamo Structured UI, diamo priorità a quella ignorando eventuali fallback HTML
+                                    const actuallyRenderHtml = canRenderHtml && !hasStructuredUI;
+
+                                    const normalizedHtml = actuallyRenderHtml ? normalizeWrapperThemeClasses(extractedHtml || '', isDark) : '';
+                                    const htmlWithLatex = actuallyRenderHtml ? renderLatexInHtml(normalizedHtml) : '';
+                                    const safeHtml = actuallyRenderHtml
                                         ? DOMPurify.sanitize(htmlWithLatex, {
                                             ADD_TAGS: ['svg', 'path', 'g', 'rect', 'circle', 'line', 'polyline', 'polygon', 'button', 'span', 'section', 'article', 'math', 'semantics', 'mrow', 'mn', 'mo', 'mi', 'msup', 'msub', 'mfrac', 'mtext', 'annotation', 'annotation-xml'],
                                             ADD_ATTR: ['class', 'style', 'viewBox', 'd', 'fill', 'xmlns', 'width', 'height', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'x', 'y', 'rx', 'ry', 'cx', 'cy', 'r', 'encoding', 'aria-hidden']
@@ -381,7 +390,7 @@ const ChatContent = () => {
                                                     ? <p className="text-neutral-500 italic text-sm">{msg.content}</p> 
                                                     : hasStructuredUI
                                                         ? <GenerativeUIRenderer text={msg.content} />
-                                                        : canRenderHtml
+                                                        : actuallyRenderHtml
                                                             ? <div className="genui-html" dangerouslySetInnerHTML={{ __html: safeHtml }} />
                                                         : <MarkdownRender text={msg.content} />
                                                 }
@@ -408,7 +417,7 @@ const ChatContent = () => {
 
 
             </main>
-
+            {isUsageOpen && (<UsageConversation onClose={() => setIsUsageOpen(false)} />)}
             {/* FOOTER */}
             <footer className={styles.footer}>
                 {/* Il container interno del footer matcha esattamente le classi di larghezza della Chat */}

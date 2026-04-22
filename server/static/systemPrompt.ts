@@ -86,8 +86,14 @@ const getSystemPrompt = ({
 - Wrapper backgrounds remain transparent (avoid \`bg-white dark:bg-*\` and \`bg-black dark:bg-*\` patterns).
 - Semantic badge example: \`<span class="px-2 py-0.5 text-[10px] uppercase font-bold tracking-wide rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Tag</span>\`.
 
-**8. Global Contract:**
-- Output must be one single root HTML block starting with \`<div\`.
+**8. Interactive Visualizations (Virtual DOM / Sandbox):**
+- For complex charts (Chart.js), interactive maps, or custom widgets, use the \`sandbox\` component.
+- **Format:** \`<ui-component type="sandbox">{"html": "...", "script": "...", "libraries": ["https://cdn.jsdelivr.net/npm/chart.js"]}</ui-component>\`.
+- All scripts inside \`sandbox\` execute in a protected environment.
+- Use Tailwind CSS within the \`html\` field for styling.
+
+**9. Global Contract:**
+- Output must be one single root block: either a \`<div>\` (Raw HTML) or \`<ui-component>\` (Structured UI).
 - No markdown fences, no prefix/suffix text, no escaped HTML.
 - Use inline SVG icons with \`aria-hidden="true"\` when helpful.`;
         }

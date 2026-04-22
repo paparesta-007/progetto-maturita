@@ -14,6 +14,7 @@ import { parseGenerativeUI, hasUIComponents } from '../../utils/parseGenerativeU
 
 // ── Component Registry ──
 import DynamicCanvas from './DynamicCanvas';
+import Sandbox from './Sandbox';
 
 interface GenerativeUIRendererProps {
     text: string;
@@ -26,6 +27,7 @@ interface GenerativeUIRendererProps {
  */
 const COMPONENT_REGISTRY: Record<string, React.FC<{ data: any }>> = {
     'dynamic': DynamicCanvas,
+    'sandbox': Sandbox,
 };
 
 const GenerativeUIRenderer: React.FC<GenerativeUIRendererProps> = ({ text, isStreaming }) => {
