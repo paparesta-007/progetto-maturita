@@ -48,8 +48,8 @@ const SchemaTextbar = () => {
         el.style.height = Math.min(el.scrollHeight, maxHeight) + "px";
     }, []);
 
-    const containerStyle = `w-full rounded-[1.5rem] p-3 flex flex-col gap-2 transition-all duration-300 ${
-        isDark ? "glass border-white/10 shadow-2xl" : "bg-white border border-neutral-200 shadow-md"
+    const containerStyle = `w-full rounded-[1.5rem] p-3 flex flex-col gap-2 transition-all duration-300 border ${
+        isDark ? "bg-[#18181b] border-white/20 shadow-2xl" : "bg-white border-neutral-300 shadow-md"
     }`;
 
     const inputStyle = `flex-1 p-2 focus:outline-none bg-transparent resize-none ${

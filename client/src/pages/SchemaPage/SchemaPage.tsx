@@ -1,4 +1,4 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect,useState } from 'react';
 import { useSchema, type SchemaNodeData } from '../../context/SchemaContext';
 import { useAuth } from '../../context/AuthContext';
 import SchemaTextbar from './Textbar';
@@ -46,6 +46,12 @@ const SchemaNode = ({
                         onChange={(e) => onUpdate(node.id, 'description', e.target.value)}
                         placeholder="Descrizione (opzionale)..."
                         rows={1}
+                        ref={(el) => {
+                            if (el) {
+                                el.style.height = "auto";
+                                el.style.height = `${el.scrollHeight}px`;
+                            }
+                        }}
                         onInput={(e) => {
                             e.currentTarget.style.height = "auto";
                             e.currentTarget.style.height = `${e.currentTarget.scrollHeight}px`;
@@ -149,8 +155,8 @@ const SchemaBuilder = () => {
     };
 
     return (
-        <div className={`flex-1 overflow-auto p-6 ${isDark ? 'text-white' : 'text-neutral-900'}`}>
-            <div className="w-full h-full flex flex-col space-y-6">
+        <div className={`flex flex-col flex-1 h-full p-6 ${isDark ? 'text-white' : 'text-neutral-900'}`}>
+            <div className="w-full flex-1 flex flex-col space-y-6 min-h-0">
                 <div className="flex items-center justify-between">
                     <h2 className="text-2xl font-bold tracking-tight">Schema Builder</h2>
                     <button 
@@ -232,7 +238,7 @@ const SchemaBuilder = () => {
                     }
                 `}</style>
                 
-                <div className={`w-full flex-1 min-h-[600px] overflow-auto rounded-2xl border ${isDark ? 'bg-[#07070a] border-white/[0.08]' : 'bg-neutral-50 border-neutral-200'}`} style={{
+                <div className={`w-full flex-1 h-full overflow-auto rounded-2xl border ${isDark ? 'bg-[#07070a] border-white/[0.08]' : 'bg-neutral-50 border-neutral-200'}`} style={{
                      backgroundImage: `radial-gradient(${isDark ? '#ffffff1a' : '#0000001a'} 1px, transparent 0)`,
                      backgroundSize: '30px 30px'
                 }}>
@@ -271,23 +277,58 @@ const SchemaPage = () => {
     const isDark = theme === 'dark';
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
+    const [isChatOpen, setIsChatOpen] = useState(true);
+
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages]);
 
     return (
-        <div className={`flex h-full w-full overflow-hidden transition-colors duration-500 ${isDark ? "bg-[#07070a] text-[#f4f1ea]" : "bg-[#fdfcfb] text-neutral-900"}`}>
+        <div className={`relative flex h-full w-full overflow-hidden transition-colors duration-500 ${isDark ? "bg-[#07070a] text-[#f4f1ea]" : "bg-[#fdfcfb] text-neutral-900"}`}>
             
-            {/* Left Panel: Chat & Textbar */}
-            <div className={`w-[400px] flex flex-col border-r ${isDark ? 'border-white/[0.08] bg-white/[0.02]' : 'border-neutral-200 bg-white/50'}`}>
+            {/* Main Canvas: Schema Builder */}
+            <div className="flex-1 w-full h-full flex flex-col">
+                <SchemaBuilder />
+            </div>
+
+            {/* Toggle Button if Chat is hidden */}
+            {!isChatOpen && (
+                <div className="fixed bottom-6 right-6 z-40">
+                    <button
+                        onClick={() => setIsChatOpen(true)}
+                        className={`p-4 rounded-2xl shadow-2xl transition-transform hover:scale-105 active:scale-95 ${
+                            isDark ? "bg-white text-black" : "bg-black text-white"
+                        }`}
+                    >
+                        <span className="text-2xl">🪄</span>
+                    </button>
+                </div>
+            )}
+
+            {/* Floating Chat */}
+            {isChatOpen && (
+            <div className={`fixed bottom-6 right-6 w-[360px] h-[550px] max-h-[80vh] flex flex-col rounded-3xl shadow-2xl z-50 border overflow-hidden transition-colors duration-500 ${
+                isDark ? 'bg-[#07070a]/80 backdrop-blur-2xl border-white/[0.05] shadow-[0_0_30px_rgba(0,0,0,0.5)]' : 'bg-white/90 backdrop-blur-2xl border-neutral-200 shadow-[0_0_30px_rgba(0,0,0,0.1)]'
+            }`}>
                 {/* Header */}
-                <div className={`p-4 border-b ${isDark ? 'border-white/[0.08]' : 'border-neutral-200'}`}>
-                    <h1 className="font-bold">Schema Assistant</h1>
-                    <p className={`text-xs ${isDark ? 'text-neutral-500' : 'text-neutral-500'}`}>Descrivi cosa vuoi creare o modificare.</p>
+                <div className={`px-5 py-4 border-b flex items-center justify-between ${isDark ? 'border-white/[0.05] bg-white/[0.01]' : 'border-neutral-100 bg-neutral-50/50'}`}>
+                    <div className="flex items-center gap-3">
+                        <span className="text-xl">🪄</span>
+                        <div>
+                            <h1 className={`font-bold text-base ${isDark ? 'text-white' : 'text-neutral-900'}`}>Schema Assistant</h1>
+                            <p className={`text-[11px] font-medium ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>Crea e Modifica con l'AI</p>
+                        </div>
+                    </div>
+                    <button 
+                        onClick={() => setIsChatOpen(false)}
+                        className={`p-2 rounded-xl transition-colors ${isDark ? 'hover:bg-white/10 text-neutral-400' : 'hover:bg-neutral-200 text-neutral-500'}`}
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
                 </div>
 
                 {/* Messages */}
-                <div className="flex-1 overflow-auto p-4 space-y-4">
+                <div className="flex-1 overflow-auto p-4 space-y-4 custom-scrollbar">
                     {messages.length === 0 && (
                         <div className={`text-center text-sm py-10 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
                             Chiedimi di creare o modificare uno schema per te!
@@ -295,10 +336,10 @@ const SchemaPage = () => {
                     )}
                     {messages.map((msg, idx) => (
                         <div key={idx} className={`flex flex-col ${msg.role === 'user' ? 'items-end' : 'items-start'}`}>
-                            <div className={`max-w-[85%] rounded-2xl p-3 text-sm ${
+                            <div className={`max-w-[85%] rounded-2xl p-3.5 text-sm leading-relaxed ${
                                 msg.role === 'user' 
-                                    ? (isDark ? 'bg-orange-500 text-black' : 'bg-black text-white')
-                                    : (isDark ? 'bg-neutral-800 text-white' : 'bg-neutral-100 text-neutral-900')
+                                    ? (isDark ? 'bg-orange-500 text-black' : 'bg-orange-500 text-white')
+                                    : (isDark ? 'bg-white/[0.03] border border-white/[0.03] text-white' : 'bg-neutral-100 border border-neutral-200 text-neutral-900')
                             }`}>
                                 {msg.content}
                             </div>
@@ -306,8 +347,8 @@ const SchemaPage = () => {
                     ))}
                     {loading && (
                         <div className="flex items-start">
-                            <div className={`max-w-[85%] rounded-2xl p-3 text-sm ${isDark ? 'bg-neutral-800 text-white' : 'bg-neutral-100 text-neutral-900'}`}>
-                                <span className="animate-pulse">Thinking...</span>
+                            <div className={`max-w-[85%] rounded-2xl p-3.5 text-sm ${isDark ? 'bg-white/[0.03] border border-white/[0.03] text-white' : 'bg-neutral-100 border border-neutral-200 text-neutral-900'}`}>
+                                <span className="animate-pulse">Sto pensando...</span>
                             </div>
                         </div>
                     )}
@@ -315,13 +356,11 @@ const SchemaPage = () => {
                 </div>
 
                 {/* Textbar */}
-                <div className="p-4">
+                <div className={`p-4 pt-2 ${isDark ? 'bg-transparent' : 'bg-transparent'}`}>
                     <SchemaTextbar />
                 </div>
             </div>
-
-            {/* Right Panel: Schema Builder */}
-            <SchemaBuilder />
+            )}
 
         </div>
     );
