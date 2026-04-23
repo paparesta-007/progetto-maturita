@@ -69,13 +69,15 @@ const RankedList: React.FC<{ data: RankedListData }> = ({ data }) => {
     const [activeSort, setActiveSort] = useState(0);
     const [expandedIndex, setExpandedIndex] = useState<number | null>(null);
 
-    // Sort logic
-    const sortedItems = [...data.items].sort((a, b) => {
-        if (data.sortOptions && activeSort === 1) {
-            return a.name.localeCompare(b.name);
-        }
-        return b.score - a.score; // default: by score desc
-    });
+    // Sort logic memoized
+    const sortedItems = useMemo(() => {
+        return [...data.items].sort((a, b) => {
+            if (data.sortOptions && activeSort === 1) {
+                return a.name.localeCompare(b.name);
+            }
+            return b.score - a.score; // default: by score desc
+        });
+    }, [data.items, data.sortOptions, activeSort]);
 
     return (
         <motion.div
@@ -126,99 +128,111 @@ const RankedList: React.FC<{ data: RankedListData }> = ({ data }) => {
             {/* Items */}
             <div className="divide-y divide-neutral-100 dark:divide-neutral-800/40">
                 {sortedItems.map((item, idx) => (
-                    <motion.div
-                        key={item.name}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: idx * 0.04 }}
-                        className={`px-4 py-3 transition-colors duration-150 ${
-                            isDark ? 'hover:bg-white/[0.02]' : 'hover:bg-neutral-50/80'
-                        }`}
-                    >
-                        <div className="flex items-center gap-3">
-                            {/* Icon */}
-                            {item.icon && (
-                                <span className="text-lg flex-shrink-0">{item.icon}</span>
-                            )}
-
-                            {/* Content */}
-                            <div className="flex-1 min-w-0">
-                                <div className="flex items-center gap-2">
-                                    <span className={`text-sm font-medium truncate ${isDark ? 'text-neutral-100' : 'text-neutral-800'}`}>
-                                        {item.name}
-                                    </span>
-                                    {item.tag && (
-                                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold border ${getTagStyle(item.tag, isDark)}`}>
-                                            {item.tag}
-                                        </span>
-                                    )}
-                                </div>
-                                {item.subtitle && (
-                                    <p className={`text-[11px] mt-0.5 truncate ${isDark ? 'text-neutral-500' : 'text-neutral-500'}`}>
-                                        {item.subtitle}
-                                    </p>
-                                )}
-                            </div>
-
-                            {/* Score */}
-                            <div className="flex items-center gap-2 flex-shrink-0">
-                                <div className="flex flex-col items-end">
-                                    <span className={`text-lg font-bold tabular-nums ${getScoreColor(item.score, isDark)}`}>
-                                        {item.score}
-                                    </span>
-                                    {/* Score mini bar */}
-                                    <div className={`w-12 h-1 rounded-full overflow-hidden mt-0.5 ${isDark ? 'bg-neutral-800' : 'bg-neutral-200'}`}>
-                                        <motion.div
-                                            initial={{ width: 0 }}
-                                            animate={{ width: `${item.score}%` }}
-                                            transition={{ duration: 0.6, delay: idx * 0.06, ease: 'easeOut' }}
-                                            className={`h-full rounded-full ${getScoreBarColor(item.score)}`}
-                                        />
-                                    </div>
-                                </div>
-
-                                {/* Expand button */}
-                                {item.details && Object.keys(item.details).length > 0 && (
-                                    <button
-                                        onClick={() => setExpandedIndex(expandedIndex === idx ? null : idx)}
-                                        className={`p-1 rounded-md transition-colors cursor-pointer ${isDark ? 'text-neutral-600 hover:text-neutral-400 hover:bg-white/5' : 'text-neutral-400 hover:text-neutral-600 hover:bg-black/5'}`}
-                                    >
-                                        {expandedIndex === idx ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
-                                    </button>
-                                )}
-                            </div>
-                        </div>
-
-                        {/* Expanded Details */}
-                        <AnimatePresence>
-                            {expandedIndex === idx && item.details && (
-                                <motion.div
-                                    initial={{ height: 0, opacity: 0 }}
-                                    animate={{ height: 'auto', opacity: 1 }}
-                                    exit={{ height: 0, opacity: 0 }}
-                                    transition={{ duration: 0.2 }}
-                                    className="overflow-hidden"
-                                >
-                                    <div className={`mt-2.5 pt-2.5 grid grid-cols-2 gap-x-4 gap-y-1.5 border-t ${isDark ? 'border-neutral-800/60' : 'border-neutral-100'}`}>
-                                        {Object.entries(item.details).map(([key, val]) => (
-                                            <div key={key} className="text-[11px]">
-                                                <span className={`font-semibold ${isDark ? 'text-neutral-500' : 'text-neutral-500'}`}>
-                                                    {key}
-                                                </span>
-                                                <span className={`ml-1.5 ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
-                                                    {val}
-                                                </span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </motion.div>
-                            )}
-                        </AnimatePresence>
-                    </motion.div>
+                    <RankedItemRow 
+                        key={item.name} 
+                        item={item} 
+                        idx={idx} 
+                        isDark={isDark} 
+                        isExpanded={expandedIndex === idx} 
+                        onToggle={() => setExpandedIndex(expandedIndex === idx ? null : idx)} 
+                    />
                 ))}
             </div>
         </motion.div>
     );
 };
 
-export default RankedList;
+const RankedItemRow = React.memo(({ item, idx, isDark, isExpanded, onToggle }: { item: RankedItem, idx: number, isDark: boolean, isExpanded: boolean, onToggle: () => void }) => {
+    return (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: idx * 0.04 }}
+            className={`px-4 py-3 transition-colors duration-150 ${isDark ? 'hover:bg-white/[0.02]' : 'hover:bg-neutral-50/80'
+                }`}
+        >
+            <div className="flex items-center gap-3">
+                {/* Icon */}
+                {item.icon && (
+                    <span className="text-lg flex-shrink-0">{item.icon}</span>
+                )}
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                        <span className={`text-sm font-medium truncate ${isDark ? 'text-neutral-100' : 'text-neutral-800'}`}>
+                            {item.name}
+                        </span>
+                        {item.tag && (
+                            <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-semibold border ${getTagStyle(item.tag, isDark)}`}>
+                                {item.tag}
+                            </span>
+                        )}
+                    </div>
+                    {item.subtitle && (
+                        <p className={`text-[11px] mt-0.5 truncate ${isDark ? 'text-neutral-500' : 'text-neutral-500'}`}>
+                            {item.subtitle}
+                        </p>
+                    )}
+                </div>
+
+                {/* Score */}
+                <div className="flex items-center gap-2 flex-shrink-0">
+                    <div className="flex flex-col items-end">
+                        <span className={`text-lg font-bold tabular-nums ${getScoreColor(item.score, isDark)}`}>
+                            {item.score}
+                        </span>
+                        {/* Score mini bar */}
+                        <div className={`w-12 h-1 rounded-full overflow-hidden mt-0.5 ${isDark ? 'bg-neutral-800' : 'bg-neutral-200'}`}>
+                            <motion.div
+                                initial={{ width: 0 }}
+                                animate={{ width: `${item.score}%` }}
+                                transition={{ duration: 0.6, delay: idx * 0.06, ease: 'easeOut' }}
+                                className={`h-full rounded-full ${getScoreBarColor(item.score)}`}
+                            />
+                        </div>
+                    </div>
+
+                    {/* Expand button */}
+                    {item.details && Object.keys(item.details).length > 0 && (
+                        <button
+                            onClick={onToggle}
+                            className={`p-1 rounded-md transition-colors cursor-pointer ${isDark ? 'text-neutral-600 hover:text-neutral-400 hover:bg-white/5' : 'text-neutral-400 hover:text-neutral-600 hover:bg-black/5'}`}
+                        >
+                            {isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+                        </button>
+                    )}
+                </div>
+            </div>
+
+            {/* Expanded Details */}
+            <AnimatePresence>
+                {isExpanded && item.details && (
+                    <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="overflow-hidden"
+                    >
+                        <div className={`mt-2.5 pt-2.5 grid grid-cols-2 gap-x-4 gap-y-1.5 border-t ${isDark ? 'border-neutral-800/60' : 'border-neutral-100'}`}>
+                            {Object.entries(item.details).map(([key, val]) => (
+                                <div key={key} className="text-[11px]">
+                                    <span className={`font-semibold ${isDark ? 'text-neutral-500' : 'text-neutral-500'}`}>
+                                        {key}
+                                    </span>
+                                    <span className={`ml-1.5 ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
+                                        {val}
+                                    </span>
+                                </div>
+                            ))}
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </motion.div>
+    );
+});
+RankedItemRow.displayName = "RankedItemRow";
+
+export default React.memo(RankedList);

@@ -23,6 +23,7 @@ import chatRoutes from "./routes/chat.js";
 import supportRoutes from "./routes/support.js";
 import documentRoutes from "./routes/documents.js";
 import conversationRoutes from "./routes/conversation.js";
+import artifactsRoutes from "./routes/artifacts.js";
 import { supabase } from "./services/supabase.js";
 import { requireAuth } from "./middleware/auth.js";
 
@@ -96,6 +97,7 @@ app.use(chatRoutes);
 app.use("/api/support", supportRoutes); 
 app.use("/api/docs", requireAuth, documentRoutes);
 app.use("/api/conversations", requireAuth, conversationRoutes);
+app.use("/api/artifacts", requireAuth, artifactsRoutes);
 
 // ─── HELPER: Normalizza il testo estratto dal PDF prima del chunking ───
 
