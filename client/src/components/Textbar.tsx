@@ -209,7 +209,17 @@ const Textbar = () => {
 
                 <button
                     className={styles.sendBtn}
-                    onClick={() => { if (inputValue.trim()) { handleSendMessage(); } }}
+                    onClick={() => { 
+                        if (loading) {
+                            if (isChatPage && chatCtx.abortRequest) {
+                                chatCtx.abortRequest();
+                            } else if (!isChatPage && docCtx.abortRequest) {
+                                docCtx.abortRequest();
+                            }
+                        } else if (inputValue.trim()) { 
+                            handleSendMessage(); 
+                        } 
+                    }}
                 >
                     {loading ? <StopIcon size={20} weight="fill" /> : <PaperPlaneTilt size={20} weight="fill" />}
                 </button>

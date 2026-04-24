@@ -11,6 +11,7 @@ export interface ChatOptions {
     isTemporary?: boolean;
     reasoning?: string;
     attachedFiles?: any[];
+    signal?: AbortSignal;
 }
 
 export interface QuizQuestion {
@@ -71,6 +72,7 @@ export const sendNormalMessage = async (
 
         const response = await fetch("http://localhost:3000/api/completion/chat", {
             method: "POST",
+            signal: options.signal,
             headers: { 
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${token}`
@@ -187,6 +189,19 @@ export const sendNormalMessage = async (
         }
 
     } catch (error: any) {
+        if (error.name === 'AbortError') {
+            console.log("Richiesta abortita dall'utente");
+            // Rimuovo il placeholder o non faccio nulla, dato che la request non è partita o terminata.
+            setMessageHistory((prev) => {
+                const newHistory = [...prev];
+                if (newHistory.length > 0 && newHistory[newHistory.length - 1].role === 'bot' && !newHistory[newHistory.length - 1].content) {
+                    newHistory.pop(); // Rimuovere il placeholder
+                }
+                return newHistory;
+            });
+            return;
+        }
+
         console.error("Errore sendNormalMessage:", error);
 
         let displayError = error.message || "Si è verificato un errore durante la richiesta.";
@@ -246,6 +261,7 @@ export const sendStreamedMessage = async (
 
         const response = await fetch("http://localhost:3000/api/streamingOutput", {
             method: "POST",
+            signal: options.signal,
             headers: { 
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${token}`
@@ -416,6 +432,12 @@ export const sendStreamedMessage = async (
         }
 
     } catch (error: any) {
+        if (error.name === 'AbortError') {
+            console.log("Stream abortito dall'utente");
+            // Non aggiungere l'errore in chat, l'utente sa di aver interrotto
+            return;
+        }
+
         console.error("Errore durante lo streaming:", error);
 
         let displayError = error.message || "Si è verificato un problema.";

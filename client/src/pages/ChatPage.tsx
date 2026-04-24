@@ -228,6 +228,7 @@ const ChatContent = () => {
         setCurrentConversationName,
         setMessageHistory,
         sendMessage,
+        abortRequest,
     } = useChat();
     const [isUsageOpen, setIsUsageOpen] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
@@ -307,6 +308,11 @@ const ChatContent = () => {
         } else {
             navigate('/app');
         }
+
+        return () => {
+            // Se cambio conversazione o la component si smonta, blocco la richiesta in corso.
+            abortRequest();
+        };
     // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [conversationId, areConversationsLoaded, user?.id, navigate]);
 
