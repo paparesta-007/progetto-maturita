@@ -1,8 +1,8 @@
-import { useEffect, useState, useMemo } from "react";
+import React, { lazy, Suspense, useCallback, useState, useEffect, useMemo } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useApp } from "../../context/AppContext";
 import { useCalendar } from "../../context/CalendarContext";
-import FloatingChat from "./FloatingChat";
+const FloatingChat = lazy(() => import("./FloatingChat"));
 import { MagicWandIcon } from "@phosphor-icons/react";
 import supabase from "../../library/supabaseclient";
 
@@ -96,6 +96,27 @@ const CalendarPage = () => {
         });
     }, [currentWeekStart]);
 
+    // O(N) grouping instead of O(N*M*K) filtering in the render loop
+    const groupedEvents = useMemo(() => {
+        const map: Record<string, any[]> = {};
+        events.forEach(event => {
+            const startStr = event.start.dateTime || event.start.date;
+            const startDate = new Date(startStr);
+            const dateKey = `${startDate.getFullYear()}-${startDate.getMonth()}-${startDate.getDate()}`;
+            const hour = startDate.getHours();
+            const key = `${dateKey}-${hour}`;
+            
+            const end = new Date(event.end.dateTime || event.end.date);
+            const durationMs = end.getTime() - startDate.getTime();
+            const durationHours = Math.max(durationMs / (1000 * 60 * 60), 0.5);
+            const startMinuteOffset = startDate.getMinutes() / 60;
+
+            if (!map[key]) map[key] = [];
+            map[key].push({ ...event, durationHours, startMinuteOffset });
+        });
+        return map;
+    }, [events]);
+
     useEffect(() => {
         async function getCalendarEvents() {
             const providerToken = session?.provider_token;
@@ -121,43 +142,27 @@ const CalendarPage = () => {
         getCalendarEvents();
     }, [session, currentWeekStart]);
 
-    const handlePrev = () => {
+    const handlePrev = useCallback(() => {
         const d = new Date(currentWeekStart);
         d.setDate(d.getDate() - 7);
         setCurrentWeekStart(d);
-    };
+    }, [currentWeekStart]);
 
-    const handleNext = () => {
+    const handleNext = useCallback(() => {
         const d = new Date(currentWeekStart);
         d.setDate(d.getDate() + 7);
         setCurrentWeekStart(d);
-    };
+    }, [currentWeekStart]);
+
+    const handleToday = useCallback(() => {
+        setCurrentWeekStart(getStartOfWeek(new Date()));
+    }, []);
 
     const ROW_HEIGHT = 40; // h-10 = 40px
 
-    const getEventsStartingAt = (day: Date, hour: number) => {
-        return events
-            .filter(event => {
-                const startStr = event.start.dateTime || event.start.date;
-                const startDate = new Date(startStr);
-                return startDate.getDate() === day.getDate() &&
-                    startDate.getMonth() === day.getMonth() &&
-                    startDate.getFullYear() === day.getFullYear() &&
-                    startDate.getHours() === hour;
-            })
-            .map(event => {
-                const start = new Date(event.start.dateTime || event.start.date);
-                const end = new Date(event.end.dateTime || event.end.date);
-                const durationMs = end.getTime() - start.getTime();
-                const durationHours = Math.max(durationMs / (1000 * 60 * 60), 0.5); // min 30min
-                const startMinuteOffset = start.getMinutes() / 60; // fraction of hour
-                return { ...event, durationHours, startMinuteOffset };
-            });
-    };
-
-    function handleEventClick(event: any) {
+    const handleEventClick = useCallback((event: any) => {
         setSelectedEvent(event);
-    }
+    }, []);
 
     if (!session?.provider_token) {
         return <RequiredAuthCalendarPage />;
@@ -182,7 +187,7 @@ const CalendarPage = () => {
                 </h1>
                 <div className="flex gap-2">
                     <button onClick={handlePrev} className={`px-4 py-1.5 border rounded-xl text-sm font-medium transition-all ${isDark ? "bg-white/[0.05] border-white/[0.08] hover:bg-white/[0.1] text-white" : "bg-white border-neutral-200 hover:bg-neutral-50"}`}>Prev</button>
-                    <button onClick={() => setCurrentWeekStart(getStartOfWeek(new Date()))} className={`px-4 py-1.5 border rounded-xl text-sm font-medium transition-all ${isDark ? "bg-white text-black hover:bg-neutral-200 border-transparent" : "bg-black text-white hover:bg-neutral-800"}`}>Oggi</button>
+                    <button onClick={handleToday} className={`px-4 py-1.5 border rounded-xl text-sm font-medium transition-all ${isDark ? "bg-white text-black hover:bg-neutral-200 border-transparent" : "bg-black text-white hover:bg-neutral-800"}`}>Oggi</button>
                     <button onClick={handleNext} className={`px-4 py-1.5 border rounded-xl text-sm font-medium transition-all ${isDark ? "bg-white/[0.05] border-white/[0.08] hover:bg-white/[0.1] text-white" : "bg-white border-neutral-200 hover:bg-neutral-50"}`}>Next</button>
                 </div>
             </div>
@@ -210,35 +215,18 @@ const CalendarPage = () => {
 
                             {/* Celle Giornaliere */}
                             {weekDays.map((day, i) => {
-                                const dayEvents = getEventsStartingAt(day, hour);
+                                const dateKey = `${day.getFullYear()}-${day.getMonth()}-${day.getDate()}`;
+                                const dayEvents = groupedEvents[`${dateKey}-${hour}`] || [];
                                 return (
                                     <div key={`${hour}-${i}`} className={`border-r border-b relative h-10 group transition-colors ${isDark ? "border-white/[0.04] hover:bg-white/[0.02]" : "border-neutral-100 hover:bg-neutral-50"}`}>
-                                        {dayEvents.map(event => {
-                                            const topPx = event.startMinuteOffset * ROW_HEIGHT;
-                                            const heightPx = event.durationHours * ROW_HEIGHT - 2;
-
-                                            return (
-                                                <div
-                                                    key={event.id}
-                                                    onClick={(e) => {
-                                                        e.stopPropagation();
-                                                        handleEventClick(event);
-                                                    }}
-                                                    style={{ top: `${topPx}px`, height: `${heightPx}px` }}
-                                                    className={`absolute inset-x-1 p-2 text-[10px] leading-tight rounded-xl overflow-hidden z-10 border transition-all cursor-pointer ${isDark
-                                                            ? "bg-orange-500/10 border-orange-500/30 text-orange-200 hover:bg-orange-500/20 glass-soft shadow-lg shadow-orange-500/5"
-                                                            : "bg-blue-500 border-blue-600 text-white hover:bg-blue-600"
-                                                        }`}
-                                                >
-                                                    <span className="font-bold block truncate">{event.summary}</span>
-                                                    {event.durationHours >= 1 && (
-                                                        <span className={`block mt-0.5 opacity-80 font-mono`}>
-                                                            {new Date(event.start.dateTime).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            );
-                                        })}
+                                        {dayEvents.map(event => (
+                                            <EventCard 
+                                                key={event.id} 
+                                                event={event} 
+                                                isDark={isDark} 
+                                                onClick={handleEventClick} 
+                                            />
+                                        ))}
                                     </div>
                                 );
                             })}
@@ -258,7 +246,11 @@ const CalendarPage = () => {
                     </button>
                 </div>
             )}
-            {isFloatingChat && <FloatingChat />}
+            {isFloatingChat && (
+                <Suspense fallback={null}>
+                    <FloatingChat />
+                </Suspense>
+            )}
 
             {/* --- Modale Event Detail --- */}
             {selectedEvent && (
@@ -335,6 +327,35 @@ const CalendarPage = () => {
         </div>
     );
 };
+
+const ROW_HEIGHT = 40;
+
+const EventCard = React.memo(({ event, isDark, onClick }: { event: any, isDark: boolean, onClick: (ev: any) => void }) => {
+    const topPx = event.startMinuteOffset * ROW_HEIGHT;
+    const heightPx = event.durationHours * ROW_HEIGHT - 2;
+
+    return (
+        <div
+            onClick={(e) => {
+                e.stopPropagation();
+                onClick(event);
+            }}
+            style={{ top: `${topPx}px`, height: `${heightPx}px` }}
+            className={`absolute inset-x-1 p-2 text-[10px] leading-tight rounded-xl overflow-hidden z-10 border transition-all cursor-pointer ${isDark
+                ? "bg-orange-500/10 border-orange-500/30 text-orange-200 hover:bg-orange-500/20 glass-soft shadow-lg shadow-orange-500/5"
+                : "bg-blue-500 border-blue-600 text-white hover:bg-blue-600"
+                }`}
+        >
+            <span className="font-bold block truncate">{event.summary}</span>
+            {event.durationHours >= 1 && (
+                <span className={`block mt-0.5 opacity-80 font-mono`}>
+                    {new Date(event.start.dateTime).toLocaleTimeString("it-IT", { hour: "2-digit", minute: "2-digit" })}
+                </span>
+            )}
+        </div>
+    );
+});
+EventCard.displayName = "EventCard";
 
 
 const RequiredAuthCalendarPage = () => {

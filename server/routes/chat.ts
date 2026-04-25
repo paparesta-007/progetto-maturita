@@ -170,8 +170,15 @@ router.post("/api/streamingOutput", requireAuth, async function (req: express.Re
 			{ role: "user", content: userContent }
 		];
 
+		const controller = new AbortController();
+		req.on("close", () => {
+			console.log("Client disconnesso prima della fine. Aborto richiesta a OpenRouter.");
+			controller.abort();
+		});
+
 		const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
 			method: "POST",
+			signal: controller.signal,
 			headers: {
 				"Authorization": `Bearer ${OPENROUTER_KEY}`,
 				"Content-Type": "application/json",

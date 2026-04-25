@@ -1,5 +1,5 @@
 import { Paperclip, PaperPlaneTilt, XIcon, GlobeIcon, StopIcon, LightningIcon, GaugeIcon, BrainIcon } from "@phosphor-icons/react";
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useMemo,useCallback } from "react";
 import Tooltip from "./other/Tooltip";
 import { useChat } from "../context/ChatContext";
 import { useDocument } from "../context/DocumentContext"; // Importa il DocumentContext
@@ -76,7 +76,7 @@ const Textbar = () => {
     }, [isChatPage, chatCtx.draftMessage]);
 
     // Stili dinamici per la barra
-    const styles = {
+    const styles = useMemo(() => ({
         container: `w-full max-w-2xl rounded-[1.5rem] p-3 flex flex-col gap-2 transition-all duration-300 ${isDark
             ? "glass border-white/10 shadow-2xl"
             : "bg-white border border-neutral-200 shadow-[0_2px_24px_0_rgba(0,0,0,0.10)]"
@@ -93,57 +93,9 @@ const Textbar = () => {
         iconBtn: `transition-colors ${isDark ? "text-white/40 hover:text-white" : "text-neutral-600 hover:text-neutral-800"}`,
         fileItem: `relative group flex items-center gap-2 border rounded-lg p-1.5 pr-8 ${isDark ? "bg-white/5 border-white/10" : "bg-white border-neutral-200"
             }`
-    };
+    }), [isDark]);
 
-
-    //
-    const handleKeyPress = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            
-            e.preventDefault();
-            if (inputValue.trim()) {
-                // Chiama la funzione corretta in base al contesto
-                handleSendMessage();
-            }
-        }
-    };
-
-
-    const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-       
-        const selectedFiles = event.target.files;
-        if (selectedFiles) {
-            const newFiles = Array.from(selectedFiles).map(file => ({
-                originalFile: file,
-                name: file.name,
-                previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : null
-            }));
-            setFiles((prev) => [...prev, ...newFiles]);
-        }
-        if (fileInputRef.current) fileInputRef.current.value = "";
-    };
-
-    const removeFile = (indexToRemove: number) => {
-        setFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
-    };
-    const handleInput = (e: React.FormEvent<HTMLTextAreaElement>) => {
-
-        const el = e.currentTarget;
-
-        const lineHeight = parseFloat(getComputedStyle(el).lineHeight);
-        const maxLines = 10;
-        const maxHeight = lineHeight * maxLines;
-
-        setInputValue(e.currentTarget.value);
-        if (isChatPage) {
-            chatCtx.setDraftMessage(e.currentTarget.value);
-        }
-        if (!e.currentTarget.value.trim()) return;
-        el.style.height = "auto";
-        el.style.height = Math.min(el.scrollHeight, maxHeight) + "px";
-    };
-
-    const resetTextarea = () => {
+    const resetTextarea = useCallback(() => {
         setInputValue("");
         if (isChatPage) {
             chatCtx.setDraftMessage("");
@@ -151,8 +103,9 @@ const Textbar = () => {
         if (textareaRef.current) {
             textareaRef.current.style.height = "auto";
         }
-    };
-    const handleSendMessage = async () => {
+    }, [isChatPage, chatCtx]);
+
+    const handleSendMessage = useCallback(async () => {
         try {
             const filePromises = files.map(file => {
                 return new Promise<{ type: string, url: string }>((resolve, reject) => {
@@ -172,7 +125,49 @@ const Textbar = () => {
         } catch (error) {
             console.error("Errore conversione file:", error);
         }
-    }
+    }, [files, inputValue, functionality, reasoning, sendMessage, resetTextarea]);
+
+    const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            if (inputValue.trim()) {
+                handleSendMessage();
+            }
+        }
+    }, [inputValue, handleSendMessage]);
+
+    const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+        const selectedFiles = event.target.files;
+        if (selectedFiles) {
+            const newFiles = Array.from(selectedFiles).map(file => ({
+                originalFile: file,
+                name: file.name,
+                previewUrl: file.type.startsWith('image/') ? URL.createObjectURL(file) : null
+            }));
+            setFiles((prev) => [...prev, ...newFiles]);
+        }
+        if (fileInputRef.current) fileInputRef.current.value = "";
+    }, []);
+
+    const removeFile = useCallback((indexToRemove: number) => {
+        setFiles((prev) => prev.filter((_, index) => index !== indexToRemove));
+    }, []);
+
+    const handleInput = useCallback((e: React.FormEvent<HTMLTextAreaElement>) => {
+        const el = e.currentTarget;
+        const lineHeight = parseFloat(getComputedStyle(el).lineHeight);
+        const maxLines = 10;
+        const maxHeight = lineHeight * maxLines;
+
+        const val = e.currentTarget.value;
+        setInputValue(val);
+        if (isChatPage) {
+            chatCtx.setDraftMessage(val);
+        }
+        if (!val.trim()) return;
+        el.style.height = "auto";
+        el.style.height = Math.min(el.scrollHeight, maxHeight) + "px";
+    }, [isChatPage, chatCtx]);
     return (
         <div className={styles.container} ref={menuRef}>
 
@@ -206,8 +201,7 @@ const Textbar = () => {
                     ref={textareaRef}
                     rows={1}
                     placeholder={isChatPage ? `Chat with ${model?.name || "AI"}` : "Ask your document..."} // Placeholder dinamico
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onInput={handleInput}
+                    onChange={handleInput}
                     value={inputValue}
                     onKeyDown={handleKeyPress}
                     className={styles.input}
@@ -215,7 +209,17 @@ const Textbar = () => {
 
                 <button
                     className={styles.sendBtn}
-                    onClick={() => { if (inputValue.trim()) { handleSendMessage(); } }}
+                    onClick={() => { 
+                        if (loading) {
+                            if (isChatPage && chatCtx.abortRequest) {
+                                chatCtx.abortRequest();
+                            } else if (!isChatPage && docCtx.abortRequest) {
+                                docCtx.abortRequest();
+                            }
+                        } else if (inputValue.trim()) { 
+                            handleSendMessage(); 
+                        } 
+                    }}
                 >
                     {loading ? <StopIcon size={20} weight="fill" /> : <PaperPlaneTilt size={20} weight="fill" />}
                 </button>

@@ -13,6 +13,8 @@ import DocumentLayout from './layouts/DocumentLayout';
 import CalendarPage from './pages/CalendarPage/CalendarPage';
 import { CalendarProvider } from './context/CalendarContext';
 import ArtifactsPage from './pages/ArtifactsPage';
+import SchemaPage from './pages/SchemaPage/SchemaPage';
+import { SchemaProvider } from './context/SchemaContext';
 import { initRemoteLogger } from './utils/remoteLogger';
 import QuizPage from './pages/ArtifactsPages/QuizPage';
 import KnowledgePage from './pages/static/Knowledge';
@@ -50,10 +52,10 @@ function App() {
 
                 <Route path='calendar' element={<CalendarProvider><CalendarPage /></CalendarProvider>} />
 
-                {/* --- SEZIONE ARTIFACTS --- */}
                 <Route path='artifacts'>
                   <Route index element={<ArtifactsPage />} /> {/* /app/artifacts */}
                   <Route path='quiz' element={<QuizPage />} /> {/* /app/artifacts/quiz */}
+                  <Route path='schema' element={<SchemaProvider><SchemaPage /></SchemaProvider>} />
                 </Route>
 
               </Route>

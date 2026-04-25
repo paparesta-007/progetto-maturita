@@ -42,3 +42,4 @@ export const PORT = Number(process.env.PORT || 3000);
 export const SUPABASE_URL = requireEnv("SUPABASE_URL");
 export const SUPABASE_KEY = requireEnv("SUPABASE_SERVICE_KEY");
 export const OPENROUTER_KEY = requireEnv("VITE_OPENROUTER_API_KEY");
+export const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD;

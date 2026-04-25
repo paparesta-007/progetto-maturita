@@ -37,6 +37,7 @@ interface ChatContextType {
 
     draftMessage: string;
     setDraftMessage: React.Dispatch<React.SetStateAction<string>>;
+    abortRequest: () => void;
 }
 
 // 1. Creazione del Context
@@ -57,6 +58,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const [isTemporaryConversation, setIsTemporaryConversation] = useState(false);
     const [isBetterView, setIsBetterView] = useState(true);
     const [draftMessage, setDraftMessage] = useState("");
+    const [abortController, setAbortController] = useState<AbortController | null>(null);
     const navigate = useNavigate();
 
     const fetchConversations = useCallback(async () => {
@@ -76,6 +78,14 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         }
     }, [user?.id]);
 
+    const abortRequest = useCallback(() => {
+        if (abortController) {
+            abortController.abort();
+            setAbortController(null);
+            setLoading(false);
+        }
+    }, [abortController]);
+
     const updateConversationPosition = useCallback((conversationId: string) => {
         setConversations(prev => {
             const index = prev.findIndex(c => c.id === conversationId);
@@ -89,6 +99,14 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     }, []);
 
     const sendMessage = useCallback(async (message: string, functionality: string, reasoning: string, files?: any[]) => {
+        // Abort previous request before starting a new one
+        if (abortController) {
+            abortController.abort();
+        }
+        
+        const controller = new AbortController();
+        setAbortController(controller);
+
         const chatOptions: ChatOptions = {
             systemPrompt,
             personalInfo,
@@ -96,7 +114,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
             allowedCustomInstructions,
             isTemporary: isTemporaryConversation,
             reasoning,
-            attachedFiles: files
+            attachedFiles: files,
+            signal: controller.signal
         };
 
         try {
@@ -115,8 +134,10 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
             return res;
         } catch (error) {
             console.error("Errore durante l'invio del messaggio:", error);
+        } finally {
+            setAbortController(null);
         }
-    }, [isStreamTextEnabled, model, messageHistory, currentConversationId, user, systemPrompt, personalInfo, tone, allowedCustomInstructions, fetchConversations, navigate, isTemporaryConversation, updateConversationPosition, isBetterView]);
+    }, [abortController, isStreamTextEnabled, model, messageHistory, currentConversationId, user, systemPrompt, personalInfo, tone, allowedCustomInstructions, fetchConversations, navigate, isTemporaryConversation, updateConversationPosition, isBetterView]);
 
     const loadConversation = useCallback(async (conversationId: string) => {
         try {
@@ -249,7 +270,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         isBetterView,
         setIsBetterView,
         draftMessage,
-        setDraftMessage
+        setDraftMessage,
+        abortRequest
     }), [
         sendMessage,
         messageHistory,
@@ -270,7 +292,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         isBetterView,
         setIsBetterView,
         draftMessage,
-        setDraftMessage
+        setDraftMessage,
+        abortRequest
     ]);
 
     return (

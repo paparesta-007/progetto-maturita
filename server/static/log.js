@@ -25,17 +25,73 @@ const closeAiBtn = document.getElementById('close-ai');
 let allServerLogs = [];
 let allClientLogs = [];
 let isAiLoading = false;
+let adminToken = sessionStorage.getItem('admin_token') || '';
+
+// Handle Login
+const loginOverlay = document.getElementById('login-overlay');
+const loginBtn = document.getElementById('login-btn');
+const passwordInput = document.getElementById('admin-password');
+const loginError = document.getElementById('login-error');
+
+if (adminToken) {
+    document.body.style.display = 'block';
+    loginOverlay.style.display = 'none';
+    fetchLogs();
+} else {
+    document.body.style.display = 'block';
+}
+
+loginBtn.addEventListener('click', performLogin);
+passwordInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') performLogin();
+});
+
+function performLogin() {
+    const password = passwordInput.value;
+    if (!password) return;
+    
+    // Proviamo a fare una fetch di test per verificare la password
+    fetch('/api/logs', {
+        headers: {
+            'Authorization': `AdminBearer ${password}`
+        }
+    }).then(res => {
+        if (res.ok) {
+            adminToken = password;
+            sessionStorage.setItem('admin_token', adminToken);
+            loginOverlay.style.display = 'none';
+            fetchLogs();
+        } else {
+            loginError.style.display = 'block';
+        }
+    }).catch(err => {
+        console.error('Login error:', err);
+        loginError.innerText = 'Errore di connessione';
+        loginError.style.display = 'block';
+    });
+}
 
 /**
  * Fetch logs from the server
  */
 async function fetchLogs() {
+    if (!adminToken) return;
     try {
         const [serverRes, clientRes] = await Promise.all([
-            fetch('/api/logs'),
-            fetch('/api/client-logs')
+            fetch('/api/logs', {
+                headers: { 'Authorization': `AdminBearer ${adminToken}` }
+            }),
+            fetch('/api/client-logs', {
+                headers: { 'Authorization': `AdminBearer ${adminToken}` }
+            })
         ]);
         
+        if (serverRes.status === 401 || serverRes.status === 403) {
+            sessionStorage.removeItem('admin_token');
+            location.reload();
+            return;
+        }
+
         if (serverRes.ok) {
             allServerLogs = await serverRes.json();
             renderServerLogs();
