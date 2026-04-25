@@ -26,6 +26,7 @@ import conversationRoutes from "./routes/conversation.js";
 import artifactsRoutes from "./routes/artifacts.js";
 import { supabase } from "./services/supabase.js";
 import { requireAuth } from "./middleware/auth.js";
+import { requireAdminAuth } from "./middleware/adminAuth.js";
 
 import { embed, generateText, streamText } from 'ai';
 import { google } from '@ai-sdk/google';
@@ -123,17 +124,17 @@ app.post("/logs", (req, res) => {
 });
 
 // Endpoint API per i log del client (errori frontend)
-app.get("/api/client-logs", (req, res) => {
+app.get("/api/client-logs", requireAdminAuth, (req, res) => {
     res.json(getClientLogs());
 });
 
 // Endpoint API per l'Audit Log unificato (HTTP + SYSTEM)
-app.get("/api/logs", (req, res) => {
+app.get("/api/logs", requireAdminAuth, (req, res) => {
     res.json(getAuditLogs());
 });
 
 // Endpoint API per svuotare tutti i log (svuotamento in memory)
-app.delete("/api/logs", (req, res) => {
+app.delete("/api/logs", requireAdminAuth, (req, res) => {
     clearAllLogs();
     res.json({ success: true });
 });
