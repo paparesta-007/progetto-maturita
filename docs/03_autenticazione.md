@@ -14,6 +14,18 @@ L'autenticazione segue un approccio moderno e decentralizzato:
 
 ---
 
+## Focus: Cos'è un JWT?
+
+Per capire meglio come funziona la sicurezza dietro le quinte, possiamo immaginare il **JWT (JSON Web Token)** come un **braccialetto elettronico** che ricevi all'ingresso di un club o di un festival:
+
+1.  **Il Check-in**: Quando fai il login, il sistema verifica chi sei e ti consegna questo "braccialetto" digitale.
+2.  **Accesso Senza Domande**: Da quel momento in poi, ogni volta che chiedi di vedere i tuoi messaggi o i tuoi documenti, non devi ripetere email e password. Ti basta mostrare il braccialetto (il token) e il server ti lascia passare immediatamente.
+3.  **Sicurezza Garantita**: Il braccialetto è firmato digitalmente. Se qualcuno provasse a modificarlo (ad esempio per fingere di essere un altro utente), la firma risulterebbe alterata e il sistema lo rifiuterebbe all'istante.
+
+Questo metodo rende l'applicazione **estremamente veloce** e **sicura**, perché il server sa chi sei semplicemente guardando il token, senza dover andare a cercare ogni volta i tuoi dati nel database principale.
+
+---
+
 ## Interfaccia di Accesso
 
 Di seguito è rappresentata la struttura della pagina di login dell'applicazione:
