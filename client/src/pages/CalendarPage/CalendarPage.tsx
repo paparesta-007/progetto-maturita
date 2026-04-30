@@ -1,20 +1,22 @@
 import React, { lazy, Suspense, useCallback, useState, useEffect, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
 import { useApp } from "../../context/AppContext";
 import { useCalendar } from "../../context/CalendarContext";
-const FloatingChat = lazy(() => import("./FloatingChat"));
-import { MagicWandIcon } from "@phosphor-icons/react";
+import FloatingChat from "./FloatingChat";
+import { MagicWandIcon, Clock } from "@phosphor-icons/react";
 import supabase from "../../library/supabaseclient";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
+const ROW_HEIGHT = 40;
 
 /* -------------------------------------------------------
    System Styles (Shared from Chat/LandingPage)
 ------------------------------------------------------- */
-const CalendarStyles = ({ isDark }: { isDark: boolean }) => {
-  if (!isDark) return null;
-  return (
-    <style>{`
+const CalendarStyles = React.memo(({ isDark }: { isDark: boolean }) => {
+    if (!isDark) return null;
+    return (
+        <style>{`
       @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500;600;700&display=swap');
 
       :root {
@@ -60,276 +62,11 @@ const CalendarStyles = ({ isDark }: { isDark: boolean }) => {
         color: #fff;
       }
     `}</style>
-  );
-};
-
-const CalendarPage = () => {
-    const { session, theme } = useAuth();
-    const { setIsLivePreview } = useApp();
-    const [error, setError] = useState("");
-    const [events, setEvents] = useState<any[]>([]);
-    const isDark = theme === 'dark';
-    const { isFloatingChat, setIsFloatingChat } = useCalendar();
-
-    // Nuovo stato per l'evento selezionato
-    const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
-
-    // Definiamo il colore del bordo una volta per riutilizzarlo facilmente
-    const borderColor = isDark ? "border-white/[0.08]" : "border-neutral-300";
-
-    const [currentWeekStart, setCurrentWeekStart] = useState(() => getStartOfWeek(new Date()));
-
-    function getStartOfWeek(date: Date) {
-        const d = new Date(date);
-        const day = d.getDay();
-        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-        const start = new Date(d.setDate(diff));
-        start.setHours(0, 0, 0, 0);
-        return start;
-    }
-
-    const weekDays = useMemo(() => {
-        return Array.from({ length: 7 }).map((_, i) => {
-            const day = new Date(currentWeekStart);
-            day.setDate(day.getDate() + i);
-            return day;
-        });
-    }, [currentWeekStart]);
-
-    // O(N) grouping instead of O(N*M*K) filtering in the render loop
-    const groupedEvents = useMemo(() => {
-        const map: Record<string, any[]> = {};
-        events.forEach(event => {
-            const startStr = event.start.dateTime || event.start.date;
-            const startDate = new Date(startStr);
-            const dateKey = `${startDate.getFullYear()}-${startDate.getMonth()}-${startDate.getDate()}`;
-            const hour = startDate.getHours();
-            const key = `${dateKey}-${hour}`;
-            
-            const end = new Date(event.end.dateTime || event.end.date);
-            const durationMs = end.getTime() - startDate.getTime();
-            const durationHours = Math.max(durationMs / (1000 * 60 * 60), 0.5);
-            const startMinuteOffset = startDate.getMinutes() / 60;
-
-            if (!map[key]) map[key] = [];
-            map[key].push({ ...event, durationHours, startMinuteOffset });
-        });
-        return map;
-    }, [events]);
-
-    useEffect(() => {
-        async function getCalendarEvents() {
-            const providerToken = session?.provider_token;
-            if (!providerToken) return;
-
-            try {
-                const timeMin = currentWeekStart.toISOString();
-                const timeMax = new Date(currentWeekStart.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
-                const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`;
-
-                const response = await fetch(url, {
-                    headers: { 'Authorization': `Bearer ${providerToken}` }
-                });
-
-                if (!response.ok) throw new Error('Errore nel recupero');
-                const data = await response.json();
-                setEvents(data.items || []);
-            } catch (err) {
-                setError("Impossibile caricare gli eventi.");
-            }
-        }
-
-        getCalendarEvents();
-    }, [session, currentWeekStart]);
-
-    const handlePrev = useCallback(() => {
-        const d = new Date(currentWeekStart);
-        d.setDate(d.getDate() - 7);
-        setCurrentWeekStart(d);
-    }, [currentWeekStart]);
-
-    const handleNext = useCallback(() => {
-        const d = new Date(currentWeekStart);
-        d.setDate(d.getDate() + 7);
-        setCurrentWeekStart(d);
-    }, [currentWeekStart]);
-
-    const handleToday = useCallback(() => {
-        setCurrentWeekStart(getStartOfWeek(new Date()));
-    }, []);
-
-    const ROW_HEIGHT = 40; // h-10 = 40px
-
-    const handleEventClick = useCallback((event: any) => {
-        setSelectedEvent(event);
-    }, []);
-
-    if (!session?.provider_token) {
-        return <RequiredAuthCalendarPage />;
-    }
-
-    return (
-        <div className={`h-full flex flex-col overflow-hidden relative transition-colors duration-500 ${isDark ? "bg-[#07070a] text-[#f4f1ea] noise" : "bg-white text-neutral-900"}`}>
-            <CalendarStyles isDark={isDark} />
-            
-            {isDark && (
-                <>
-                    <div className="absolute -top-24 -left-24 h-[400px] w-[400px] rounded-full bg-orange-500/[0.08] blur-[80px] pointer-events-none" />
-                    <div className="absolute top-1/4 -right-24 h-[300px] w-[300px] rounded-full bg-orange-600/[0.04] blur-[70px] pointer-events-none" />
-                    <div className="absolute bottom-1/4 left-1/3 h-[250px] w-[250px] rounded-full bg-orange-500/[0.04] blur-[80px] pointer-events-none" />
-                </>
-            )}
-
-            {/* Header - Glass Effect */}
-            <div className={`p-4 flex items-center justify-between border-b z-20 ${isDark ? "bg-white/[0.02] backdrop-blur-md border-white/[0.08]" : "bg-white border-neutral-200"}`}>
-                <h1 className="text-xl font-bold tracking-tight">
-                    {currentWeekStart.toLocaleDateString("it-IT", { month: 'long', year: 'numeric' }).toUpperCase()}
-                </h1>
-                <div className="flex gap-2">
-                    <button onClick={handlePrev} className={`px-4 py-1.5 border rounded-xl text-sm font-medium transition-all ${isDark ? "bg-white/[0.05] border-white/[0.08] hover:bg-white/[0.1] text-white" : "bg-white border-neutral-200 hover:bg-neutral-50"}`}>Prev</button>
-                    <button onClick={handleToday} className={`px-4 py-1.5 border rounded-xl text-sm font-medium transition-all ${isDark ? "bg-white text-black hover:bg-neutral-200 border-transparent" : "bg-black text-white hover:bg-neutral-800"}`}>Oggi</button>
-                    <button onClick={handleNext} className={`px-4 py-1.5 border rounded-xl text-sm font-medium transition-all ${isDark ? "bg-white/[0.05] border-white/[0.08] hover:bg-white/[0.1] text-white" : "bg-white border-neutral-200 hover:bg-neutral-50"}`}>Next</button>
-                </div>
-            </div>
-
-            {/* Griglia Calendario */}
-            <div className="flex-1 overflow-auto z-10 custom-scrollbar">
-                <div className={`min-w-[800px] grid grid-cols-[60px_repeat(7,1fr)] border-b ${borderColor}`}>
-
-                    {/* Header Giorni */}
-                    <div className={`sticky top-0 z-20 border-r ${isDark ? "bg-[#07070a]/90 backdrop-blur-md border-white/[0.08]" : "bg-white border-neutral-200"}`}></div>
-                    {weekDays.map((day, i) => (
-                        <div key={i} className={`sticky top-0 z-20 p-2 text-center border-r transition-colors ${isDark ? "bg-[#07070a]/90 backdrop-blur-md border-white/[0.08]" : "bg-white border-neutral-200"} ${day.toDateString() === new Date().toDateString() ? "text-orange-500 font-bold" : ""}`}>
-                            <div className={`text-[10px] uppercase tracking-wider ${isDark ? "text-neutral-500" : "text-neutral-400"}`}>{day.toLocaleDateString("it-IT", { weekday: 'short' })}</div>
-                            <div className="text-xl font-bold">{day.getDate()}</div>
-                        </div>
-                    ))}
-
-                    {/* Righe Orarie */}
-                    {HOURS.map(hour => (
-                        <div key={hour} className="contents">
-                            {/* Etichetta Ora */}
-                            <div className={`text-right pr-3 text-[10px] font-mono border-r h-10 flex items-center justify-end ${isDark ? "text-neutral-600 border-white/[0.04]" : "text-neutral-400 border-neutral-100"}`}>
-                                {`${hour.toString().padStart(2, '0')}:00`}
-                            </div>
-
-                            {/* Celle Giornaliere */}
-                            {weekDays.map((day, i) => {
-                                const dateKey = `${day.getFullYear()}-${day.getMonth()}-${day.getDate()}`;
-                                const dayEvents = groupedEvents[`${dateKey}-${hour}`] || [];
-                                return (
-                                    <div key={`${hour}-${i}`} className={`border-r border-b relative h-10 group transition-colors ${isDark ? "border-white/[0.04] hover:bg-white/[0.02]" : "border-neutral-100 hover:bg-neutral-50"}`}>
-                                        {dayEvents.map(event => (
-                                            <EventCard 
-                                                key={event.id} 
-                                                event={event} 
-                                                isDark={isDark} 
-                                                onClick={handleEventClick} 
-                                            />
-                                        ))}
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    ))}
-                </div>
-            </div>
-
-            {/* Pulsante Floating */}
-            {!isFloatingChat && (
-                <div className="fixed bottom-6 right-6 z-40">
-                    <button
-                        onClick={() => setIsFloatingChat(!isFloatingChat)}
-                        className={`p-4 rounded-2xl transition-all shadow-2xl scale-100 hover:scale-105 active:scale-95 ${isDark ? "bg-white text-black" : "bg-black text-white"}`}
-                    >
-                        <MagicWandIcon size={24} weight="fill" />
-                    </button>
-                </div>
-            )}
-            {isFloatingChat && (
-                <Suspense fallback={null}>
-                    <FloatingChat />
-                </Suspense>
-            )}
-
-            {/* --- Modale Event Detail --- */}
-            {selectedEvent && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" onClick={() => setSelectedEvent(null)}>
-                    <div
-                        className={`relative w-full max-w-lg p-8 rounded-3xl shadow-2xl overflow-hidden glass ${isDark ? "text-white" : "bg-white text-neutral-900"}`}
-                        onClick={(e) => e.stopPropagation()}
-                    >
-                        {/* Header Modale */}
-                        <div className="flex justify-between items-start mb-6">
-                            <h2 className="text-2xl font-bold pr-8 tracking-tight">{selectedEvent.summary || "(Nessun titolo)"}</h2>
-                            <button
-                                onClick={() => setSelectedEvent(null)}
-                                className={`p-2 rounded-xl transition-colors ${isDark ? "hover:bg-white/10 text-neutral-400" : "hover:bg-neutral-100 text-neutral-500"}`}
-                            >
-                                ✕
-                            </button>
-                        </div>
-
-                        {/* Corpo Modale */}
-                        <div className="space-y-4 text-sm">
-                            <div className="flex items-center gap-4 p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
-                                <span className={`font-semibold w-16 ${isDark ? "text-neutral-500" : "text-neutral-400"}`}>Orario</span>
-                                <div className="flex flex-col">
-                                    <span className="font-medium">{new Date(selectedEvent.start.dateTime || selectedEvent.start.date).toLocaleString("it-IT", { dateStyle: 'full' })}</span>
-                                    <span className="text-xs opacity-60">
-                                        {new Date(selectedEvent.start.dateTime || selectedEvent.start.date).toLocaleTimeString("it-IT", { hour: '2-digit', minute: '2-digit' })} 
-                                        {" - "}
-                                        {new Date(selectedEvent.end.dateTime || selectedEvent.end.date).toLocaleTimeString("it-IT", { hour: '2-digit', minute: '2-digit' })}
-                                    </span>
-                                </div>
-                            </div>
-
-                            {selectedEvent.location && (
-                                <div className="flex items-center gap-4 p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
-                                    <span className={`font-semibold w-16 ${isDark ? "text-neutral-500" : "text-neutral-400"}`}>Luogo</span>
-                                    <span className="truncate">{selectedEvent.location}</span>
-                                </div>
-                            )}
-
-                            {selectedEvent.description && (
-                                <div className="space-y-2 p-3 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
-                                    <span className={`font-semibold block ${isDark ? "text-neutral-500" : "text-neutral-400"}`}>Descrizione</span>
-                                    <div
-                                        className="whitespace-pre-wrap max-h-40 overflow-y-auto pr-2 text-sm leading-relaxed opacity-90"
-                                        dangerouslySetInnerHTML={{ __html: selectedEvent.description }}
-                                    />
-                                </div>
-                            )}
-                        </div>
-
-                        {/* Footer Modale */}
-                        <div className="mt-8 flex justify-end gap-3 items-center">
-                            {selectedEvent.htmlLink && (
-                                <a
-                                    href={selectedEvent.htmlLink}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="text-orange-500 hover:text-orange-400 text-sm font-bold mr-auto transition-colors"
-                                >
-                                    Apri in Calendar
-                                </a>
-                            )}
-                            <button
-                                onClick={() => setSelectedEvent(null)}
-                                className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${isDark ? "bg-white text-black hover:bg-neutral-200" : "bg-black text-white hover:bg-neutral-800"}`}
-                            >
-                                Chiudi
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
-        </div>
     );
-};
+});
+CalendarStyles.displayName = "CalendarStyles";
 
-const ROW_HEIGHT = 40;
-
+// --- Sub-component for the single Event Card (Memoized) ---
 const EventCard = React.memo(({ event, isDark, onClick }: { event: any, isDark: boolean, onClick: (ev: any) => void }) => {
     const topPx = event.startMinuteOffset * ROW_HEIGHT;
     const heightPx = event.durationHours * ROW_HEIGHT - 2;
@@ -357,6 +94,60 @@ const EventCard = React.memo(({ event, isDark, onClick }: { event: any, isDark: 
 });
 EventCard.displayName = "EventCard";
 
+// --- Sub-component for the hour cell (Memoized) ---
+const CalendarCell = React.memo(({ hour, day, isDark, events, onClick }: {
+    hour: number,
+    day: Date,
+    isDark: boolean,
+    events: any[],
+    onClick: (ev: any) => void
+}) => {
+    return (
+        <div className={`border-r border-b relative h-10 group transition-colors ${isDark ? "border-white/[0.04] hover:bg-white/[0.02]" : "border-neutral-100 hover:bg-neutral-50"}`}>
+            {events.map(event => (
+                <EventCard
+                    key={event.id}
+                    event={event}
+                    isDark={isDark}
+                    onClick={onClick}
+                />
+            ))}
+        </div>
+    );
+});
+CalendarCell.displayName = "CalendarCell";
+
+// --- Sub-component for the hour row (Memoized) ---
+const CalendarRow = React.memo(({ hour, weekDays, isDark, groupedEvents, onClick }: {
+    hour: number,
+    weekDays: Date[],
+    isDark: boolean,
+    groupedEvents: Record<string, any[]>,
+    onClick: (ev: any) => void
+}) => {
+    return (
+        <div className="contents">
+            <div className={`text-right pr-3 text-[10px] font-mono border-r h-10 flex items-center justify-end ${isDark ? "text-neutral-600 border-white/[0.04]" : "text-neutral-400 border-neutral-100"}`}>
+                {`${hour.toString().padStart(2, '0')}:00`}
+            </div>
+            {weekDays.map((day, i) => {
+                const dateKey = `${day.getFullYear()}-${day.getMonth()}-${day.getDate()}`;
+                const dayEvents = groupedEvents[`${dateKey}-${hour}`] || [];
+                return (
+                    <CalendarCell
+                        key={`${hour}-${i}`}
+                        hour={hour}
+                        day={day}
+                        isDark={isDark}
+                        events={dayEvents}
+                        onClick={onClick}
+                    />
+                );
+            })}
+        </div>
+    );
+});
+CalendarRow.displayName = "CalendarRow";
 
 const RequiredAuthCalendarPage = () => {
     const { theme } = useAuth();
@@ -411,4 +202,294 @@ const RequiredAuthCalendarPage = () => {
         </div>
     )
 };
+
+const CalendarPage = () => {
+    const { session, theme } = useAuth();
+    const { setIsLivePreview } = useApp();
+    const [error, setError] = useState("");
+    const [events, setEvents] = useState<any[]>([]);
+    const isDark = theme === 'dark';
+    const { isFloatingChat, setIsFloatingChat } = useCalendar();
+
+    const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
+    const borderColor = isDark ? "border-white/[0.08]" : "border-neutral-300";
+    const [currentWeekStart, setCurrentWeekStart] = useState(() => getStartOfWeek(new Date()));
+
+    function getStartOfWeek(date: Date) {
+        const d = new Date(date);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        const start = new Date(d.setDate(diff));
+        start.setHours(0, 0, 0, 0);
+        return start;
+    }
+
+    const weekDays = useMemo(() => {
+        return Array.from({ length: 7 }).map((_, i) => {
+            const day = new Date(currentWeekStart);
+            day.setDate(day.getDate() + i);
+            return day;
+        });
+    }, [currentWeekStart]);
+
+    const groupedEvents = useMemo(() => {
+        const map: Record<string, any[]> = {};
+        events.forEach(event => {
+            const startStr = event.start.dateTime || event.start.date;
+            const startDate = new Date(startStr);
+            const dateKey = `${startDate.getFullYear()}-${startDate.getMonth()}-${startDate.getDate()}`;
+            const hour = startDate.getHours();
+            const key = `${dateKey}-${hour}`;
+
+            const end = new Date(event.end.dateTime || event.end.date);
+            const durationMs = end.getTime() - startDate.getTime();
+            const durationHours = Math.max(durationMs / (1000 * 60 * 60), 0.5);
+            const startMinuteOffset = startDate.getMinutes() / 60;
+
+            if (!map[key]) map[key] = [];
+            map[key].push({ ...event, durationHours, startMinuteOffset });
+        });
+        return map;
+    }, [events]);
+
+    useEffect(() => {
+        async function getCalendarEvents() {
+            const providerToken = session?.provider_token;
+            if (!providerToken) return;
+
+            try {
+                const timeMin = currentWeekStart.toISOString();
+                const timeMax = new Date(currentWeekStart.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+                const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`;
+
+                const response = await fetch(url, {
+                    headers: { 'Authorization': `Bearer ${providerToken}` }
+                });
+
+                if (!response.ok) throw new Error('Errore nel recupero');
+                const data = await response.json();
+                setEvents(data.items || []);
+            } catch (err) {
+                setError("Impossibile caricare gli eventi.");
+            }
+        }
+
+        getCalendarEvents();
+    }, [session, currentWeekStart]);
+
+    const handlePrev = useCallback(() => {
+        const d = new Date(currentWeekStart);
+        d.setDate(d.getDate() - 7);
+        setCurrentWeekStart(d);
+    }, [currentWeekStart]);
+
+    const handleNext = useCallback(() => {
+        const d = new Date(currentWeekStart);
+        d.setDate(d.getDate() + 7);
+        setCurrentWeekStart(d);
+    }, [currentWeekStart]);
+
+    const handleToday = useCallback(() => {
+        setCurrentWeekStart(getStartOfWeek(new Date()));
+    }, []);
+
+    const handleEventClick = useCallback((event: any) => {
+        setSelectedEvent(event);
+    }, []);
+
+    if (!session?.provider_token) {
+        return <RequiredAuthCalendarPage />;
+    }
+
+    return (
+        <div className={`h-full flex flex-col overflow-hidden relative transition-colors duration-500 ${isDark ? "bg-[#07070a] text-[#f4f1ea] noise" : "bg-white text-neutral-900"}`}>
+            <CalendarStyles isDark={isDark} />
+
+            {isDark && (
+                <>
+                    <div className="absolute -top-24 -left-24 h-[400px] w-[400px] rounded-full bg-orange-500/[0.08] blur-[80px] pointer-events-none" />
+                    <div className="absolute top-1/4 -right-24 h-[300px] w-[300px] rounded-full bg-orange-600/[0.04] blur-[70px] pointer-events-none" />
+                    <div className="absolute bottom-1/4 left-1/3 h-[250px] w-[250px] rounded-full bg-orange-500/[0.04] blur-[80px] pointer-events-none" />
+                </>
+            )}
+
+            {/* Header - Glass Effect */}
+            <div className={`p-6 flex items-center justify-between border-b z-20 ${isDark ? "bg-white/[0.02] backdrop-blur-md border-white/[0.08]" : "bg-white border-neutral-200"}`}>
+                <div className="flex flex-col">
+                    <h1 className="text-2xl font-black tracking-tighter uppercase italic">
+                        {currentWeekStart.toLocaleDateString("it-IT", { month: 'long', year: 'numeric' })}
+                    </h1>
+                    <span className="text-[10px] font-mono opacity-40 tracking-[0.2em] uppercase">Time Horizon</span>
+                </div>
+                <div className="flex items-center gap-4">
+                    <div className="flex gap-1 p-1 rounded-2xl bg-white/[0.03] border border-white/[0.06]">
+                        <button onClick={handlePrev} className={`p-2 rounded-xl transition-all ${isDark ? "hover:bg-white/10 text-white" : "hover:bg-neutral-100"}`}>
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" /></svg>
+                        </button>
+                        <button onClick={handleToday} className={`px-4 py-1.5 rounded-xl text-xs font-bold transition-all ${isDark ? "bg-white text-black hover:bg-neutral-200" : "bg-black text-white"}`}>OGGI</button>
+                        <button onClick={handleNext} className={`p-2 rounded-xl transition-all ${isDark ? "hover:bg-white/10 text-white" : "hover:bg-neutral-100"}`}>
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" /></svg>
+                        </button>
+                    </div>
+                    <a
+                        href="https://calendar.google.com"
+                        target="_blank"
+                        rel="noreferrer"
+                        className={`px-5 py-2.5 rounded-2xl text-xs font-black tracking-widest uppercase border transition-all ${isDark ? "border-orange-500/20 text-[#f97316] hover:bg-orange-500/10 shadow-[0_0_20px_rgba(249,115,22,0.1)]" : "border-neutral-200 text-neutral-800 hover:bg-neutral-50"}`}
+                    >
+                        Calendar →
+                    </a>
+                </div>
+            </div>
+
+            {/* Griglia Calendario */}
+            <div className="flex-1 overflow-auto z-10 custom-scrollbar relative">
+                <div className={`min-w-[1000px] grid grid-cols-[80px_repeat(7,1fr)] border-b ${borderColor}`}>
+
+                    {/* Header Giorni */}
+                    <div className={`sticky top-0 z-30 border-r ${isDark ? "bg-[#07070a] border-white/[0.08]" : "bg-white border-neutral-200"}`}></div>
+                    {weekDays.map((day, i) => (
+                        <div key={i} className={`sticky top-0 z-30 p-4 text-center border-r transition-colors ${isDark ? "bg-[#07070a]/80 backdrop-blur-xl border-white/[0.08]" : "bg-white border-neutral-200"} ${day.toDateString() === new Date().toDateString() ? "text-orange-500" : ""}`}>
+                            <div className={`text-[9px] font-mono uppercase tracking-[0.3em] mb-1 ${isDark ? "text-neutral-500" : "text-neutral-400"}`}>
+                                {day.toLocaleDateString("it-IT", { weekday: 'short' })}
+                            </div>
+                            <div className="text-2xl font-black tracking-tighter">{day.getDate()}</div>
+                        </div>
+                    ))}
+
+                    {/* Righe Orarie */}
+                    {HOURS.map(hour => (
+                        <CalendarRow
+                            key={hour}
+                            hour={hour}
+                            weekDays={weekDays}
+                            isDark={isDark}
+                            groupedEvents={groupedEvents}
+                            onClick={handleEventClick}
+                        />
+                    ))}
+                </div>
+            </div>
+
+            {/* Pulsante Floating */}
+            {!isFloatingChat && (
+                <div className="fixed bottom-8 right-8 z-40">
+                    <button
+                        onClick={() => setIsFloatingChat(!isFloatingChat)}
+                        className={`p-5 rounded-3xl transition-all shadow-[0_20px_50px_rgba(0,0,0,0.4)] scale-100 hover:scale-110 active:scale-90 
+                            ${isDark ? "bg-[#f97316] text-black hover:bg-[#fb923c] shadow-orange-500/20" : "bg-black text-white hover:bg-neutral-800"}`}
+                    >
+                        <MagicWandIcon size={28} weight="fill" />
+                    </button>
+                </div>
+            )}
+
+            {isFloatingChat && <FloatingChat />}
+
+            {/* --- Modale Event Detail (Sober & Fast) --- */}
+            <AnimatePresence>
+                {selectedEvent && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.15 }}
+                        className="fixed inset-0 z-[60] flex items-center justify-center p-4 overflow-hidden"
+                    >
+                        <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedEvent(null)} />
+
+                        <motion.div
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: 10 }}
+                            transition={{ duration: 0.15, ease: "linear" }}
+                            className={`relative w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden border
+                                ${isDark ? "bg-[#0f0f12] border-white/10 text-white" : "bg-white border-neutral-200 text-neutral-900"}`}
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            {/* Header Modale */}
+                            <div className="p-6 pb-2 flex justify-between items-start">
+                                <div className="space-y-1">
+                                    <span className="text-[10px] font-bold tracking-widest uppercase opacity-40">Event Details</span>
+                                    <h2 className="text-xl font-bold tracking-tight leading-tight">
+                                        {selectedEvent.summary || "(Nessun titolo)"}
+                                    </h2>
+                                </div>
+                                <button
+                                    onClick={() => setSelectedEvent(null)}
+                                    className={`p-2 rounded-lg transition-all ${isDark ? "hover:bg-white/5 text-neutral-500" : "hover:bg-neutral-100 text-neutral-500"}`}
+                                >
+                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                                </button>
+                            </div>
+
+                            {/* Corpo Modale */}
+                            <div className="px-6 py-4 space-y-6">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <div className={`p-4 rounded-xl border ${isDark ? "bg-white/[0.02] border-white/5" : "bg-neutral-50 border-neutral-100"}`}>
+                                        <div className="text-[9px] font-bold uppercase tracking-wider opacity-30 mb-2">Schedule</div>
+                                        <div className="text-xs font-semibold mb-1">{new Date(selectedEvent.start.dateTime || selectedEvent.start.date).toLocaleDateString("it-IT", { dateStyle: 'medium' })}</div>
+                                        <div className="text-lg font-bold text-orange-500">
+                                            {new Date(selectedEvent.start.dateTime || selectedEvent.start.date).toLocaleTimeString("it-IT", { hour: '2-digit', minute: '2-digit' })}
+                                            <span className="opacity-20 mx-1">—</span>
+                                            {new Date(selectedEvent.end.dateTime || selectedEvent.end.date).toLocaleTimeString("it-IT", { hour: '2-digit', minute: '2-digit' })}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-3">
+                                        {selectedEvent.location && (
+                                            <div className={`p-3 rounded-xl border ${isDark ? "bg-white/[0.01] border-white/5" : "bg-neutral-50 border-neutral-100"}`}>
+                                                <div className="text-[8px] font-bold uppercase tracking-wider opacity-30 mb-0.5">Location</div>
+                                                <div className="text-[11px] font-medium truncate">{selectedEvent.location}</div>
+                                            </div>
+                                        )}
+                                        <div className={`p-3 rounded-xl border ${isDark ? "bg-white/[0.01] border-white/5" : "bg-neutral-50 border-neutral-100"}`}>
+                                            <div className="text-[8px] font-bold uppercase tracking-wider opacity-30 mb-0.5">Status</div>
+                                            <div className="flex items-center gap-1.5 text-[11px] font-medium">
+                                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                                Confirmed
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {selectedEvent.description && (
+                                    <div className={`p-4 rounded-xl border ${isDark ? "bg-white/[0.01] border-white/5" : "bg-neutral-50 border-neutral-100"}`}>
+                                        <div className="text-[9px] font-bold uppercase tracking-wider opacity-30 mb-2">Description</div>
+                                        <div
+                                            className="text-[12px] leading-relaxed opacity-70 max-h-32 overflow-y-auto custom-scrollbar pr-2"
+                                            dangerouslySetInnerHTML={{ __html: selectedEvent.description }}
+                                        />
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Footer Modale */}
+                            <div className="p-6 pt-2 flex items-center justify-between gap-4">
+                                {selectedEvent.htmlLink && (
+                                    <a
+                                        href={selectedEvent.htmlLink}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-orange-500 text-black font-bold text-[11px] uppercase hover:bg-orange-400 transition-all active:scale-95"
+                                    >
+                                        OPEN IN CALENDAR
+                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+                                    </a>
+                                )}
+                                <button
+                                    onClick={() => setSelectedEvent(null)}
+                                    className={`px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase transition-all ${isDark ? "text-white/30 hover:text-white hover:bg-white/5" : "text-neutral-400 hover:text-neutral-800"}`}
+                                >
+                                    CLOSE
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </div>
+    );
+};
+
 export default CalendarPage;
