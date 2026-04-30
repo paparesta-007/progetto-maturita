@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import { Command, Keyboard, ArrowElbowDownLeft, Globe, Plus, Trash } from "@phosphor-icons/react";
 import { motion } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
@@ -15,42 +15,48 @@ const ShortcutSetting = () => {
     const { theme } = useAuth();
     const isDark = theme === 'dark';
 
-    const s = {
-        container: `flex flex-col h-full w-full bg-transparent`,
-        header: `px-8 pt-8 pb-6 shrink-0`,
-        title: `text-2xl font-bold tracking-tight ${isDark ? "text-white" : "text-neutral-900"}`,
-        subtitle: `text-sm mt-1 ${isDark ? "text-neutral-500" : "text-neutral-600"}`,
+    const s = useMemo(() => ({
+        container: `flex flex-col h-full relative transition-all duration-500 font-['Manrope'] ${isDark ? "bg-transparent text-[#f4f1ea]" : "bg-white"}`,
+        header: `px-8 pt-8 pb-4 shrink-0 relative z-10`,
+        title: `text-2xl font-black tracking-tighter ${isDark ? "text-white" : "text-neutral-900"}`,
+        subtitle: `text-xs font-medium opacity-40 mt-1`,
         
-        tableWrapper: `px-8 pb-10`,
-        gridRow: `grid grid-cols-2 py-4 items-center border-b ${
-            isDark ? "border-white/[0.06]" : "border-black/[0.04]"
+        tableWrapper: `flex-1 overflow-y-auto px-8 py-4 relative z-10 custom-scrollbar`,
+        gridRow: `grid grid-cols-2 py-5 items-center border-b ${
+            isDark ? "border-white/[0.04]" : "border-neutral-100"
         }`,
         
-        actionLabel: `flex items-center gap-3 text-sm font-medium ${isDark ? "text-neutral-300" : "text-neutral-700"}`,
-        iconBox: `p-2 rounded-lg ${isDark ? "bg-white/[0.03] text-neutral-500" : "bg-black/[0.03] text-neutral-600"}`,
+        actionLabel: `flex items-center gap-4 text-[13px] font-bold tracking-tight ${isDark ? "text-white/90" : "text-neutral-700"}`,
+        iconBox: `w-9 h-9 rounded-xl flex items-center justify-center transition-all ${isDark ? "bg-white/[0.03] text-orange-500 border border-white/5" : "bg-neutral-100 text-neutral-600"}`,
         
-        keycap: `inline-flex items-center justify-center min-w-[24px] h-6 px-1.5 rounded-md border text-[11px] font-bold shadow-sm ${
+        keycap: `inline-flex items-center justify-center min-w-[28px] h-7 px-2 rounded-lg border text-[10px] font-black font-mono shadow-sm transition-all ${
             isDark 
-            ? "bg-neutral-800 border-neutral-700 text-neutral-200" 
+            ? "bg-white/[0.03] border-white/10 text-white/70 shadow-[0_2px_10px_rgba(0,0,0,0.3)]" 
             : "bg-white border-neutral-200 text-neutral-600"
         }`
-    };
+    }), [isDark]);
 
     return (
         <div className={s.container}>
-            {/* ─── HEADER ─── */}
+            {isDark && (
+                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                    <div className="absolute -top-20 -left-20 w-64 h-64 bg-orange-500/5 rounded-full blur-[80px]" />
+                </div>
+            )}
+
+            {/* HEADER */}
             <div className={s.header}>
                 <h2 className={s.title}>Scorciatoie</h2>
-                <p className={s.subtitle}>Velocizza il tuo lavoro con i comandi rapidi da tastiera.</p>
+                <p className={s.subtitle}>Velocizza il tuo workflow con i comandi rapidi da tastiera.</p>
             </div>
 
-            {/* ─── GRID TABLE ─── */}
-            <motion.div 
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={s.tableWrapper}
-            >
-                <div className="flex flex-col">
+            {/* GRID TABLE */}
+            <div className={s.tableWrapper}>
+                <motion.div 
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="flex flex-col"
+                >
                     {SHORTCUTS.map((item, idx) => (
                         <div key={idx} className={s.gridRow}>
                             {/* Action Name */}
@@ -62,30 +68,37 @@ const ShortcutSetting = () => {
                             </div>
 
                             {/* Shortcut Keys */}
-                            <div className="flex justify-end gap-1.5">
+                            <div className="flex justify-end gap-2">
                                 {item.keys.map((key, kIdx) => (
                                     <React.Fragment key={kIdx}>
                                         <kbd className={s.keycap}>{key}</kbd>
                                         {kIdx < item.keys.length - 1 && (
-                                            <span className="text-neutral-500 self-center">+</span>
+                                            <span className="text-white/20 self-center font-mono text-[10px]">+</span>
                                         )}
                                     </React.Fragment>
                                 ))}
                             </div>
                         </div>
                     ))}
-                </div>
+                </motion.div>
 
                 {/* Footer Tip */}
-                <div className={`mt-8 p-4 rounded-xl border text-center ${
-                    isDark ? "bg-white/[0.02] border-white/[0.05]" : "bg-neutral-50 border-black/[0.03]"
+                <div className={`mt-12 p-6 rounded-[1.5rem] border transition-all ${
+                    isDark ? "bg-white/[0.01] border-white/5" : "bg-neutral-50 border-neutral-100"
                 }`}>
-                    <p className={`text-xs ${isDark ? "text-neutral-500" : "text-neutral-600"}`}>
-                        <Command size={12} className="inline mr-1 mb-0.5" />
-                        Usa il tasto <strong>Ctrl</strong> al posto di <strong>⌘</strong> su Windows o Linux.
-                    </p>
+                    <div className="flex gap-4 items-start">
+                        <div className={`p-2 rounded-xl ${isDark ? "bg-white/5 text-orange-500" : "bg-white text-neutral-400 shadow-sm"}`}>
+                            <Command size={16} weight="bold" />
+                        </div>
+                        <div>
+                            <p className={`text-[11px] font-bold ${isDark ? "text-white/90" : "text-neutral-700"}`}>Compatibilità Sistema</p>
+                            <p className={`text-[11px] font-medium opacity-40 leading-relaxed mt-0.5`}>
+                                Su Windows o Linux, utilizza il tasto <span className="font-mono bg-white/5 px-1 rounded">Ctrl</span> al posto del simbolo <span className="font-mono bg-white/5 px-1 rounded">⌘</span> (Command).
+                            </p>
+                        </div>
+                    </div>
                 </div>
-            </motion.div>
+            </div>
         </div>
     );
 };

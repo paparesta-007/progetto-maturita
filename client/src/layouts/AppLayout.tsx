@@ -30,23 +30,21 @@ const AppLayout = () => {
   const effectiveSidebarMinimized = isLivePreview || isMinimized;
 
   // --- Palette dinamica ---
-  const style = {
-    layoutContainer: `flex h-screen w-full relative transition-colors duration-300 ${isDark ? "bg-neutral-950 text-white" : "bg-white text-neutral-900"}`, //bg-[#f0eee6]
-    modalOverlay: "fixed inset-0 bg-black/60  z-40",
-    modalContent: `fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 rounded-xl shadow-2xl w-[95vw] max-w-[680px] h-[85vh] max-h-[540px] flex flex-col md:flex-row overflow-hidden border transition-colors duration-300 ${isDark ? "bg-neutral-900 border-neutral-800" : " border-neutral-200"
-      }`,
-    modalSidebar: `flex md:flex-col gap-1 md:w-[200px] md:min-w-[200px] border-b md:border-b-0 md:border-r p-3 overflow-x-auto md:overflow-visible transition-colors ${isDark ? "bg-neutral-900/50 border-neutral-800" : "bg-neutral-50 border-neutral-200"
-      }`,
+  const style = useMemo(() => ({
+    layoutContainer: `flex h-screen w-full relative transition-colors duration-300 ${isDark ? "bg-[#07070a] text-[#f4f1ea]" : "bg-white text-neutral-900"}`,
+    modalOverlay: "fixed inset-0 bg-black/80 backdrop-blur-sm z-40",
+    modalContent: `fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 rounded-[2rem] shadow-[0_50px_100px_rgba(0,0,0,0.6)] w-[95vw] max-w-[800px] h-[85vh] max-h-[600px] flex flex-col md:flex-row overflow-hidden border transition-colors duration-300 ${isDark ? "bg-[#07070a] border-white/10" : "bg-white border-neutral-200"}`,
+    modalSidebar: `flex md:flex-col gap-1 md:w-[220px] md:min-w-[220px] border-b md:border-b-0 md:border-r p-5 overflow-x-auto md:overflow-visible transition-colors ${isDark ? "bg-white/[0.02] border-white/5 backdrop-blur-2xl" : "bg-neutral-50 border-neutral-200"}`,
     navButton: (active: boolean) => `
-      flex items-center gap-2 whitespace-nowrap px-3 py-2 rounded-lg transition-all text-sm
+      flex items-center gap-3 whitespace-nowrap px-4 py-2.5 rounded-xl transition-all text-[13px] font-semibold
       ${active
-        ? (isDark ? "bg-neutral-800 text-white shadow-sm" : "bg-neutral-200/80 text-neutral-900 shadow-sm")
-        : (isDark ? "text-neutral-400 hover:bg-neutral-800/50 hover:text-neutral-200" : "text-neutral-500 hover:bg-neutral-200/60 hover:text-neutral-900")
+        ? (isDark ? "bg-white/10 text-white shadow-[0_0_20px_rgba(255,255,255,0.05)] border border-white/10" : "bg-neutral-200/80 text-neutral-900 shadow-sm")
+        : (isDark ? "text-white/40 hover:bg-white/5 hover:text-white/70" : "text-neutral-500 hover:bg-neutral-200/60 hover:text-neutral-900")
       }
     `,
-    divider: `md:my-2 ${isDark ? "border-neutral-800" : "border-neutral-200"}`,
-    closeBtn: `absolute top-4 right-4 transition-colors ${isDark ? "text-neutral-500 hover:text-neutral-300" : "text-neutral-600 hover:text-neutral-600"}`
-  };
+    divider: `md:my-3 ${isDark ? "border-white/5" : "border-neutral-200"}`,
+    closeBtn: `absolute top-6 right-6 transition-colors z-50 ${isDark ? "text-white/30 hover:text-white" : "text-neutral-400 hover:text-neutral-900"}`
+  }), [isDark]);
 
   const menuItems = [
     { label: "Generale", Icon: FadersHorizontalIcon, id: "generale" },
@@ -122,7 +120,7 @@ const AppLayout = () => {
                   initial={{ opacity: 0, scale: 0.95, y: 20 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                  transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                  transition={{ duration: 0.15, ease: [0.16, 1, 0.3, 1] }}
                 >
                   {/* Menu laterale del modale */}
                   <div className={style.modalSidebar}>
@@ -154,7 +152,7 @@ const AppLayout = () => {
                   </div>
 
                   {/* Contenuto dinamico delle pagine di impostazione */}
-                  <div className={`flex flex-col flex-1 relative overflow-y-auto ${isDark ? "bg-neutral-900" : "bg-neutral-50"}`}>
+                  <div className={`flex flex-col flex-1 relative overflow-y-auto ${isDark ? "bg-transparent" : "bg-neutral-50"}`}>
                     <div className="p-3 md:p-4 h-full">
                       {settingPage === "generale" && <GeneralSettingPage />}
                       {settingPage === "istruzioni" && <InstructionsSettingPage />}

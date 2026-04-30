@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { PaintBrush, TextT, FloppyDisk } from "@phosphor-icons/react";
 import { useAuth } from "../../context/AuthContext";
 import updatePreferences from "../../services/supabase/User/updatePreferences";
@@ -56,58 +56,56 @@ const PreferencesPage: React.FC = () => {
             setSaving(false);
         }
     };
-
-    const styles = {
-        container: `flex flex-col h-full relative transition-colors ${isDark ? "" : "bg-white"}`,
-        title: `text-xl font-semibold ${isDark ? "text-white" : "text-neutral-900"}`,
-        subtitle: `text-sm ${isDark ? "text-neutral-600" : "text-neutral-500"}`,
-        sectionTitle: `text-sm font-semibold uppercase tracking-wide ${isDark ? "text-neutral-600" : "text-neutral-900"}`,
-        label: `text-sm font-medium ${isDark ? "text-neutral-200" : "text-neutral-700"}`,
-        description: `text-xs font-normal mt-0.5 ${isDark ? "text-neutral-500" : "text-neutral-600"}`,
-        card: `rounded-xl p-4 border transition-colors ${isDark ? "bg-neutral-900/50 border-neutral-800" : "bg-neutral-50 border-neutral-100"}`,
-        input: `w-full text-sm border rounded-lg px-3 py-2 outline-none transition-all ${isDark
-            ? "bg-neutral-900 border-neutral-700 text-white focus:ring-neutral-800"
-            : "bg-white border-neutral-300 text-neutral-700 focus:ring-neutral-200"
-            }`,
-        select: `w-full text-sm border rounded-lg px-3 py-2 outline-none transition-all appearance-none cursor-pointer ${isDark
-            ? "bg-neutral-900 border-neutral-700 text-white focus:ring-neutral-800"
-            : "bg-white border-neutral-300 text-neutral-700 focus:ring-neutral-200"
-            }`,
-        footer: `p-4 border-t shrink-0 flex justify-end transition-colors ${isDark ? "border-neutral-800" : "border-neutral-200 bg-white"
-            }`,
-        saveButton: `flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-medium transition-all shadow-sm ${isDark ? "bg-white text-neutral-900 hover:bg-neutral-200" : "bg-neutral-900 text-white hover:bg-neutral-800"
+    const styles = useMemo(() => ({
+        container: `flex flex-col h-full relative transition-all duration-500 font-['Manrope'] ${isDark ? "bg-transparent text-[#f4f1ea]" : "bg-white"}`,
+        title: `text-2xl font-black tracking-tighter ${isDark ? "text-white" : "text-neutral-900"}`,
+        subtitle: `text-xs font-medium opacity-40 mt-1`,
+        sectionTitle: `text-[10px] font-bold uppercase tracking-[0.2em] ${isDark ? "text-white/30" : "text-neutral-500"}`,
+        label: `text-[13px] font-bold tracking-tight ${isDark ? "text-white/90" : "text-neutral-700"}`,
+        description: `text-[11px] font-medium opacity-40 leading-relaxed mt-0.5`,
+        card: `rounded-[1.5rem] p-6 border transition-all duration-300 ${isDark ? "bg-white/[0.02] border-white/5" : "bg-neutral-50 border-neutral-100"}`,
+        footer: `p-6 pt-2 shrink-0 flex justify-end relative z-10`,
+        saveButton: `flex items-center gap-2 px-6 py-3 rounded-2xl text-[11px] font-black tracking-widest uppercase transition-all shadow-lg active:scale-95 ${isDark ? "bg-orange-500 text-black hover:bg-orange-400" : "bg-neutral-900 text-white hover:bg-neutral-800"
             } ${saving ? "opacity-70 cursor-not-allowed" : ""}`
-    };
+    }), [isDark, saving]);
 
     if (loading) return (
         <div className="flex items-center justify-center h-full">
-            <div className={`animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 ${isDark ? "border-white" : "border-neutral-900"}`}></div>
+            <div className={`w-8 h-8 border-2 border-orange-500/30 border-t-orange-500 rounded-full animate-spin`}></div>
         </div>
     );
 
     return (
         <div className={styles.container}>
+            {isDark && (
+                <div className="absolute inset-0 pointer-events-none overflow-hidden">
+                    <div className="absolute -top-20 -right-20 w-64 h-64 bg-orange-500/5 rounded-full blur-[80px]" />
+                </div>
+            )}
+
             {/* HEADER */}
-            <div className="px-6 pt-6 pb-2 shrink-0">
-                <h2 className={styles.title}>Preferenze</h2>
-                <p className={styles.subtitle}>Personalizza l'aspetto e lo stile dell'applicazione.</p>
+            <div className="px-6 pt-8 pb-4 shrink-0 relative z-10">
+                <h2 className={styles.title}>Preferenze Visive</h2>
+                <p className={styles.subtitle}>Personalizza l'aspetto e l'esperienza di lettura dell'interfaccia.</p>
             </div>
 
             {/* BODY */}
-            <div className="flex-1 overflow-y-auto px-6 py-6 space-y-8">
+            <div className="flex-1 overflow-y-auto px-6 py-4 space-y-10 relative z-10 custom-scrollbar">
 
                 {/* Theme Section */}
-                <section>
-                    <div className="flex items-center gap-2 mb-4">
-                        <PaintBrush size={18} className={isDark ? "text-neutral-500" : "text-neutral-600"} />
-                        <h3 className={styles.sectionTitle}>Aspetto</h3>
+                <section className="space-y-4">
+                    <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-xl ${isDark ? "bg-white/5 text-orange-500" : "bg-neutral-100 text-neutral-600"}`}>
+                            <PaintBrush size={18} weight="bold" />
+                        </div>
+                        <h3 className={styles.sectionTitle}>Interfaccia</h3>
                     </div>
 
                     <div className={styles.card}>
-                        <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-5">
                             <div>
-                                <label className={styles.label}>Tema dell'interfaccia</label>
-                                <p className={styles.description}>Scegli se visualizzare l'app in modalità chiara o scura.</p>
+                                <label className={styles.label}>Tema Globale</label>
+                                <p className={styles.description}>Scegli l'atmosfera cromatica preferita per l'applicazione.</p>
                             </div>
 
                             <div className="relative">
@@ -115,10 +113,10 @@ const PreferencesPage: React.FC = () => {
                                     value={selectedTheme}
                                     onChange={(value) => setSelectedTheme(value)}
                                     options={[
-                                        { value: "light", label: "Chiaro (Light)" },
-                                        { value: "light-beige", label: "Chiaro (Beige)" },
-                                        { value: "dark", label: "Scuro (Dark)" },
-                                        { value: "system", label: "Sistema" }
+                                        { value: "light", label: "Pure Light" },
+                                        { value: "light-beige", label: "Beige Comfort" },
+                                        { value: "dark", label: "Liquid Dark" },
+                                        { value: "system", label: "Sync System" }
                                     ]}
                                 />
                             </div>
@@ -126,52 +124,53 @@ const PreferencesPage: React.FC = () => {
                     </div>
                 </section>
 
-                <hr className={`border-neutral-100 ${isDark ? "border-neutral-800" : "border-neutral-100"}`} />
+                <div className={`border-none h-px my-4 ${isDark ? "bg-gradient-to-r from-transparent via-white/5 to-transparent" : "bg-neutral-100"}`} />
 
                 {/* Typography Section */}
-                <section>
-                    <div className="flex items-center gap-2 mb-4">
-                        <TextT size={18} className={isDark ? "text-neutral-500" : "text-neutral-600"} />
+                <section className="space-y-4">
+                    <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-xl ${isDark ? "bg-white/5 text-orange-500" : "bg-neutral-100 text-neutral-600"}`}>
+                            <TextT size={18} weight="bold" />
+                        </div>
                         <h3 className={styles.sectionTitle}>Tipografia</h3>
                     </div>
 
-                    <div className="space-y-4">
-                        <div className={`flex p-4 flex-col gap-2 rounded-lg border ${isDark ? "border-neutral-800 bg-neutral-900" : "border-neutral-200 bg-neutral-50"}`}>
-                            <label className={styles.label}>Font Family</label>
-                            <p className={styles.description}>Seleziona il carattere principale per la lettura.</p>
-                            <div className="relative mt-1">
+                    <div className="space-y-6">
+                        <div className="flex flex-col gap-2">
+                            <label className={styles.label}>Famiglia di Caratteri</label>
+                            <p className={styles.description}>Seleziona il font principale per i blocchi di testo e la chat.</p>
+                            <div className="relative mt-2">
                                 <SelectPopup
                                     value={fontFamily}
                                     onChange={(value) => setFontFamily(value)}
                                     options={[
-                                        { value: "domine", label: "Domine (Serif)" },
-                                        { value: "comic-neue", label: "Comic Neue (Cursive)" },
-                                        { value: "overlock", label: "Overlock (Cursive)" },
-                                        { value: "poppins", label: "Poppins" },
-                                        { value: "roboto", label: "Roboto" },
-                                        { value: "merriweather", label: "Merriweather" }
+                                        { value: "domine", label: "Domine (Elegante)" },
+                                        { value: "comic-neue", label: "Comic Neue (Informale)" },
+                                        { value: "overlock", label: "Overlock (Creativo)" },
+                                        { value: "poppins", label: "Poppins (Moderno)" },
+                                        { value: "roboto", label: "Roboto (Standard)" },
+                                        { value: "merriweather", label: "Merriweather (Libro)" }
                                     ]}
                                 />
                             </div>
-                            {/* Preview Area */}
-                            <div className={`mt-4 p-4 rounded-lg border border-dashed ${isDark ? "border-neutral-800 bg-neutral-900" : "border-neutral-200 bg-neutral-50"}`}>
-                                <p className={`text-sm ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>Anteprima:</p>
-                                <p
-                                    className={`mt-2 text-lg ${fontFamily === "domine" ? "f-domine" :
-                                            fontFamily === "comic-neue" ? "f-comic" :
-                                                fontFamily === "overlock" ? "f-overlock" :
-                                                    fontFamily === "poppins" ? "f-poppins" :
-                                                        fontFamily === "roboto" ? "f-roboto" :       // Assumendo che la classe sia f-roboto
-                                                            fontFamily === "merriweather" ? "f-merriweather" : // Assumendo che la classe sia f-merriweather
-                                                                ""
-                                        }`}
-                                >
-                                    L'eleganza non è farsi notare, ma farsi ricordare.
-                                </p>
-                            </div>
                         </div>
 
-
+                        {/* Preview Area */}
+                        <div className={`p-6 rounded-[1.5rem] border border-dashed transition-all ${isDark ? "border-white/10 bg-white/[0.01]" : "border-neutral-200 bg-neutral-50"}`}>
+                            <p className={`text-[10px] font-bold uppercase tracking-wider opacity-30 mb-4`}>Live Preview</p>
+                            <p
+                                className={`text-xl leading-relaxed ${fontFamily === "domine" ? "f-domine" :
+                                        fontFamily === "comic-neue" ? "f-comic" :
+                                            fontFamily === "overlock" ? "f-overlock" :
+                                                fontFamily === "poppins" ? "f-poppins" :
+                                                    fontFamily === "roboto" ? "f-roboto" :
+                                                        fontFamily === "merriweather" ? "f-merriweather" :
+                                                            ""
+                                    }`}
+                            >
+                                L'essenziale è invisibile agli occhi.
+                            </p>
+                        </div>
                     </div>
                 </section>
 
@@ -184,12 +183,10 @@ const PreferencesPage: React.FC = () => {
                     disabled={saving}
                     className={styles.saveButton}
                 >
-                    <FloppyDisk size={18} />
+                    <FloppyDisk size={16} weight="bold" />
                     {saving ? "Salvataggio..." : "Salva Preferenze"}
                 </button>
             </div>
-
-
         </div>
     );
 };
