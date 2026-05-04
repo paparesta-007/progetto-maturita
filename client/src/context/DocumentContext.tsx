@@ -30,8 +30,8 @@ export interface DocumentContextType {
 
     // --- NUOVE PROPRIETÀ AGGIUNTE (Chat & Model) ---    // --- NUOVE PROPRIETÀ AGGIUNTE (Chat & Model) ---
     sendMessage: (message: string, functionality: string, reasoning: string, files?: any[]) => Promise<void>;
-    messageHistory: { role: 'user' | 'bot'; content: string; usage?: any; model?: string; suggestedQuestions?: string[] }[];
-    setMessageHistory: React.Dispatch<React.SetStateAction<{ role: 'user' | 'bot'; content: string; usage?: any; model?: string; suggestedQuestions?: string[] }[]>>;
+    messageHistory: { role: 'user' | 'bot'; content: string; usage?: any; model?: string; suggestedQuestions?: string[]; sources?: any[] }[];
+    setMessageHistory: React.Dispatch<React.SetStateAction<{ role: 'user' | 'bot'; content: string; usage?: any; model?: string; suggestedQuestions?: string[]; sources?: any[] }[]>>;
     loading: boolean;
     setLoading: React.Dispatch<React.SetStateAction<boolean>>;
     model: any;
@@ -69,7 +69,7 @@ export const DocumentProvider = ({ children }: { children: React.ReactNode }) =>
     const [isWizardFinished, setIsWizardFinished] = useState(false);
 
     // --- NUOVI STATI (Chat & Model) ---
-    const [messageHistory, setMessageHistory] = useState<{ role: 'user' | 'bot'; content: string; usage?: any; model?: string; suggestedQuestions?: string[] }[]>([]);
+    const [messageHistory, setMessageHistory] = useState<{ role: 'user' | 'bot'; content: string; usage?: any; model?: string; suggestedQuestions?: string[]; sources?: any[] }[]>([]);
     const [loading, setLoading] = useState(false);
     // Valore di default del modello (puoi personalizzarlo come nel ChatContext)
     const {model,setModel} =useChat()

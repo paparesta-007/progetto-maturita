@@ -8,7 +8,7 @@ import { BrainCircuit, Sparkles, ThumbsUp, ThumbsDown, RotateCcw, ChevronDown, C
 /* ─── Premium Bot Logs Component ─── */
 const BotLogsTimeline = ({ logs, isDark, isComplete }: { logs: string[], isDark: boolean, isComplete?: boolean }) => {
     const [isOpen, setIsOpen] = useState(!isComplete);
-    
+
     // Riapri automaticamente se ci sono nuovi log e non è completo
     useEffect(() => {
         if (!isComplete) setIsOpen(true);
@@ -20,7 +20,7 @@ const BotLogsTimeline = ({ logs, isDark, isComplete }: { logs: string[], isDark:
 
     return (
         <div className={`mb-4 w-full rounded-xl overflow-hidden border transition-colors duration-300 ${isDark ? 'glass-soft border-white/5' : 'bg-white/50 border-black/5'}`}>
-            <button 
+            <button
                 onClick={() => setIsOpen(!isOpen)}
                 className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium cursor-pointer transition-colors ${isDark ? 'text-neutral-400 hover:text-neutral-200 hover:bg-white/5' : 'text-neutral-500 hover:text-neutral-700 hover:bg-black/5'}`}
             >
@@ -29,10 +29,10 @@ const BotLogsTimeline = ({ logs, isDark, isComplete }: { logs: string[], isDark:
                 <span>{isComplete ? "Processo completato" : "Elaborazione in corso..."}</span>
                 <span className="ml-auto text-[10px] opacity-60">{filteredLogs.length} passaggi</span>
             </button>
-            
+
             <AnimatePresence>
                 {isOpen && (
-                    <motion.div 
+                    <motion.div
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: "auto", opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
@@ -40,25 +40,25 @@ const BotLogsTimeline = ({ logs, isDark, isComplete }: { logs: string[], isDark:
                     >
                         <div className="p-4 pl-6 relative">
                             <div className={`absolute left-[19px] top-6 bottom-4 w-[2px] rounded-full ${isDark ? 'bg-neutral-800' : 'bg-neutral-200'}`} />
-                            
+
                             <div className="flex flex-col gap-4">
                                 {filteredLogs.map((log, index) => {
                                     const emojiMatch = log.match(/^([\u2700-\u27BF]|[\uE000-\uF8FF]|\uD83C[\uDC00-\uDFFF]|\uD83D[\uDC00-\uDFFF]|[\u2011-\u26FF]|\uD83E[\uDD10-\uDDFF])/);
                                     let icon = <div className={`w-2 h-2 rounded-full ${isDark ? 'bg-neutral-600' : 'bg-neutral-400'}`} />;
                                     let cleanedLog = log.trim();
-                                    
+
                                     if (emojiMatch) {
                                         icon = <span className="text-[12px]">{emojiMatch[0]}</span>;
                                         cleanedLog = log.slice(emojiMatch[0].length).trim();
                                     }
-                                    
+
                                     // Highlight metrics
                                     const isMetric = cleanedLog.includes("[METRICHE]");
                                     const isError = cleanedLog.includes("ERRORE");
                                     const isSuccess = cleanedLog.includes("[Successo]");
 
                                     return (
-                                        <motion.div 
+                                        <motion.div
                                             key={index}
                                             initial={{ opacity: 0, x: -10 }}
                                             animate={{ opacity: 1, x: 0 }}
@@ -68,12 +68,11 @@ const BotLogsTimeline = ({ logs, isDark, isComplete }: { logs: string[], isDark:
                                             <div className={`absolute -left-[20.5px] my-0.5 top-0 w-6 h-6 rounded-full flex items-center justify-center ring-4 ${isDark ? 'bg-[#1e1e1e] ring-[#1e1e1e]' : 'bg-neutral-50 ring-neutral-50'}`}>
                                                 {icon}
                                             </div>
-                                            <div className={`flex-1 pl-2 ${
-                                                isError ? 'text-red-400 font-medium' : 
-                                                isSuccess ? (isDark ? 'text-emerald-400' : 'text-emerald-600') : 
-                                                isMetric ? (isDark ? 'text-neutral-300 font-mono text-[10px]' : 'text-neutral-600 font-mono text-[10px]') : 
-                                                (isDark ? 'text-neutral-400' : 'text-neutral-500')
-                                            }`}>
+                                            <div className={`flex-1 pl-2 ${isError ? 'text-red-400 font-medium' :
+                                                    isSuccess ? (isDark ? 'text-emerald-400' : 'text-emerald-600') :
+                                                        isMetric ? (isDark ? 'text-neutral-300 font-mono text-[10px]' : 'text-neutral-600 font-mono text-[10px]') :
+                                                            (isDark ? 'text-neutral-400' : 'text-neutral-500')
+                                                }`}>
                                                 {cleanedLog}
                                             </div>
                                         </motion.div>
@@ -103,37 +102,34 @@ const ReasoningTimeline = ({ reasoning, isDark, isStreaming }: { reasoning: stri
     if (!reasoning || reasoning.trim().length === 0) return null;
 
     return (
-        <div className={`mb-4 w-full rounded-xl overflow-hidden border transition-colors duration-300 ${
-            isDark 
-                ? 'glass-soft border-orange-500/10' 
+        <div className={`mb-4 w-full rounded-xl overflow-hidden border transition-colors duration-300 ${isDark
+                ? 'glass-soft border-orange-500/10'
                 : 'bg-purple-50/50 border-purple-200/40'
-        }`}>
-            <button 
+            }`}>
+            <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium cursor-pointer transition-colors ${
-                    isDark 
-                        ? 'text-purple-300/70 hover:text-purple-200 hover:bg-purple-500/5' 
+                className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-medium cursor-pointer transition-colors ${isDark
+                        ? 'text-purple-300/70 hover:text-purple-200 hover:bg-purple-500/5'
                         : 'text-purple-600/70 hover:text-purple-700 hover:bg-purple-500/5'
-                }`}
+                    }`}
             >
                 {isOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
                 <BrainCircuit size={14} className={`${isStreaming ? 'animate-pulse' : ''} ${isDark ? 'text-purple-400' : 'text-purple-500'}`} />
                 <span>{isStreaming ? "Ragionamento in corso..." : "Ragionamento del modello"}</span>
             </button>
-            
+
             <AnimatePresence>
                 {isOpen && (
-                    <motion.div 
+                    <motion.div
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: "auto", opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}
                         className="border-t border-inherit overflow-hidden"
                     >
-                        <div 
+                        <div
                             ref={contentRef}
-                            className={`p-4 max-h-[300px] overflow-y-auto custom-scrollbar text-xs leading-relaxed whitespace-pre-wrap ${
-                                isDark ? 'text-purple-200/50' : 'text-purple-700/50'
-                            }`}
+                            className={`p-4 max-h-[300px] overflow-y-auto custom-scrollbar text-xs leading-relaxed whitespace-pre-wrap ${isDark ? 'text-purple-200/50' : 'text-purple-700/50'
+                                }`}
                         >
                             {reasoning}
                             {isStreaming && (
@@ -217,7 +213,31 @@ const BotMessageStyles = () => (
     `}</style>
 );
 
-const BotMessage = React.memo(({ i, children, usage, model, suggestedQuestions, logs, isComplete, reasoning, onSuggestedClick }: { i: number; children: React.ReactNode; usage?: any; model?: any; suggestedQuestions?: string[]; logs?: string[]; isComplete?: boolean; reasoning?: string | null; onSuggestedClick?: (question: string) => void }) => {
+const BotMessage = React.memo(({
+    i,
+    children,
+    usage,
+    model,
+    suggestedQuestions,
+    logs,
+    isComplete,
+    reasoning,
+    sources,
+    onSuggestedClick,
+    onSourceClick
+}: {
+    i: number;
+    children: React.ReactNode;
+    usage?: any;
+    model?: any;
+    suggestedQuestions?: string[];
+    logs?: string[];
+    isComplete?: boolean;
+    reasoning?: string | null;
+    sources?: any[];
+    onSuggestedClick?: (question: string) => void;
+    onSourceClick?: (source: any) => void;
+}) => {
     // Aggiungi un fallback sicuro per useAuth nel caso il contesto sia vuoto
     const auth = useAuth();
     const theme = auth?.theme || 'light';
@@ -337,8 +357,64 @@ const BotMessage = React.memo(({ i, children, usage, model, suggestedQuestions, 
                             {logs && logs.length > 0 && (
                                 <BotLogsTimeline logs={logs} isDark={isDark} isComplete={isComplete} />
                             )}
-                            
+
                             {children}
+
+                            {/* ─── Sources ─── */}
+                            {sources && sources.length > 0 && (() => {
+                                // Raggruppa e ordina le fonti
+                                const processedSources = sources.reduce((acc: any[], current) => {
+                                    const page = current.page;
+                                    const existing = acc.find(s => s.page === page);
+                                    if (existing) {
+                                        // Evita duplicati di contenuto identico
+                                        if (!existing.contents.includes(current.content)) {
+                                            existing.contents.push(current.content);
+                                        }
+                                    } else {
+                                        acc.push({ ...current, contents: [current.content] });
+                                    }
+                                    return acc;
+                                }, []).sort((a, b) => (a.page || 0) - (b.page || 0));
+
+                                return (
+                                    <div className={`mt-4 pt-3 border-t ${isDark ? 'border-white/5' : 'border-black/5'}`}>
+                                        <p className={`text-[10px] font-bold uppercase tracking-wider mb-2 ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                                            Fonti del documento ({processedSources.length})
+                                        </p>
+                                        <div className="flex flex-col gap-2">
+                                            {processedSources.map((source, idx) => (
+                                                <button
+                                                    key={idx}
+                                                    onClick={() => onSourceClick?.({ ...source, content: source.contents.join("\n\n---\n\n") })}
+                                                    className={`text-left p-2 rounded-lg border transition-all duration-200 group/source ${isDark
+                                                            ? 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10'
+                                                            : 'bg-black/5 border-black/5 hover:bg-black/10 hover:border-black/10'
+                                                        }`}
+                                                >
+                                                    <div className="flex items-center justify-between gap-2">
+                                                        <span className={`text-[11px] font-medium truncate ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>
+                                                            {source.source}
+                                                        </span>
+                                                        <span className={`flex-shrink-0 px-1.5 py-0.5 rounded-md text-[9px] font-bold ${isDark ? 'bg-orange-500/20 text-orange-400' : 'bg-orange-100 text-orange-600'
+                                                            }`}>
+                                                            Pag. {source.page}
+                                                        </span>
+                                                    </div>
+                                                    <div className="mt-1 space-y-1">
+                                                        {source.contents.map((content: string, cIdx: number) => (
+                                                            <p key={cIdx} className={`text-[10px] line-clamp-1 opacity-60 ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>
+                                                                {cIdx > 0 && <span className="mr-1 opacity-30">•</span>}
+                                                                {content}
+                                                            </p>
+                                                        ))}
+                                                    </div>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+                                );
+                            })()}
                         </div>
 
                         {/* ─── Action Bar ─── */}
@@ -472,8 +548,8 @@ const BotMessage = React.memo(({ i, children, usage, model, suggestedQuestions, 
                                         key={idx}
                                         onClick={() => onSuggestedClick(q)}
                                         className={`text-xs px-3 py-1.5 rounded-full border transition-all duration-200 cursor-pointer text-left ${isDark
-                                                ? "border-white/[0.08] text-neutral-400 hover:text-neutral-200 hover:border-white/[0.15] hover:bg-white/[0.04]"
-                                                : "border-black/[0.06] text-neutral-500 hover:text-neutral-700 hover:border-black/[0.12] hover:bg-black/[0.02]"
+                                            ? "border-white/[0.08] text-neutral-400 hover:text-neutral-200 hover:border-white/[0.15] hover:bg-white/[0.04]"
+                                            : "border-black/[0.06] text-neutral-500 hover:text-neutral-700 hover:border-black/[0.12] hover:bg-black/[0.02]"
                                             }`}
                                     >
                                         {q}

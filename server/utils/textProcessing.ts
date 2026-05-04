@@ -68,7 +68,7 @@ export function splitTextIntoChunks(
         respectParagraphs?: boolean;
         minChunkSize?: number;
     } = {}
-): Array<{ content: string; metadata: { startChar: number; endChar: number; order: number; length: number; sectionHeading: string | null } }> {
+): Array<{ content: string; metadata: { startChar: number; endChar: number; order: number; length: number; sectionHeading: string | null; page: number } }> {
 
     const { minChunkSize = 100 } = options;
 
@@ -80,15 +80,44 @@ export function splitTextIntoChunks(
     // 2️⃣ Rileva gli heading del documento
     const headings = detectHeadings(cleanedText);
 
+    // 2.5️⃣ Mappa delle pagine (se presenti marker)
+    // Cerchiamo i marker tipo [[PAGE_BREAK:N]]
+    const pageMarkers: Array<{ pos: number; page: number }> = [];
+    const pageRegex = /\[\[PAGE_BREAK:(\d+)\]\]/g;
+    let match;
+    while ((match = pageRegex.exec(cleanedText)) !== null) {
+        pageMarkers.push({ pos: match.index, page: parseInt(match[1]) });
+    }
+
+    function getPageAt(pos: number): number {
+        if (pageMarkers.length === 0) return 1;
+        let currentPage = 1;
+        for (const marker of pageMarkers) {
+            if (pos >= marker.pos) {
+                currentPage = marker.page;
+            } else {
+                break;
+            }
+        }
+        return currentPage;
+    }
+
     // 3️⃣ Livello 1: splitta per paragrafi (doppio newline)
     const paragraphs: Array<{ text: string; startChar: number }> = [];
-    let pos = 0;
-    for (const para of cleanedText.split(/\n\n+/)) {
+    let currentSearchPos = 0;
+    
+    // Usiamo un metodo più robusto per trovare le posizioni dei paragrafi
+    const paragraphTexts = cleanedText.split(/\n\n+/);
+    for (const para of paragraphTexts) {
         const trimmed = para.trim();
         if (trimmed.length > 0) {
-            paragraphs.push({ text: trimmed, startChar: pos });
+            // Troviamo l'indice reale nel testo originale (o cleanedText)
+            const actualPos = cleanedText.indexOf(para, currentSearchPos);
+            if (actualPos !== -1) {
+                paragraphs.push({ text: trimmed, startChar: actualPos });
+                currentSearchPos = actualPos + para.length;
+            }
         }
-        pos += para.length + 2; // +2 per \n\n
     }
 
     // 4️⃣ Assembla i chunk combinando paragrafi fino a raggiungere chunkSize
@@ -98,16 +127,31 @@ export function splitTextIntoChunks(
     let chunkOrder = 0;
 
     function pushChunk(content: string, startChar: number, endChar: number) {
-        const trimmed = content.trim();
-        if (trimmed.length >= minChunkSize) {
+        // Rimuoviamo i marker di pagina dal contenuto finale del chunk per non sporcare il testo
+        const finalContent = content.replace(/\[\[PAGE_BREAK:\d+\]\]/g, '').trim();
+        
+        if (finalContent.length >= minChunkSize) {
+            // Determiniamo la pagina: se i marker sono alla FINE della pagina,
+            // allora il testo alla posizione 'startChar' appartiene alla pagina 'marker.page + 1'
+            // del marker più recente che lo precede.
+            let page = 1;
+            for (const marker of pageMarkers) {
+                if (startChar >= marker.pos) {
+                    page = marker.page + 1;
+                } else {
+                    break;
+                }
+            }
+
             chunks.push({
-                content: trimmed,
+                content: finalContent,
                 metadata: {
                     startChar,
                     endChar,
                     order: chunkOrder++,
-                    length: trimmed.length,
-                    sectionHeading: getNearestHeading(startChar, headings)
+                    length: finalContent.length,
+                    sectionHeading: getNearestHeading(startChar, headings),
+                    page: page
                 }
             });
         }
