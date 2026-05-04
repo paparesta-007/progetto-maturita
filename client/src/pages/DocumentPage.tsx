@@ -12,7 +12,15 @@ import BotLoading from "../components/other/BotLoading";
 import { useApp } from "../context/AppContext";
 import PromptStarter from "../components/PromptStarter";
 import supabase from "../library/supabaseclient";
-import { FilePdf, X } from "@phosphor-icons/react";
+import { FilePdf, X, CaretLeft, CaretRight, MagnifyingGlass } from "@phosphor-icons/react";
+import { Document, Page, pdfjs } from 'react-pdf';
+
+// Import react-pdf styles
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
+
+// Configure PDF.js worker
+pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
 
 // Stili costanti - evita ricreazione ad ogni render
 const getStyles = (isDark: boolean) => ({
@@ -48,9 +56,18 @@ const DocumentPage = () => {
     const [previewLoading, setPreviewLoading] = useState(false);
     const [showPreview, setShowPreview] = useState(false);
     
+    // NUOVI STATI PER IL PUNTATORE
+    const [activeSource, setActiveSource] = useState<{ page: number; content: string } | null>(null);
+    const [numPages, setNumPages] = useState<number | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [scale, setScale] = useState(1.0);
+    const [isFitToWidth, setIsFitToWidth] = useState(false);
+    const [containerWidth, setContainerWidth] = useState<number | null>(null);
+    
     // Refs
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
     const chatContainerRef = useRef<HTMLDivElement | null>(null);
+    const pdfContainerRef = useRef<HTMLDivElement | null>(null);
     const isUserScrolledUp = useRef(false);
     const scrollTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     
@@ -195,6 +212,50 @@ const DocumentPage = () => {
         }
     }, [documentId, scrollToBottom]);
 
+    // Keyboard navigation per il PDF
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (!showPreview) return;
+            
+            // Se l'utente sta scrivendo in un input, non cambiare pagina
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+
+            if (e.key === 'ArrowLeft') {
+                setCurrentPage(prev => Math.max(1, prev - 1));
+            } else if (e.key === 'ArrowRight') {
+                setCurrentPage(prev => Math.min(numPages || prev, prev + 1));
+            }
+        };
+
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, [showPreview, numPages]);
+
+    // Observer per la larghezza del container PDF
+    useEffect(() => {
+        if (!pdfContainerRef.current || !showPreview) return;
+
+        const observer = new ResizeObserver((entries) => {
+            for (let entry of entries) {
+                setContainerWidth(entry.contentRect.width);
+            }
+        });
+
+        observer.observe(pdfContainerRef.current);
+        return () => observer.disconnect();
+    }, [showPreview]);
+
+    // Gestione download PDF
+    const handleDownloadPdf = async () => {
+        if (!pdfPreviewUrl) return;
+        const link = document.createElement('a');
+        link.href = pdfPreviewUrl;
+        link.download = currentDocument?.[0]?.metadata?.title || 'documento.pdf';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
     // Cleanup timeout
     useEffect(() => {
         return () => {
@@ -270,7 +331,13 @@ const DocumentPage = () => {
                                                         suggestedQuestions={msg.suggestedQuestions}
                                                         logs={(msg as any).logs}
                                                         isComplete={(msg as any).isComplete}
+                                                        sources={msg.sources}
                                                         onSuggestedClick={(q) => sendMessage(q, "ask-pdf", "")}
+                                                        onSourceClick={(source) => {
+                                                            setActiveSource(source);
+                                                            setCurrentPage(source.page);
+                                                            setShowPreview(true);
+                                                        }}
                                                     >
                                                         {msg.content === "Elaborazione in corso..." || msg.content === "Avvio della richiesta..." 
                                                             ? <p className="text-neutral-500 italic text-sm">{msg.content}</p> 
@@ -334,13 +401,145 @@ const DocumentPage = () => {
                                 <X size={16} />
                             </button>
                         </div>
-                        <div className={`flex-1 overflow-hidden relative flex items-center justify-center ${isDark ? 'bg-neutral-900/40' : 'bg-neutral-100/50'}`}>
+                        <div className={`flex-1 overflow-hidden relative flex flex-col ${isDark ? 'bg-neutral-900/40' : 'bg-neutral-100/50'}`}>
                             {previewLoading ? (
-                                <p className={`text-sm ${isDark ? 'text-neutral-500' : 'text-neutral-500'}`}>Caricamento preview...</p>
+                                <div className="flex-1 flex items-center justify-center">
+                                    <p className={`text-sm ${isDark ? 'text-neutral-500' : 'text-neutral-500'}`}>Caricamento preview...</p>
+                                </div>
                             ) : pdfPreviewUrl ? (
-                                <iframe src={`${pdfPreviewUrl}#toolbar=0`} className="w-full h-full border-none" title="PDF Preview" />
+                                <>
+                                    {/* Toolbar della Preview */}
+                                    <div className={`p-2 border-b flex items-center justify-between gap-2 ${isDark ? 'border-white/5 bg-neutral-900' : 'border-black/5 bg-neutral-50'}`}>
+                                        <div className="flex items-center gap-1">
+                                            <button 
+                                                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                                disabled={currentPage <= 1}
+                                                className={`p-1.5 rounded-lg disabled:opacity-30 transition-colors ${isDark ? 'hover:bg-white/10 text-neutral-400' : 'hover:bg-black/10 text-neutral-600'}`}
+                                                title="Pagina precedente"
+                                            >
+                                                <CaretLeft size={18} weight="bold" />
+                                            </button>
+                                            
+                                            <div className="flex items-center gap-1 mx-1">
+                                                <input 
+                                                    type="number"
+                                                    value={currentPage}
+                                                    onChange={(e) => {
+                                                        const val = parseInt(e.target.value);
+                                                        if (!isNaN(val) && val >= 1 && val <= (numPages || 1)) {
+                                                            setCurrentPage(val);
+                                                        }
+                                                    }}
+                                                    className={`w-10 text-center text-xs font-bold py-1 rounded border transition-colors ${isDark ? 'bg-white/5 border-white/10 text-white focus:border-orange-500/50' : 'bg-white border-black/10 text-black focus:border-orange-500/50'} outline-none`}
+                                                />
+                                                <span className={`text-[11px] font-medium opacity-60 ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
+                                                    / {numPages || '?'}
+                                                </span>
+                                            </div>
+
+                                            <button 
+                                                onClick={() => setCurrentPage(prev => Math.min(numPages || prev, prev + 1))}
+                                                disabled={currentPage >= (numPages || 1)}
+                                                className={`p-1.5 rounded-lg disabled:opacity-30 transition-colors ${isDark ? 'hover:bg-white/10 text-neutral-400' : 'hover:bg-black/10 text-neutral-600'}`}
+                                                title="Pagina successiva"
+                                            >
+                                                <CaretRight size={18} weight="bold" />
+                                            </button>
+                                        </div>
+
+                                        <div className="flex items-center gap-1">
+                                            <button 
+                                                onClick={() => {
+                                                    setIsFitToWidth(!isFitToWidth);
+                                                    if (!isFitToWidth && containerWidth) {
+                                                        // La scala viene calcolata nel componente Page
+                                                    }
+                                                }}
+                                                className={`text-[10px] px-2 py-1.5 rounded-md font-medium transition-colors ${isFitToWidth ? (isDark ? 'bg-orange-500/20 text-orange-400' : 'bg-orange-100 text-orange-600') : (isDark ? 'bg-white/5 hover:bg-white/10 text-neutral-400' : 'bg-black/5 hover:bg-black/10 text-neutral-600')}`}
+                                            >
+                                                {isFitToWidth ? "Adatta scala" : "Adatta larghezza"}
+                                            </button>
+                                            
+                                            <div className={`h-4 w-px mx-1 ${isDark ? 'bg-white/10' : 'bg-black/10'}`} />
+
+                                            <button 
+                                                onClick={() => {
+                                                    setIsFitToWidth(false);
+                                                    setScale(prev => Math.max(0.5, prev - 0.1));
+                                                }}
+                                                className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-white/10 text-neutral-400' : 'hover:bg-black/10 text-neutral-600'}`}
+                                            >
+                                                -
+                                            </button>
+                                            <span className={`text-[10px] w-10 text-center font-mono ${isDark ? 'text-neutral-400' : 'text-neutral-600'}`}>
+                                                {isFitToWidth ? 'Auto' : `${Math.round(scale * 100)}%`}
+                                            </span>
+                                            <button 
+                                                onClick={() => {
+                                                    setIsFitToWidth(false);
+                                                    setScale(prev => Math.min(3, prev + 0.1));
+                                                }}
+                                                className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-white/10 text-neutral-400' : 'hover:bg-black/10 text-neutral-600'}`}
+                                            >
+                                                +
+                                            </button>
+
+                                            <div className={`h-4 w-px mx-1 ${isDark ? 'bg-white/10' : 'bg-black/10'}`} />
+                                            
+                                            <button 
+                                                onClick={handleDownloadPdf}
+                                                className={`p-1.5 rounded-lg transition-colors ${isDark ? 'hover:bg-white/10 text-neutral-400 hover:text-white' : 'hover:bg-black/10 text-neutral-600 hover:text-black'}`}
+                                                title="Scarica PDF"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 256 256"><path d="M224,144v64a8,8,0,0,1-8,8H40a8,8,0,0,1-8-8V144a8,8,0,0,1,16,0v56H208V144a8,8,0,0,1,16,0Zm-101.66,5.66a8,8,0,0,0,11.32,0l40-40a8,8,0,0,0-11.32-11.32L136,124.69V40a8,8,0,0,0-16,0v84.69L93.66,98.34a8,8,0,0,0-11.32,11.32Z"></path></svg>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Contenitore PDF */}
+                                    <div 
+                                        ref={pdfContainerRef}
+                                        className="flex-1 overflow-auto custom-scrollbar p-4 flex justify-center bg-neutral-800"
+                                    >
+                                        <Document
+                                            file={pdfPreviewUrl}
+                                            onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+                                            loading={
+                                                <div className="flex flex-col items-center gap-3 mt-10">
+                                                    <div className="w-8 h-8 border-2 border-orange-500/20 border-t-orange-500 rounded-full animate-spin" />
+                                                    <p className="text-white/50 text-xs font-medium">Caricamento PDF...</p>
+                                                </div>
+                                            }
+                                        >
+                                            <Page 
+                                                pageNumber={currentPage} 
+                                                scale={isFitToWidth ? undefined : scale}
+                                                width={isFitToWidth && containerWidth ? containerWidth - 40 : undefined}
+                                                renderAnnotationLayer={true}
+                                                renderTextLayer={true}
+                                                className="shadow-2xl"
+                                            />
+                                        </Document>
+                                    </div>
+
+                                    {/* Indicatori di highlight */}
+                                    {activeSource && (
+                                        <div className={`p-3 border-t text-[10px] flex items-center gap-2 ${isDark ? 'border-orange-500/20 bg-orange-500/5 text-orange-400' : 'border-orange-200 bg-orange-50 text-orange-700'}`}>
+                                            <MagnifyingGlass size={14} weight="bold" />
+                                            <p className="line-clamp-2">
+                                                <strong>Evidenziato:</strong> {activeSource.content}
+                                            </p>
+                                            <button 
+                                                onClick={() => setActiveSource(null)}
+                                                className="ml-auto p-1 hover:bg-black/5 rounded"
+                                            >
+                                                <X size={12} />
+                                            </button>
+                                        </div>
+                                    )}
+                                </>
                             ) : (
-                                <div className="text-center p-6">
+                                <div className="text-center p-6 flex-1 flex flex-col items-center justify-center">
                                     <FilePdf size={48} className={`mx-auto mb-3 opacity-20 ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`} />
                                     <p className={`text-sm font-medium ${isDark ? 'text-neutral-300' : 'text-neutral-700'}`}>Preview non disponibile</p>
                                     <p className={`text-xs mt-2 max-w-xs mx-auto ${isDark ? 'text-neutral-500' : 'text-neutral-500'}`}>

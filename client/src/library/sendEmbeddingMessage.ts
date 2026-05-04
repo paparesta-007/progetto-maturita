@@ -105,18 +105,14 @@ export const sendEmbeddingMessage = async (
                         // 3. Formattazione finale della risposta con le fonti (se presenti)
                         let botContent = data.answer;
                         
-                        if (data.sources && Array.isArray(data.sources) && data.sources.length > 0) {
-                            const uniqueSources = [...new Set(data.sources)];
-                            botContent += `\n\n**Fonti:**\n` + uniqueSources.map((s: any) => `- ${s}`).join("\n");
-                        }
-
-                        // Aggiornamento finale del messaggio (aggiungendo fonti e le domande se supportate)
+                        // Aggiornamento finale del messaggio (aggiungendo fonti strutturate)
                         setMessageHistory((prev) => 
                             prev.map(msg => 
                                 msg.id === botMessageId 
                                     ? { 
                                         ...msg, 
                                         content: botContent, 
+                                        sources: data.sources || [], // Fonti strutturate con pagina e contenuto
                                         suggestedQuestions: data.suggested_questions || [],
                                         isComplete: true
                                       } 

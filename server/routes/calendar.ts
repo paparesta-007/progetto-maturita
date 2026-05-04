@@ -1,6 +1,7 @@
 import express from "express";
 import { requireAuth } from "../middleware/auth.js";
 import { OPENROUTER_KEY } from "../config/enviroments.js";
+import { applyPromptCaching } from "../utils/promptCaching.js";
 
 const router = express.Router();
 
@@ -124,11 +125,14 @@ router.post("/api/calendar/action", requireAuth, async (req: express.Request, re
 
         console.log(`[CalendarAPI] Avvio Agente: ${selectedModel}`);
 
-        const messages: any[] = [
-            { role: "system", content: `Sei un Agente Calendar. ${getCurrentDateInfo()}\nREGOLE: 1. Chiama i tool per ogni azione. 2. Forza titolo e descrizione per ogni evento.` },
+        const rawMessages: any[] = [
+            { role: "system", content: "Sei un Agente Calendar.\nREGOLE: 1. Chiama i tool per ogni azione. 2. Forza titolo e descrizione per ogni evento." },
+            { role: "system", content: getCurrentDateInfo() },
             ...history,
             { role: "user", content: text }
         ];
+
+        const cachedMessages = applyPromptCaching(rawMessages);
 
         const reasoning: any[] = [];
         let finalResponse = "";
@@ -141,13 +145,15 @@ router.post("/api/calendar/action", requireAuth, async (req: express.Request, re
                     "Authorization": `Bearer ${OPENROUTER_KEY}`,
                     "Content-Type": "application/json",
                     "HTTP-Referer": "http://localhost:3000",
-                    "X-Title": "Smart Calendar Assistant"
+                    "X-Title": "Smart Calendar Assistant",
+                    "X-OpenRouter-Cache": "true"
                 },
                 body: JSON.stringify({
                     model: selectedModel,
-                    messages: messages,
+                    messages: cachedMessages,
                     tools: TOOLS,
-                    tool_choice: "auto"
+                    tool_choice: "auto",
+                    provider: { allow_fallbacks: false }
                 })
             });
 

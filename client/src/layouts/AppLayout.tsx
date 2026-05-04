@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState,useMemo } from "react";
 import { Outlet } from "react-router-dom";
 import Sidebar from "../components/Sidebar";
 import {
@@ -20,7 +20,6 @@ import { DocumentProvider } from "../context/DocumentContext";
 import AccountPage from "../pages/SettingPages/AccountPage";
 import ShortcutSetting from "../pages/SettingPages/Shortcut";
 import PreferencesPage from "../pages/SettingPages/PreferencesPage";
-import ToastNotification from "../components/other/ToastNotification";
 const AppLayout = () => {
   const [isMinimized, setIsMinimized] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);

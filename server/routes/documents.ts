@@ -44,7 +44,10 @@ router.post("/ingest", requireAuth, upload.single('file'), async (req: express.R
         try {
             const dataBuffer = req.file.buffer;
             parser = new PDFParse({ data: dataBuffer });
-            const result = await parser.getText();
+            // Usiamo pageJoiner per inserire i marker di pagina nel testo estratto
+            const result = await parser.getText({
+                pageJoiner: '[[PAGE_BREAK:page_number]]'
+            });
             text = result.text;
         } catch (pdfError: any) {
             console.error("❌ Errore durante il parsing del PDF:", pdfError);
@@ -177,8 +180,8 @@ router.post("/ask-pdf", requireAuth, async (req: express.Request, res: express.R
         const { data: chunks, error } = await supabase
             .rpc('match_documents', {
                 query_embedding: embedding,
-                match_threshold: 0.4,
-                match_count: 7,
+                match_threshold: 0.5,
+                match_count: 8,
                 filter_user_id: user_id,
                 selected_id: document_id
             });
@@ -205,9 +208,9 @@ router.post("/ask-pdf", requireAuth, async (req: express.Request, res: express.R
 
         sendLog("📄 [Fase 4/8] Costruzione del contesto dai chunk estratti...");
         const contextText = chunks
-            .map((chunk: any) => {
+            .map((chunk: any, index: number) => {
                 const section = chunk.metadata?.sectionHeading ? `[Sezione: ${chunk.metadata.sectionHeading}]` : '';
-                return `--- FONTE: ${chunk.metadata.source} ${section} ---\n${chunk.content}`;
+                return `--- [FONTE #${index + 1}] ${chunk.metadata.source} ${section} ---\n${chunk.content}`;
             })
             .join("\n\n");
 
@@ -215,17 +218,16 @@ router.post("/ask-pdf", requireAuth, async (req: express.Request, res: express.R
         sendLog(`✅ [Fase 4/8] Contesto creato (Lunghezza: ${contextText.length} caratteri). (+${now - stepTime}ms)`);
         stepTime = now;
 
-        const systemPrompt = `
+        const staticSystemPrompt = `
         Sei un esperto Analista di Documenti. Il tuo compito è rispondere alle domande dell'utente basandoti ESCLUSIVAMENTE sul CONTESTO fornito qui sotto.
+        Il contesto è diviso in blocchi numerati come [FONTE #1], [FONTE #2], ecc.
 
         ### REGOLE RIGIDE DI RISPOSTA:
         1.  **Fedeltà al Testo**: Rispondi solo utilizzando le informazioni presenti nel CONTESTO. Se la risposta non è contenuta nel testo, dichiara esplicitamente: "Mi dispiace, ma le informazioni fornite nei documenti non mi permettono di rispondere a questa domanda." Non utilizzare conoscenze esterne.
         2.  **Formattazione Markdown**: Usa titolazioni (###), elenchi puntati e grassetti per rendere la risposta professionale e facile da leggere.
         3.  **Formule Matematiche**: Ogni formula, simbolo matematico o equazione DEVE essere scritta in LaTeX utilizzando il delimitatore "$$" per i blocchi (es. $$E = mc^2$$) o "$" per le formule in linea (es. $x = 2$).
         4.  **Lingua**: Rispondi sempre nella lingua della domanda dell'utente (predefinito: Italiano).
-
-        ### CONTESTO:
-        ${contextText}
+        5.  **Attribuzione**: Alla fine della tua risposta, DEVI aggiungere una riga speciale con questo formato esatto: [[FONTI: 1, 2]] elencando i numeri delle fonti che hai usato. Se non hai usato fonti, scrivi [[FONTI: nessuna]].
         `;
 
         const selectedModel = model || "google/gemini-2.5-flash-lite";
@@ -250,16 +252,31 @@ router.post("/ask-pdf", requireAuth, async (req: express.Request, res: express.R
                 "Authorization": `Bearer ${OPENROUTER_KEY}`,
                 "Content-Type": "application/json",
                 "HTTP-Referer": "http://localhost:3000/ask-pdf",
-                "X-Title": "NomeTuaApp"
+                "X-Title": "NomeTuaApp",
+                "X-OpenRouter-Cache": "true" // Abilita caching della risposta
             },
             body: JSON.stringify({
                 model: selectedModel,
                 messages: [
-                    { role: 'system', content: systemPrompt },
+                    { 
+                        role: 'system', 
+                        content: [
+                            {
+                                type: "text",
+                                text: staticSystemPrompt,
+                                cache_control: { type: "ephemeral" } // Caching solo sulle istruzioni statiche
+                            },
+                            {
+                                type: "text",
+                                text: `\n\n### CONTESTO:\n${contextText}` // Contesto dinamico (non cacha per non fare miss continuo)
+                            }
+                        ] 
+                    },
                     { role: 'user', content: userContent }
                 ],
                 stream: false,
-                reasoning: { effort: reasoningEffort }
+                reasoning: { effort: reasoningEffort },
+                provider: { allow_fallbacks: false }
             })
         });
 
@@ -276,13 +293,41 @@ router.post("/ask-pdf", requireAuth, async (req: express.Request, res: express.R
         sendLog(`✅ [Fase 6/8] Risposta principale ricevuta da OpenRouter. (+${now - stepTime}ms)`);
         stepTime = now;
 
-        sendLog("🧹 [Fase 8/8] Pulizia dei duplicati nelle fonti e invio della risposta finale al client...");
-        const uniqueSources = Array.from(new Set(chunks.map((c: any) => c.metadata.source)));
+        sendLog("🧹 [Fase 8/8] Invio della risposta finale con fonti filtrate al client...");
+        
+        // Estraiamo le fonti usate dal testo della risposta
+        const sourcesMatch = text.match(/\[\[FONTI:\s*(.+?)\]\]/);
+        let usedIndices: number[] = [];
+        let cleanedAnswer = text;
+
+        if (sourcesMatch) {
+            const sourcesStr = sourcesMatch[1];
+            if (sourcesStr.toLowerCase() !== "nessuna") {
+                usedIndices = sourcesStr.split(',').map((s: string) => parseInt(s.trim())).filter((n: number) => !isNaN(n));
+            }
+            // Rimuoviamo il tag delle fonti dalla risposta visibile all'utente
+            cleanedAnswer = text.replace(/\[\[FONTI:\s*(.+?)\]\]/, "").trim();
+        }
+
+        // Mappiamo i chunk in oggetti fonte strutturati, filtrando se abbiamo gli indici
+        const detailedSources = chunks
+            .map((c: any, index: number) => ({
+                id: index + 1,
+                content: c.content,
+                page: c.metadata?.page || 1,
+                source: c.metadata?.source || "Documento"
+            }))
+            .filter((source: any) => {
+                if (usedIndices.length > 0) {
+                    return usedIndices.includes(source.id);
+                }
+                return true; // Se non riusciamo a parse-are gli indici, mostriamo tutto (fallback)
+            });
 
         res.write(JSON.stringify({
             type: "result",
-            answer: text,
-            sources: uniqueSources,
+            answer: cleanedAnswer,
+            sources: detailedSources,
         }) + "\n");
 
         now = Date.now();
