@@ -188,11 +188,22 @@ router.post("/getTitleConversation", requireAuth, async function (req: express.R
                 "Authorization": `Bearer ${OPENROUTER_KEY}`,
                 "Content-Type": "application/json",
                 "HTTP-Referer": "http://localhost:3000/getTitleConversation",
-                "X-Title": "NomeTuaApp"
+                "X-Title": "NomeTuaApp",
+                "X-OpenRouter-Cache": "true"
             },
             body: JSON.stringify({
                 model: "mistralai/mistral-nemo",
                 messages: [
+                    {
+                        role: "system",
+                        content: [
+                            {
+                                type: "text",
+                                text: "Sei un esperto di titolazione. Genera titoli brevi, accattivanti e descrittivi.",
+                                cache_control: { type: "ephemeral" }
+                            }
+                        ]
+                    },
                     {
                         role: "user",
                         content: prompt
@@ -200,7 +211,8 @@ router.post("/getTitleConversation", requireAuth, async function (req: express.R
                 ],
                 temperature: 0.5,
                 max_tokens: 50,
-                reasoning: { effort: "none" }
+                reasoning: { effort: "none" },
+                provider: { allow_fallbacks: false }
             })
         });
 
@@ -264,14 +276,21 @@ async function getSuggestedQuestionInternal(question: string, answer: string): P
                 "Authorization": `Bearer ${OPENROUTER_KEY}`,
                 "Content-Type": "application/json",
                 "HTTP-Referer": "http://localhost:3000/suggested",
-                "X-Title": "NomeTuaApp"
+                "X-Title": "NomeTuaApp",
+                "X-OpenRouter-Cache": "true"
             },
             body: JSON.stringify({
-                model: "openai/gpt-oss-20b:free:nitro",
+                model: "openai/gpt-oss-20b:nitro",
                 messages: [
                     {
                         role: "system",
-                        content: "Sei un utile assistente AI che risponde sempre in formato JSON. Genera domande brevi dirette e chiare di approfondimento nella stessa lingua dell'input."
+                        content: [
+                            {
+                                type: "text",
+                                text: "Sei un utile assistente AI che risponde sempre in formato JSON. Genera domande brevi dirette e chiare di approfondimento nella stessa lingua dell'input.",
+                                cache_control: { type: "ephemeral" }
+                            }
+                        ]
                     },
                     {
                         role: "user",
@@ -280,7 +299,8 @@ async function getSuggestedQuestionInternal(question: string, answer: string): P
                 ],
                 response_format: { type: "json_object" }, // Forza l'output JSON
                 temperature: 0.5,
-                reasoning: { effort: "minimal" }
+                reasoning: { effort: "minimal" },
+                provider: { allow_fallbacks: false }
             })
         });
 

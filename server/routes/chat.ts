@@ -2,6 +2,7 @@ import express from "express";
 import getSystemPrompt from "../static/systemPrompt.js";
 import { OPENROUTER_KEY } from "../config/enviroments.js";
 import { requireAuth } from "../middleware/auth.js";
+import { applyPromptCaching } from "../utils/promptCaching.js";
 
 const router = express.Router();
 
@@ -50,11 +51,12 @@ router.post("/api/completion/chat", requireAuth, async function (req: express.Re
 			});
 		}
 
-		const messages = [
+		const rawMessages = [
 			{ role: "system", content: systemPrompt },
 			...history,
 			{ role: "user", content: userContent }
 		];
+		const messages = applyPromptCaching(rawMessages);
 
 		const startTime = Date.now();
 
@@ -64,13 +66,15 @@ router.post("/api/completion/chat", requireAuth, async function (req: express.Re
 				"Authorization": `Bearer ${OPENROUTER_KEY}`,
 				"Content-Type": "application/json",
 				"HTTP-Referer": "http://localhost:3000/completion",
-				"X-Title": "NomeTuaApp"
+				"X-Title": "NomeTuaApp",
+				"X-OpenRouter-Cache": "true"
 			},
 			body: JSON.stringify({
 				model: selectedModel,
 				messages: messages,
 				stream: false,
-				reasoning: { effort: reasoningEffort }
+				reasoning: { effort: reasoningEffort },
+				provider: { allow_fallbacks: false }
 			})
 		});
 
@@ -164,11 +168,12 @@ router.post("/api/streamingOutput", requireAuth, async function (req: express.Re
 			});
 		}
 
-		const messages = [
+		const rawMessages = [
 			{ role: "system", content: systemPrompt },
 			...history,
 			{ role: "user", content: userContent }
 		];
+		const messages = applyPromptCaching(rawMessages);
 
 		const controller = new AbortController();
 		req.on("close", () => {
@@ -183,14 +188,16 @@ router.post("/api/streamingOutput", requireAuth, async function (req: express.Re
 				"Authorization": `Bearer ${OPENROUTER_KEY}`,
 				"Content-Type": "application/json",
 				"HTTP-Referer": "http://localhost:3000/streamingOutput",
-				"X-Title": "NomeTuaApp"
+				"X-Title": "NomeTuaApp",
+				"X-OpenRouter-Cache": "true"
 			},
 			body: JSON.stringify({
 				model: selectedModel,
 				messages: messages,
 				stream: true,
 				stream_options: { include_usage: true },
-				reasoning: { effort: reasoningEffort }
+				reasoning: { effort: reasoningEffort },
+				provider: { allow_fallbacks: false }
 			})
 		});
 

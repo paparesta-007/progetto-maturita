@@ -31,13 +31,20 @@ router.post("/quiz/generate", async function (req: express.Request, res: express
                 "Authorization": `Bearer ${OPENROUTER_KEY}`,
                 "Content-Type": "application/json",
                 "HTTP-Referer": "http://localhost:3000/quiz",
+                "X-OpenRouter-Cache": "true"
             },
             body: JSON.stringify({
                 model: selectedModel,
                 messages: [
                     {
                         role: "system",
-                        content: "Genera solo JSON valido senza testo extra."
+                        content: [
+                            {
+                                type: "text",
+                                text: "Genera solo JSON valido senza testo extra.",
+                                cache_control: { type: "ephemeral" }
+                            }
+                        ]
                     },
                     { role: "user", content: prompt }
                 ],
@@ -86,7 +93,8 @@ router.post("/quiz/generate", async function (req: express.Request, res: express
                 },
                 temperature: 0.5,
                 provider: {
-                    require_parameters: true
+                    require_parameters: true,
+                    allow_fallbacks: false
                 }
             })
         });
@@ -192,14 +200,25 @@ ESEMPI DI COMPORTAMENTO:
             headers: {
                 "Authorization": `Bearer ${OPENROUTER_KEY}`,
                 "Content-Type": "application/json",
+                "X-OpenRouter-Cache": "true"
             },
             body: JSON.stringify({
                 model: selectedModel,
                 messages: [
-                    { role: "system", content: systemPrompt },
+                    { 
+                        role: "system", 
+                        content: [
+                            {
+                                type: "text",
+                                text: systemPrompt,
+                                cache_control: { type: "ephemeral" }
+                            }
+                        ] 
+                    },
                     ...messages
                 ],
-                response_format: { type: "json_object" }
+                response_format: { type: "json_object" },
+                provider: { allow_fallbacks: false }
             })
         });
 

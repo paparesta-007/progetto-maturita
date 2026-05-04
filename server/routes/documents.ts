@@ -218,7 +218,7 @@ router.post("/ask-pdf", requireAuth, async (req: express.Request, res: express.R
         sendLog(`✅ [Fase 4/8] Contesto creato (Lunghezza: ${contextText.length} caratteri). (+${now - stepTime}ms)`);
         stepTime = now;
 
-        const systemPrompt = `
+        const staticSystemPrompt = `
         Sei un esperto Analista di Documenti. Il tuo compito è rispondere alle domande dell'utente basandoti ESCLUSIVAMENTE sul CONTESTO fornito qui sotto.
         Il contesto è diviso in blocchi numerati come [FONTE #1], [FONTE #2], ecc.
 
@@ -228,9 +228,6 @@ router.post("/ask-pdf", requireAuth, async (req: express.Request, res: express.R
         3.  **Formule Matematiche**: Ogni formula, simbolo matematico o equazione DEVE essere scritta in LaTeX utilizzando il delimitatore "$$" per i blocchi (es. $$E = mc^2$$) o "$" per le formule in linea (es. $x = 2$).
         4.  **Lingua**: Rispondi sempre nella lingua della domanda dell'utente (predefinito: Italiano).
         5.  **Attribuzione**: Alla fine della tua risposta, DEVI aggiungere una riga speciale con questo formato esatto: [[FONTI: 1, 2]] elencando i numeri delle fonti che hai usato. Se non hai usato fonti, scrivi [[FONTI: nessuna]].
-
-        ### CONTESTO:
-        ${contextText}
         `;
 
         const selectedModel = model || "google/gemini-2.5-flash-lite";
@@ -255,16 +252,31 @@ router.post("/ask-pdf", requireAuth, async (req: express.Request, res: express.R
                 "Authorization": `Bearer ${OPENROUTER_KEY}`,
                 "Content-Type": "application/json",
                 "HTTP-Referer": "http://localhost:3000/ask-pdf",
-                "X-Title": "NomeTuaApp"
+                "X-Title": "NomeTuaApp",
+                "X-OpenRouter-Cache": "true" // Abilita caching della risposta
             },
             body: JSON.stringify({
                 model: selectedModel,
                 messages: [
-                    { role: 'system', content: systemPrompt },
+                    { 
+                        role: 'system', 
+                        content: [
+                            {
+                                type: "text",
+                                text: staticSystemPrompt,
+                                cache_control: { type: "ephemeral" } // Caching solo sulle istruzioni statiche
+                            },
+                            {
+                                type: "text",
+                                text: `\n\n### CONTESTO:\n${contextText}` // Contesto dinamico (non cacha per non fare miss continuo)
+                            }
+                        ] 
+                    },
                     { role: 'user', content: userContent }
                 ],
                 stream: false,
-                reasoning: { effort: reasoningEffort }
+                reasoning: { effort: reasoningEffort },
+                provider: { allow_fallbacks: false }
             })
         });
 
