@@ -42,7 +42,7 @@ function App() {
             <Route element={<ProtectedRoute />}>
               <Route path='/complete-profile' element={<CompleteProfile />} />
 
-              <Route path='/app' element={<AppLayout />}>
+              <Route path='/app' element={<CalendarProvider><AppLayout /></CalendarProvider>}>
                 <Route index element={<Navigate to="/app/chat" replace />} />
                 <Route path='chat/:conversationId' element={<ChatPage />} />
                 <Route path='chat' element={<ChatPage />} />
@@ -50,7 +50,7 @@ function App() {
                 <Route path='documents' element={<DocumentLayout />} />
                 <Route path='documents/:documentId' element={<DocumentPage />} />
 
-                <Route path='calendar' element={<CalendarProvider><CalendarPage /></CalendarProvider>} />
+                <Route path='calendar' element={<CalendarPage />} />
 
                 <Route path='artifacts'>
                   <Route index element={<ArtifactsPage />} /> {/* /app/artifacts */}

@@ -8,15 +8,15 @@
    1. VARIABILI E TEMI
    ========================================= */
 :root {
-    --code-bg: #ffffff;
-    --code-text: #dc2626;
-    --code-border: #d1d5db;
+    --code-bg: #faf9f6;
+    --code-text: #b45309;
+    --code-border: #e8e2d9;
     --pre-bg: transparent;
     
     /* Variabili base per la chat (fallbacks) */
-    --color-chat-primary: #1f2937; /* Gray 800 */
-    --color-chat-muted: #6b7280;   /* Gray 500 */
-    --color-primary: #111827;      /* Gray 900 */
+    --color-chat-primary: #2c2825;
+    --color-chat-muted: #8c8278;
+    --color-primary: #1a1714;
 }
 
 .dark, [data-theme="dark"] {

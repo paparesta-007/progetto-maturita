@@ -62,14 +62,14 @@ const DocumentWizard = () => {
         // Inputs
         inputGroup: "space-y-1.5",
         label: `text-xs font-medium uppercase tracking-wider ml-1 ${isDark ? "text-neutral-500" : "text-neutral-500"}`,
-        input: `w-full px-4 py-2.5 rounded-lg border text-sm transition-all duration-200 outline-none
+        input: `w-full px-4 py-2.5 rounded-lg border text-sm transition-all  outline-none
             ${isDark
                 ? "bg-neutral-950 border-neutral-800 text-white placeholder:text-neutral-600 focus:border-neutral-600 focus:ring-1 focus:ring-neutral-600"
                 : "bg-neutral-50 border-neutral-200 text-neutral-900 placeholder:text-neutral-600 focus:border-neutral-400 focus:ring-1 focus:ring-neutral-400"
             }`,
 
         // Custom File Upload Styles
-        uploadArea: `relative border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center transition-all duration-200 cursor-pointer group
+        uploadArea: `relative border-2 border-dashed rounded-xl p-8 flex flex-col items-center justify-center text-center transition-all  cursor-pointer group
             ${isDark
                 ? "border-neutral-800 bg-neutral-950 hover:border-neutral-600 hover:bg-neutral-900"
                 : "border-neutral-300 bg-neutral-50 hover:border-neutral-400 hover:bg-neutral-100"
@@ -82,12 +82,12 @@ const DocumentWizard = () => {
         reviewValue: `text-sm font-medium ${isDark ? "text-neutral-200" : "text-neutral-800"}`,
 
         // Buttons
-        buttonPrimary: `flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-all duration-200
+        buttonPrimary: `flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium transition-all 
             ${isDark
                 ? "bg-white text-neutral-950 hover:bg-neutral-200"
                 : "bg-neutral-900 text-white hover:bg-neutral-800"
             }`,
-        buttonSecondary: `flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium border transition-all duration-200
+        buttonSecondary: `flex items-center justify-center gap-2 px-6 py-2.5 rounded-lg text-sm font-medium border transition-all 
             ${isDark
                 ? "border-neutral-800 text-neutral-600 hover:text-white hover:bg-neutral-800"
                 : "border-neutral-200 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100"

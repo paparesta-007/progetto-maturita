@@ -15,7 +15,7 @@ type ChatMessage = {
 };
 
 const FloatingChat = () => {
-    const { setIsFloatingChat, fetchEvents } = useCalendar();
+    const { setIsFloatingChat, fetchEvents, chatPosition, setChatPosition } = useCalendar();
     const [isExiting, setIsExiting] = useState(false);
     const [inputValue, setInputValue] = useState("");
     const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -109,14 +109,14 @@ const FloatingChat = () => {
     }
 
     const styles = useMemo(() => ({
-        container: `fixed bottom-6 right-6 w-[380px] h-[520px] flex flex-col p-5 rounded-[1.5rem] z-50 border transition-all font-['Manrope'] overflow-hidden
+        container: `w-[380px] h-[520px] flex flex-col p-5 rounded-[1.5rem] z-50 border transition-all font-['Manrope'] overflow-hidden
             ${isDark 
                 ? 'bg-[#0a0a0c] border-white/10 text-[#f4f1ea] shadow-2xl backdrop-blur-xl' 
                 : 'bg-white border-neutral-200 text-neutral-900 shadow-xl'}`,
         header: `flex justify-between items-center mb-5 shrink-0 relative z-10`,
         headerTitle: `flex items-center gap-2 text-xs font-bold tracking-tight ${isDark ? 'text-white/90' : 'text-neutral-800'}`,
         messagesArea: `flex-1 overflow-y-auto mb-4 space-y-4 custom-scrollbar pr-1 px-1 relative z-10`,
-        inputWrapper: `relative rounded-2xl p-3 flex flex-col gap-2 transition-all duration-200 shrink-0 border relative z-10
+        inputWrapper: `relative rounded-2xl p-3 flex flex-col gap-2 transition-all  shrink-0 border relative z-10
             ${isDark 
                 ? 'bg-white/5 border-white/10 shadow-sm' 
                 : 'bg-neutral-50 border-neutral-200 shadow-sm'}`,
@@ -139,16 +139,10 @@ const FloatingChat = () => {
             `}</style>
 
             <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                animate={isExiting 
-                    ? { opacity: 0, y: 20 } 
-                    : { opacity: 1, y: 0 }
-                }
-                transition={{ 
-                    duration: 0.15, 
-                    ease: "linear"
-                }}
-                className={styles.container}
+                initial={chatPosition === 'sidebar-right' ? { opacity: 0, x: 200 } : { opacity: 0, y: 20 }}
+                animate={isExiting ? (chatPosition === 'sidebar-right' ? { opacity: 0, x: 200 } : { opacity: 0, y: 20 }) : (chatPosition === 'sidebar-right' ? { opacity: 1, x: 0 } : { opacity: 1, y: 0 })}
+                transition={{ duration: 0.18, ease: "linear" }}
+                className={`${styles.container} ${chatPosition === 'sidebar-right' ? 'fixed top-0 right-0 h-full rounded-l-2xl w-[380px]' : 'fixed bottom-6 right-6'}`}
             >
                 {/* Header */}
                 <div className={styles.header}>
@@ -164,6 +158,13 @@ const FloatingChat = () => {
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setChatPosition(chatPosition === 'floating' ? 'sidebar-right' : 'floating')}
+                            title={chatPosition === 'floating' ? 'Apri come sidebar' : 'Mostra come floating'}
+                            className={`p-1.5 rounded-lg transition-all ${isDark ? 'text-white/20 hover:bg-white/5 hover:text-white' : 'text-neutral-400 hover:bg-neutral-100'}`}
+                        >
+                            {chatPosition === 'floating' ? <CaretDown size={16} /> : <Calendar size={16} />}
+                        </button>
                         <button
                             onClick={() => setMessages([])}
                             title="Clear chat"

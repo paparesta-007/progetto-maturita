@@ -1,27 +1,26 @@
-  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap');
 
-  :root {
-    --bg-color: #ffffff;
-    --text-main: #171717;
-    --text-muted: #737373;
-    --border-color: #e5e5e5;
-  }
+:root {
+  --bg-color: #faf9f6;
+  --text-main: #2c2825;
+  --text-muted: #8c8278;
+  --border-color: #e8e2d9;
+}
 
-  body {
-    font-family: 'Inter', sans-serif;
-    background-color: var(--bg-color);
-    color: var(--text-main);
-    overflow-x: hidden;
-    -webkit-font-smoothing: antialiased;
-  }
+body {
+  font-family: 'Inter', sans-serif;
+  background-color: var(--bg-color);
+  color: var(--text-main);
+  overflow-x: hidden;
+  -webkit-font-smoothing: antialiased;
+}
 
-  /* Grid Background Pattern - Subtle and Technical */
-  .bg-grid {
-    background-size: 40px 40px;
-    background-image: linear-gradient(to right, #f5f5f5 1px, transparent 1px),
-      linear-gradient(to bottom, #f5f5f5 1px, transparent 1px);
-  }
+/* Grid Background Pattern - Subtle and warm */
+.bg-grid {
+  background-size: 40px 40px;
+  background-image: linear-gradient(to right, #ece6dd 1px, transparent 1px),
+    linear-gradient(to bottom, #ece6dd 1px, transparent 1px);
+}
 
-
-   .katex {}
-
+.katex {}

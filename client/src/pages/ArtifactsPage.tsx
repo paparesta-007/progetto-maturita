@@ -298,7 +298,7 @@ const ArtifactsPage: React.FC = () => {
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ duration: 0.35, delay: i * 0.06, ease: "easeOut" }}
-                                className={`group relative flex flex-col sm:flex-row rounded-2xl border cursor-pointer transition-all duration-200 overflow-hidden text-left ${isDark
+                                className={`group relative flex flex-col sm:flex-row rounded-2xl border cursor-pointer transition-all  overflow-hidden text-left ${isDark
                                     ? "bg-neutral-900/60 border-neutral-800 hover:border-neutral-700 hover:bg-neutral-800/80"
                                     : "bg-white border-neutral-200 hover:border-neutral-300 hover:shadow-lg hover:shadow-neutral-200/50"
                                     }`}

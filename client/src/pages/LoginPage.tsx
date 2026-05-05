@@ -203,7 +203,7 @@ const LoginPage = () => {
                         </Link>
                         <Link
                             to="/"
-                            className="text-sm font-medium text-neutral-600 hover:text-neutral-900 transition-colors duration-200"
+                            className="text-sm font-medium text-neutral-600 hover:text-neutral-900 transition-colors "
                         >
                             ← Torna alla home
                         </Link>

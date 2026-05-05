@@ -91,7 +91,7 @@ const UsageConversation: React.FC<UsageConversationProps> = ({ onClose }) => {
                         <button
                             type="button"
                             onClick={onClose}
-                            className="p-2 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-xl transition-all duration-200 text-neutral-500 dark:text-neutral-400"
+                            className="p-2 hover:bg-neutral-100 dark:hover:bg-white/5 rounded-xl transition-all  text-neutral-500 dark:text-neutral-400"
                             aria-label="Chiudi statistiche"
                         >
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">

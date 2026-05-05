@@ -208,7 +208,9 @@ const CalendarPage = () => {
     const { setIsLivePreview } = useApp();
     const [error, setError] = useState("");
     const isDark = theme === 'dark';
-    const { isFloatingChat, setIsFloatingChat, events, fetchEvents, currentWeekStart, setCurrentWeekStart } = useCalendar();
+    const { isFloatingChat, setIsFloatingChat, events, fetchEvents, currentWeekStart, setCurrentWeekStart, chatPosition } = useCalendar();
+
+    const isSidebarOpen = isFloatingChat && chatPosition === 'sidebar-right';
 
     const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
     const borderColor = isDark ? "border-white/[0.08]" : "border-neutral-300";
@@ -279,7 +281,7 @@ const CalendarPage = () => {
     }
 
     return (
-        <div className={`h-full flex flex-col overflow-hidden relative transition-colors duration-500 ${isDark ? "bg-[#07070a] text-[#f4f1ea] noise" : "bg-white text-neutral-900"}`}>
+        <div className={`h-full flex flex-col overflow-hidden relative transition-colors duration-500 ${isDark ? "bg-[#07070a] text-[#f4f1ea] noise" : "bg-white text-neutral-900"} ${isSidebarOpen ? 'pr-[380px]' : ''}`}>
             <CalendarStyles isDark={isDark} />
 
             {isDark && (

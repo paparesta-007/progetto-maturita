@@ -136,6 +136,7 @@ router.post("/api/calendar/action", requireAuth, async (req: express.Request, re
 
         const reasoning: any[] = [];
         let finalResponse = "";
+        let respondedEarly = false;
 
         for (let i = 0; i < 6; i++) {
             console.log(`[CalendarAPI] Step ${i+1}...`);
@@ -184,6 +185,70 @@ router.post("/api/calendar/action", requireAuth, async (req: express.Request, re
                         name: name,
                         content: JSON.stringify(result)
                     });
+
+                    // If the agent performed a delete_event successfully, return a fast confirmation
+                    // to the client and continue the remaining reasoning in background.
+                    if (name === "delete_event" && result && (result.status === "success" || result.ok) && !respondedEarly) {
+                        respondedEarly = true;
+                        (async () => {
+                            try {
+                                for (let j = i + 1; j < 6; j++) {
+                                    console.log(`[CalendarAPI][bg] Step ${j + 1}...`);
+                                    const apiResBG = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                                        method: "POST",
+                                        headers: {
+                                            "Authorization": `Bearer ${OPENROUTER_KEY}`,
+                                            "Content-Type": "application/json",
+                                            "HTTP-Referer": "http://localhost:3000",
+                                            "X-Title": "Smart Calendar Assistant",
+                                            "X-OpenRouter-Cache": "true"
+                                        },
+                                        body: JSON.stringify({
+                                            model: selectedModel,
+                                            messages: cachedMessages,
+                                            tools: TOOLS,
+                                            tool_choice: "auto",
+                                            provider: { allow_fallbacks: false }
+                                        })
+                                    });
+
+                                    if (!apiResBG.ok) {
+                                        console.error("[CalendarAPI][bg] OpenRouter Error:", await apiResBG.text());
+                                        break;
+                                    }
+
+                                    const dataBG = await apiResBG.json();
+                                    const choiceBG = dataBG.choices[0];
+                                    const msgBG = choiceBG.message;
+                                    if (msgBG.content) {
+                                        reasoning.push({ type: "text", content: msgBG.content });
+                                        finalResponse = msgBG.content;
+                                    }
+
+                                    if (msgBG.tool_calls) {
+                                        cachedMessages.push(msgBG);
+                                        for (const toolCallBG of msgBG.tool_calls) {
+                                            const nameBG = toolCallBG.function.name;
+                                            const argsBG = JSON.parse(toolCallBG.function.arguments);
+                                            console.log(`[CalendarAPI][bg] Eseguo tool: ${nameBG}`);
+                                            reasoning.push({ type: "tool_call", content: `🛠️ ${nameBG}: ${JSON.stringify(argsBG)}` });
+                                            const resultBG = await executeTool(nameBG, argsBG, googleToken);
+                                            reasoning.push({ type: "tool_result", content: `📦 ${nameBG}: ${JSON.stringify(resultBG).substring(0, 100)}` });
+                                            cachedMessages.push({ role: "tool", tool_call_id: toolCallBG.id, name: nameBG, content: JSON.stringify(resultBG) });
+                                        }
+                                        continue;
+                                    }
+                                    break;
+                                }
+                                console.log("[CalendarAPI][bg] Background reasoning finished.");
+                            } catch (bgErr) {
+                                console.error("[CalendarAPI][bg] Crash:", bgErr);
+                            }
+                        })();
+
+                        // Send fast confirmation to client and stop synchronous processing
+                        return res.json({ success: true, message: "Evento eliminato", reasoning });
+                    }
                 }
                 continue; // Altro giro per far elaborare i risultati all'IA
             }
