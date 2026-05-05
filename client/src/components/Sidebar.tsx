@@ -85,7 +85,6 @@ const SidebarStyles = () => (
             inset: 0;
             border-radius: 10px;
             opacity: 0;
-            transition: opacity 0.3s ease;
             background: var(--glow-color);
             filter: blur(8px);
             z-index: -1;
@@ -158,35 +157,35 @@ const Sidebar = ({
         sidebar: `sidebar-premium h-screen flex flex-col font-sans text-sm transition-all duration-500 ease-in-out relative ${isDark ? "bg-[#0a0a0a]/85 backdrop-blur-xl border-r border-white/[0.04]" : ""} ${isMobileOpen ? 'fixed inset-0 z-50 w-full' : 'hidden md:flex'} ${isMinimized ? 'md:w-[72px] min-w-[72px]' : 'md:w-[280px] min-w-[280px]'}`,
 
         textPrimary: isDark ? "text-neutral-100" : "text-neutral-900",
-        textSecondary: isDark ? "text-neutral-500" : "text-neutral-600",
-        textMuted: isDark ? "text-neutral-600" : "text-neutral-300",
+        textSecondary: isDark ? "text-neutral-500" : "text-[#8c8278]",
+        textMuted: isDark ? "text-neutral-600" : "text-[#b5a99a]",
 
         iconBase: isDark ? "text-neutral-500 group-hover:text-neutral-300" : "text-neutral-600 group-hover:text-neutral-700 ",
         iconActive: isDark ? "text-white" : "text-neutral-900",
 
-        itemHover: isDark ? "hover:bg-white/[0.04]" : "hover:bg-black/[0.03]",
-        itemActive: isDark ? "bg-white/[0.06] text-white font-medium" : "bg-black/[0.04] text-neutral-900 font-medium",
+        itemHover: isDark ? "hover:bg-white/[0.04]" : "hover:bg-[#e8e2d9]/30",
+        itemActive: isDark ? "bg-white/[0.06] text-white font-medium" : "bg-[#e8e2d9]/40 text-[#2c2825] font-medium",
 
         newChatBtn: `w-full group relative flex items-center justify-between px-2 py-2.5 rounded-xl transition-all duration-300 ${isDark
             ? "bg-white/[0.04] hover:bg-white/[0.07] text-white border border-white/[0.06] hover:border-white/[0.1]"
-            : " text-neutral-900 "
+            : " text-[#2c2825] "
             }`,
 
         shortcutBadge: `text-[11px] px-1.5 py-0.5 rounded-md font-mono transition-colors ${isDark
             ? "bg-white/[0.06] text-neutral-500 border border-white/[0.04]"
-            : "bg-neutral-100 text-neutral-600 border border-neutral-200/60"
+            : "bg-[#e8e2d9]/40 text-[#8c8278] border border-[#e8e2d9]"
             }`,
 
         popoverBg: isDark
             ? "bg-[#141414] border-white/[0.08] shadow-2xl shadow-black/40"
-            : "bg-white border-neutral-200/80 shadow-xl shadow-black/[0.08]",
+            : "bg-[#faf9f6] border-[#e8e2d9] shadow-xl shadow-black/[0.06]",
 
-        popoverItem: `flex items-center gap-2.5 w-full px-3 py-2 text-[13px] rounded-lg transition-all duration-200 text-left ${isDark
+        popoverItem: `flex items-center gap-2.5 w-full px-3 py-2 text-[13px] rounded-lg transition-all  text-left ${isDark
             ? "text-neutral-300 hover:bg-white/[0.06] hover:text-white"
-            : "text-neutral-600 hover:bg-neutral-50 hover:text-neutral-900"
+            : "text-[#8c8278] hover:bg-[#e8e2d9]/40 hover:text-[#2c2825]"
             }`,
 
-        divider: `h-px my-1 ${isDark ? "bg-white/[0.06]" : "bg-neutral-100"}`,
+        divider: `h-px my-1 ${isDark ? "bg-white/[0.06]" : "bg-[#e8e2d9]"}`,
 
         scrollbar: `flex-1 overflow-y-auto px-3 premium-scrollbar`,
 
@@ -197,9 +196,9 @@ const Sidebar = ({
             : (isDark ? "hover:bg-white/[0.04]" : "hover:bg-black/[0.03]")
             }`,
 
-        sectionLabel: `px-4 text-[10px] font-bold uppercase tracking-[0.15em] mb-2 flex justify-between items-center ${isDark ? "text-neutral-600" : "text-neutral-300"}`,
+        sectionLabel: `px-4 text-[10px] font-bold uppercase tracking-[0.15em] mb-2 flex justify-between items-center ${isDark ? "text-neutral-600" : "text-[#b5a99a]"}`,
 
-        contextDot: `absolute right-2 p-1 cursor-pointer rounded-lg transition-all duration-200`,
+        contextDot: `absolute right-2 p-1 cursor-pointer rounded-lg transition-all `,
     };
 
     // CSS Variables for dynamic theming
@@ -319,7 +318,7 @@ const Sidebar = ({
                     </button>
                     <div className={style.divider} />
                     <button
-                        className={`flex items-center gap-2.5 w-full px-3 py-2 text-[13px] rounded-lg transition-all duration-200 text-left ${isDark ? "text-red-400 hover:bg-red-500/10" : "text-red-500 hover:bg-red-50"}`}
+                        className={`flex items-center gap-2.5 w-full px-3 py-2 text-[13px] rounded-lg transition-all  text-left ${isDark ? "text-red-400 hover:bg-red-500/10" : "text-red-500 hover:bg-red-50"}`}
                         onClick={onDelete}
                     >
                         <TrashIcon size={15} /> Elimina
@@ -395,7 +394,7 @@ const Sidebar = ({
                             <div
                                 className={`w-9 h-9 rounded-xl flex items-center justify-center cursor-pointer transition-all duration-300 hover:scale-105 active:scale-95 ${isDark
                                     ? "bg-white text-neutral-900 shadow-sm shadow-white/10"
-                                    : "bg-neutral-900 text-white shadow-md shadow-neutral-900/20"
+                                    : "bg-[#2c2825] text-[#faf9f6] shadow-md shadow-[#2c2825]/20"
                                     }`}
                                 onClick={() => navigate("/")}
                             >
@@ -408,7 +407,7 @@ const Sidebar = ({
                             {isMobileOpen && setIsMobileOpen && (
                               <button
                                 onClick={() => setIsMobileOpen(false)}
-                                className={`md:hidden w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 ${isDark ? "text-neutral-600 hover:text-neutral-400 hover:bg-white/[0.04]" : "text-neutral-400 hover:text-neutral-600 hover:bg-black/[0.03]"}`}
+                                className={`md:hidden w-8 h-8 rounded-lg flex items-center justify-center transition-all  ${isDark ? "text-neutral-600 hover:text-neutral-400 hover:bg-white/[0.04]" : "text-neutral-400 hover:text-neutral-600 hover:bg-black/[0.03]"}`}
                               >
                                 <XIcon size={20} />
                               </button>
@@ -420,7 +419,7 @@ const Sidebar = ({
                                     if (isLockedMinimized) return;
                                     setIsMinimized(!isMinimized);
                                 }}
-                                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 ${isDark ? "text-neutral-600 hover:text-neutral-600 hover:bg-white/[0.04]" : "text-neutral-300 hover:text-neutral-500 hover:bg-black/[0.03]"} ${isLockedMinimized ? "opacity-40 cursor-not-allowed" : ""} ${isMobileOpen ? 'hidden md:flex' : ''}`}
+                                className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all  ${isDark ? "text-neutral-600 hover:text-neutral-600 hover:bg-white/[0.04]" : "text-neutral-300 hover:text-neutral-500 hover:bg-black/[0.03]"} ${isLockedMinimized ? "opacity-40 cursor-not-allowed" : ""} ${isMobileOpen ? 'hidden md:flex' : ''}`}
                             >
                                 <SidebarSimpleIcon size={20} />
                             </button>
@@ -430,7 +429,7 @@ const Sidebar = ({
                     {/* ─── Search Bar (Premium Touch) ─── */}
                     {!isMinimized && (
                         <button className={`nav-item-glow relative f-poppins w-full flex items-center gap-3 px-3 py-2.5 mb-1 rounded-xl transition-all duration-300 group ${style.textSecondary} ${style.itemHover}`}>
-                            <Search size={17} strokeWidth={1.5} className={`transition-colors duration-200 ${style.iconBase}`} />
+                            <Search size={17} strokeWidth={1.5} className={`transition-colors  ${style.iconBase}`} />
                             <span className="text-[13px] flex-1 font-medium text-left">Cerca…</span>
                             <span className={style.shortcutBadge}>⌘K</span>
                         </button>
@@ -451,7 +450,7 @@ const Sidebar = ({
                         }}
                     >
                         <div className={`flex items-center ${!isMinimized ? 'gap-3' : ''}`}>
-                            <Plus size={17} strokeWidth={1.5} className={`transition-colors duration-200 ${style.iconBase} `} />
+                            <Plus size={17} strokeWidth={1.5} className={`transition-colors  ${style.iconBase} `} />
                             {!isMinimized && <span className="text-[13px] font-medium">{isDocumentsPage ? "Carica File" : "Nuova Chat"}</span>}
                         </div>
                         {!isDocumentsPage && !isMinimized && (
@@ -482,7 +481,7 @@ const Sidebar = ({
                                             {active && (
                                                 <motion.div
                                                     layoutId="activeNav"
-                                                    className={`absolute inset-0 rounded-xl ${isDark ? "bg-white/[0.06] ring-1 ring-white/[0.04]" : "bg-black/[0.04] ring-1 ring-black/[0.02]"}`}
+                                                    className={`absolute inset-0 rounded-xl ${isDark ? "bg-white/[0.06] ring-1 ring-white/[0.04]" : "bg-[#e8e2d9]/40 ring-1 ring-[#e8e2d9]/60"}`}
                                                     initial={false}
                                                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                                                 />
@@ -491,7 +490,7 @@ const Sidebar = ({
                                                 {React.cloneElement(item.icon as React.ReactElement<any>, {
                                                     size: 17,
                                                     strokeWidth: active ? 2 : 1.5,
-                                                    className: `transition-colors duration-200 ${active ? style.iconActive : style.iconBase}`
+                                                    className: `transition-colors  ${active ? style.iconActive : style.iconBase}`
                                                 })}
                                                 {!isMinimized && <span className="text-[13px]">{item.label}</span>}
                                             </span>
@@ -500,7 +499,7 @@ const Sidebar = ({
                                             {active && (
                                                 <motion.div
                                                     layoutId="activeIndicator"
-                                                    className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-r-full ${isDark ? "bg-white" : "bg-neutral-900"}`}
+                                                    className={`absolute left-0 top-1/2 -translate-y-1/2 w-[3px] h-4 rounded-r-full ${isDark ? "bg-white" : "bg-[#2c2825]"}`}
                                                     initial={false}
                                                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                                                 />
@@ -545,7 +544,7 @@ const Sidebar = ({
                                             initial={{ opacity: 0, x: -8 }}
                                             animate={{ opacity: 1, x: 0 }}
                                             transition={{ delay: index * 0.03, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                                            className={`relative group flex items-center rounded-xl transition-all duration-200 ${style.itemHover}`}
+                                            className={`relative group flex items-center rounded-xl transition-all  ${style.itemHover}`}
                                         >
                                             <NavLink
                                                 onClick={() => {
@@ -554,7 +553,7 @@ const Sidebar = ({
                                                 }}
                                                 to={`/app/documents/${doc.document_id}`}
                                                 className={({ isActive }) =>
-                                                    `flex-1 flex items-center f-poppins px-3 py-2 rounded-xl text-[13px] truncate transition-all duration-200 ${isActive
+                                                    `flex-1 flex items-center f-poppins px-3 py-2 rounded-xl text-[13px] truncate transition-all  ${isActive
                                                         ? (isDark ? "bg-white/[0.08] text-white font-medium ring-1 ring-white/[0.04]" : "bg-black/[0.04] text-neutral-900 font-medium ring-1 ring-black/[0.02]")
                                                         : style.textSecondary
                                                     }`
@@ -604,12 +603,12 @@ const Sidebar = ({
                                             initial={{ opacity: 0, x: -8 }}
                                             animate={{ opacity: 1, x: 0 }}
                                             transition={{ delay: index * 0.03, duration: 0.3, ease: [0.22, 1, 0.36, 1] }}
-                                            className={`relative group flex items-center rounded-xl transition-all duration-200 ${style.itemHover}`}
+                                            className={`relative group flex items-center rounded-xl transition-all  ${style.itemHover}`}
                                         >
                                             <NavLink
                                                 to={`/app/chat/${conv.id}`}
                                                 className={({ isActive }) =>
-                                                    `flex-1 flex items-center f-poppins px-3 py-2 rounded-xl text-[13px] truncate transition-all duration-200 ${isActive
+                                                    `flex-1 flex items-center f-poppins px-3 py-2 rounded-xl text-[13px] truncate transition-all  ${isActive
                                                         ? (isDark ? "bg-white/[0.06] text-white font-medium ring-1 ring-white/[0.04]" : "bg-black/[0.04] text-neutral-900 font-medium ring-1 ring-black/[0.02]")
                                                         : style.textSecondary
                                                     }`
@@ -733,7 +732,7 @@ const Sidebar = ({
                                         <div className="p-1">
                                             <button
                                                 onClick={() => handleLogOut(convMenuOpen)}
-                                                className={`flex items-center gap-2.5 w-full px-3 py-2 text-[13px] rounded-lg transition-all duration-200 text-left ${isDark ? "text-red-400 hover:bg-red-500/10" : "text-red-500 hover:bg-red-50"}`}
+                                                className={`flex items-center gap-2.5 w-full px-3 py-2 text-[13px] rounded-lg transition-all  text-left ${isDark ? "text-red-400 hover:bg-red-500/10" : "text-red-500 hover:bg-red-50"}`}
                                             >
                                                 <LogOut size={15} />
                                                 <span>Esci</span>
@@ -786,7 +785,7 @@ const Sidebar = ({
                             >
                                 <ChevronUp
                                     size={15}
-                                    className={`transition-colors duration-200 ${isUserMenuOpen ? style.iconActive : (isDark ? "text-neutral-600" : "text-neutral-300")}`}
+                                    className={`transition-colors  ${isUserMenuOpen ? style.iconActive : (isDark ? "text-neutral-600" : "text-neutral-300")}`}
                                 />
                             </motion.div>
                         )}

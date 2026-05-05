@@ -293,11 +293,11 @@ const BotMessage = React.memo(({
 
         // Action Bar
         actionBar: `flex items-center gap-1 mt-2 transition-all duration-300`,
-        actionBtn: `action-btn-premium p-1.5 rounded-lg transition-all duration-200 cursor-pointer ${isDark
+        actionBtn: `action-btn-premium p-1.5 rounded-lg transition-all  cursor-pointer ${isDark
             ? "text-neutral-600 hover:text-neutral-300 hover:bg-white/[0.06]"
             : "text-neutral-500 hover:text-neutral-600 hover:bg-black/[0.04]"
             }`,
-        actionBtnActive: `action-btn-premium p-1.5 rounded-lg transition-all duration-200 cursor-pointer ${isDark
+        actionBtnActive: `action-btn-premium p-1.5 rounded-lg transition-all  cursor-pointer ${isDark
             ? "text-emerald-400 bg-emerald-500/10"
             : "text-emerald-600 bg-emerald-50"
             }`,
@@ -387,7 +387,7 @@ const BotMessage = React.memo(({
                                                 <button
                                                     key={idx}
                                                     onClick={() => onSourceClick?.({ ...source, content: source.contents.join("\n\n---\n\n") })}
-                                                    className={`text-left p-2 rounded-lg border transition-all duration-200 group/source ${isDark
+                                                    className={`text-left p-2 rounded-lg border transition-all  group/source ${isDark
                                                             ? 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10'
                                                             : 'bg-black/5 border-black/5 hover:bg-black/10 hover:border-black/10'
                                                         }`}
@@ -547,7 +547,7 @@ const BotMessage = React.memo(({
                                     <button
                                         key={idx}
                                         onClick={() => onSuggestedClick(q)}
-                                        className={`text-xs px-3 py-1.5 rounded-full border transition-all duration-200 cursor-pointer text-left ${isDark
+                                        className={`text-xs px-3 py-1.5 rounded-full border transition-all  cursor-pointer text-left ${isDark
                                             ? "border-white/[0.08] text-neutral-400 hover:text-neutral-200 hover:border-white/[0.15] hover:bg-white/[0.04]"
                                             : "border-black/[0.06] text-neutral-500 hover:text-neutral-700 hover:border-black/[0.12] hover:bg-black/[0.02]"
                                             }`}

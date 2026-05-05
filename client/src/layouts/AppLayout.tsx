@@ -12,6 +12,7 @@ import {
 import { ChatProvider } from "../context/ChatContext";
 import { useApp } from "../context/AppContext";
 import { useAuth } from "../context/AuthContext"; // Importa per il tema
+import { useCalendar } from "../context/CalendarContext";
 import { AnimatePresence, motion } from "framer-motion";
 import GeneralSettingPage from "../pages/SettingPages/GeneralSettingPage";
 import InstructionsSettingPage from "../pages/SettingPages/InstructionsSettingPage";
@@ -26,22 +27,23 @@ const AppLayout = () => {
   const { isSettingOpen, setIsSettingOpen, setSettingPage, settingPage, isLivePreview } = useApp();
   const { theme, setTheme } = useAuth(); // Estrai il tema globale
   const isDark = theme === 'dark';
+  const { isFloatingChat, chatPosition, chatAutoMinimizedDone, setChatAutoMinimizedDone } = useCalendar();
   const effectiveSidebarMinimized = isLivePreview || isMinimized;
 
   // --- Palette dinamica ---
   const style = useMemo(() => ({
-    layoutContainer: `flex h-screen w-full relative transition-colors duration-300 ${isDark ? "bg-[#07070a] text-[#f4f1ea]" : "bg-white text-neutral-900"}`,
+    layoutContainer: `flex h-screen w-full relative transition-colors duration-300 ${isDark ? "bg-[#07070a] text-[#f4f1ea]" : "bg-[#faf9f6] text-[#2c2825]"}`,
     modalOverlay: "fixed inset-0 bg-black/80 backdrop-blur-sm z-40",
-    modalContent: `fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 rounded-[2rem] shadow-[0_50px_100px_rgba(0,0,0,0.6)] w-[95vw] max-w-[800px] h-[85vh] max-h-[600px] flex flex-col md:flex-row overflow-hidden border transition-colors duration-300 ${isDark ? "bg-[#07070a] border-white/10" : "bg-white border-neutral-200"}`,
-    modalSidebar: `flex md:flex-col gap-1 md:w-[220px] md:min-w-[220px] border-b md:border-b-0 md:border-r p-5 overflow-x-auto md:overflow-visible transition-colors ${isDark ? "bg-white/[0.02] border-white/5 backdrop-blur-2xl" : "bg-neutral-50 border-neutral-200"}`,
+    modalContent: `fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 rounded-[2rem] shadow-[0_50px_100px_rgba(0,0,0,0.6)] w-[95vw] max-w-[800px] h-[85vh] max-h-[600px] flex flex-col md:flex-row overflow-hidden border transition-colors duration-300 ${isDark ? "bg-[#07070a] border-white/10" : "bg-[#faf9f6] border-[#e8e2d9]"}`,
+    modalSidebar: `flex md:flex-col gap-1 md:w-[220px] md:min-w-[220px] border-b md:border-b-0 md:border-r p-5 overflow-x-auto md:overflow-visible transition-colors ${isDark ? "bg-white/[0.02] border-white/5 backdrop-blur-2xl" : "bg-[#f5f0eb] border-[#e8e2d9]"}`,
     navButton: (active: boolean) => `
       flex items-center gap-3 whitespace-nowrap px-4 py-2.5 rounded-xl transition-all text-[13px] font-semibold
       ${active
-        ? (isDark ? "bg-white/10 text-white shadow-[0_0_20px_rgba(255,255,255,0.05)] border border-white/10" : "bg-neutral-200/80 text-neutral-900 shadow-sm")
-        : (isDark ? "text-white/40 hover:bg-white/5 hover:text-white/70" : "text-neutral-500 hover:bg-neutral-200/60 hover:text-neutral-900")
+        ? (isDark ? "bg-white/10 text-white shadow-[0_0_20px_rgba(255,255,255,0.05)] border border-white/10" : "bg-[#e8e2d9]/60 text-[#2c2825] shadow-sm")
+        : (isDark ? "text-white/40 hover:bg-white/5 hover:text-white/70" : "text-[#8c8278] hover:bg-[#e8e2d9]/40 hover:text-[#2c2825]")
       }
     `,
-    divider: `md:my-3 ${isDark ? "border-white/5" : "border-neutral-200"}`,
+    divider: `md:my-3 ${isDark ? "border-white/5" : "border-[#e8e2d9]"}`,
     closeBtn: `absolute top-6 right-6 transition-colors z-50 ${isDark ? "text-white/30 hover:text-white" : "text-neutral-400 hover:text-neutral-900"}`
   }), [isDark]);
 
@@ -93,6 +95,11 @@ const AppLayout = () => {
             isMobileOpen={isMobileMenuOpen}
             setIsMobileOpen={setIsMobileMenuOpen}
           />
+
+          {/* Auto-minimize sidebar once when chat opens as sidebar-right */}
+          {isFloatingChat && chatPosition === 'sidebar-right' && !chatAutoMinimizedDone && (
+            (() => { setIsMinimized(true); setChatAutoMinimizedDone(true); return null; })()
+          )}
 
           <main className={`flex-1 min-w-0 overflow-hidden relative ${isMobileMenuOpen ? 'hidden md:block' : 'block'}`}>
             <Outlet />
@@ -151,7 +158,7 @@ const AppLayout = () => {
                   </div>
 
                   {/* Contenuto dinamico delle pagine di impostazione */}
-                  <div className={`flex flex-col flex-1 relative overflow-y-auto ${isDark ? "bg-transparent" : "bg-neutral-50"}`}>
+                  <div className={`flex flex-col flex-1 relative overflow-y-auto ${isDark ? "bg-transparent" : "bg-[#faf9f6]"}`}>
                     <div className="p-3 md:p-4 h-full">
                       {settingPage === "generale" && <GeneralSettingPage />}
                       {settingPage === "istruzioni" && <InstructionsSettingPage />}

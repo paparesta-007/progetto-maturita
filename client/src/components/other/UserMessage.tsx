@@ -51,12 +51,12 @@ const UserMessage = React.memo(({ i, htmlContent, tokens = 0 }: { i: number; htm
         // Message Bubble
         bubble: `relative max-w-full md:max-w-[85%] lg:max-w-[90%] rounded-2xl rounded-tr-sm p-4 text-sm leading-relaxed transition-all duration-300 ${isDark
                 ? "text-white/90 glass-soft ring-1 ring-white/5"
-                : "text-black bg-[#e3dacc]"
+                : "text-[#2c2825] bg-[#f0ebe4]"
             }`,
 
         // Action Bar
         actionBar: `flex items-center gap-2 mt-1.5 mr-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-300`,
-        actionBtn: `p-1.5 rounded-lg transition-all duration-200 cursor-pointer ${isDark
+        actionBtn: `p-1.5 rounded-lg transition-all  cursor-pointer ${isDark
                 ? "text-neutral-500 hover:text-neutral-300 hover:bg-white/[0.06]"
                 : "text-neutral-600 hover:text-neutral-600 hover:bg-black/[0.04]"
             }`,

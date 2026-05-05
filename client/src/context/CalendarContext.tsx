@@ -5,6 +5,10 @@ import { useAuth } from "./AuthContext";
 export interface CalendarContextType {
     isFloatingChat: boolean;
     setIsFloatingChat: (val: boolean) => void;
+    chatPosition: 'floating' | 'sidebar-right';
+    setChatPosition: (pos: 'floating' | 'sidebar-right') => void;
+    chatAutoMinimizedDone: boolean;
+    setChatAutoMinimizedDone: (v: boolean) => void;
     events: any[];
     fetchEvents: () => Promise<void>;
     currentWeekStart: Date;
@@ -26,6 +30,8 @@ function getStartOfWeek(date: Date) {
 export const CalendarProvider = ({ children }: { children: React.ReactNode }) => {
     const { session } = useAuth();
     const [isFloatingChat, setIsFloatingChat] = useState(false);
+    const [chatPosition, setChatPosition] = useState<'floating' | 'sidebar-right'>('floating');
+    const [chatAutoMinimizedDone, setChatAutoMinimizedDone] = useState(false);
     const [events, setEvents] = useState<any[]>([]);
     const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => getStartOfWeek(new Date()));
 
@@ -53,6 +59,10 @@ export const CalendarProvider = ({ children }: { children: React.ReactNode }) =>
     const value: CalendarContextType = {
         isFloatingChat,
         setIsFloatingChat,
+        chatPosition,
+        setChatPosition,
+        chatAutoMinimizedDone,
+        setChatAutoMinimizedDone,
         events,
         fetchEvents,
         currentWeekStart,

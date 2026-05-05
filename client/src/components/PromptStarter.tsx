@@ -220,10 +220,10 @@ const ALL_SUGGESTIONS = [
 const SuggestionCard = React.memo(({ item, isDark, onClick }: { item: any, isDark: boolean, onClick: () => void }) => {
     const cardStyles = `flex flex-col text-left p-4 border rounded-xl transition-all group ${isDark
         ? "bg-neutral-900/40 border-neutral-800 hover:bg-neutral-800 hover:border-neutral-700"
-        : "bg-[#e3dacc] border-neutral-400 hover:brightness-105 shadow-sm hover:shadow-md"
+        : "bg-[#f5f0eb] border-[#e8e2d9] hover:brightness-105 shadow-sm hover:shadow-md"
         }`;
     const cardTitle = `font-semibold transition-colors ${isDark ? "text-neutral-200" : "text-neutral-900"}`;
-    const cardDesc = `text-sm transition-colors ${isDark ? "text-neutral-500" : "text-neutral-500"}`;
+    const cardDesc = `text-sm transition-colors ${isDark ? "text-neutral-500" : "text-[#8c8278]"}`;
 
     return (
         <button
@@ -231,7 +231,7 @@ const SuggestionCard = React.memo(({ item, isDark, onClick }: { item: any, isDar
             onClick={onClick}
             aria-label={`Usa suggerimento ${item.title}`}
         >
-            <div className="mb-3 duration-200">
+            <div className="mb-3 ">
                 {item.icon}
             </div>
             <h3 className={cardTitle}>{item.title}</h3>

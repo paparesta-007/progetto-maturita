@@ -218,7 +218,7 @@ const QuizPage = () => {
                                                 key={key}
                                                 disabled={submitted}
                                                 onClick={() => handleSelect(key)}
-                                                className={`flex items-center justify-between p-4 rounded-2xl border text-sm font-semibold transition-all duration-200 ${btnStyle}`}
+                                                className={`flex items-center justify-between p-4 rounded-2xl border text-sm font-semibold transition-all  ${btnStyle}`}
                                             >
                                                 <div className="flex items-center gap-4">
                                                     <span className={`w-8 h-8 flex items-center justify-center rounded-lg border text-[10px] ${

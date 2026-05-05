@@ -79,12 +79,12 @@ const Textbar = () => {
     const styles = useMemo(() => ({
         container: `w-full max-w-2xl rounded-[1.5rem] p-3 flex flex-col gap-2 transition-all duration-300 ${isDark
             ? "glass border-white/10 shadow-2xl"
-            : "bg-white border border-neutral-200 shadow-[0_2px_24px_0_rgba(0,0,0,0.10)]"
+            : "bg-[#faf9f6] border border-[#e8e2d9] shadow-[0_2px_24px_0_rgba(0,0,0,0.08)]"
             }`,
         input: ` flex-1 p-2 focus:outline-none bg-transparent resize-none
                 ${isDark
                 ? "text-white placeholder-white/40"
-                : "text-neutral-900 placeholder-neutral-400 bg-[#f7f6f2]"}
+                : "text-[#2c2825] placeholder-[#b5a99a] bg-transparent"}
                 w-full min-w-[200px]
                 py-2
                 max-h-[15rem] overflow-y-auto`,

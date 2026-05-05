@@ -61,7 +61,7 @@ const SchemaNode = ({
                 </div>
                 
                 {/* Action Buttons (Hover) */}
-                <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 opacity-0 group-hover/node:opacity-100 transition-opacity duration-200 z-10">
+                <div className="absolute -bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-1 opacity-0 group-hover/node:opacity-100 transition-opacity  z-10">
                     <button 
                         onClick={() => onAddChild(node.id)}
                         title="Aggiungi nodo figlio"
