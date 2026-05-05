@@ -207,13 +207,11 @@ const CalendarPage = () => {
     const { session, theme } = useAuth();
     const { setIsLivePreview } = useApp();
     const [error, setError] = useState("");
-    const [events, setEvents] = useState<any[]>([]);
     const isDark = theme === 'dark';
-    const { isFloatingChat, setIsFloatingChat } = useCalendar();
+    const { isFloatingChat, setIsFloatingChat, events, fetchEvents, currentWeekStart, setCurrentWeekStart } = useCalendar();
 
     const [selectedEvent, setSelectedEvent] = useState<any | null>(null);
     const borderColor = isDark ? "border-white/[0.08]" : "border-neutral-300";
-    const [currentWeekStart, setCurrentWeekStart] = useState(() => getStartOfWeek(new Date()));
 
     function getStartOfWeek(date: Date) {
         const d = new Date(date);
@@ -253,29 +251,8 @@ const CalendarPage = () => {
     }, [events]);
 
     useEffect(() => {
-        async function getCalendarEvents() {
-            const providerToken = session?.provider_token;
-            if (!providerToken) return;
-
-            try {
-                const timeMin = currentWeekStart.toISOString();
-                const timeMax = new Date(currentWeekStart.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
-                const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?timeMin=${timeMin}&timeMax=${timeMax}&singleEvents=true&orderBy=startTime`;
-
-                const response = await fetch(url, {
-                    headers: { 'Authorization': `Bearer ${providerToken}` }
-                });
-
-                if (!response.ok) throw new Error('Errore nel recupero');
-                const data = await response.json();
-                setEvents(data.items || []);
-            } catch (err) {
-                setError("Impossibile caricare gli eventi.");
-            }
-        }
-
-        getCalendarEvents();
-    }, [session, currentWeekStart]);
+        fetchEvents();
+    }, [session, currentWeekStart, fetchEvents]);
 
     const handlePrev = useCallback(() => {
         const d = new Date(currentWeekStart);
