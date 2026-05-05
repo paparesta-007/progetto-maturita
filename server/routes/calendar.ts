@@ -168,7 +168,7 @@ router.post("/api/calendar/action", requireAuth, async (req: express.Request, re
             }
 
             if (msg.tool_calls) {
-                messages.push(msg); // L'assistente deve stare in history prima dei tool results
+                cachedMessages.push(msg); // L'assistente deve stare in history prima dei tool results
                 for (const toolCall of msg.tool_calls) {
                     const name = toolCall.function.name;
                     const args = JSON.parse(toolCall.function.arguments);
@@ -178,7 +178,7 @@ router.post("/api/calendar/action", requireAuth, async (req: express.Request, re
                     const result = await executeTool(name, args, googleToken);
                     reasoning.push({ type: "tool_result", content: `📦 ${name}: ${JSON.stringify(result).substring(0, 100)}` });
 
-                    messages.push({
+                    cachedMessages.push({
                         role: "tool",
                         tool_call_id: toolCall.id,
                         name: name,

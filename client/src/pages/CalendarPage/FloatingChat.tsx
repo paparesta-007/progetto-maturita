@@ -4,7 +4,8 @@ import { useCalendar } from "../../context/CalendarContext";
 import { useAuth } from "../../context/AuthContext";
 import SelectPopup from "../../components/other/SelectPopup";
 import { useChat } from "../../context/ChatContext";
-import { PaperPlaneTilt, CaretDown, Minus, MagicWand, Sparkle, Calendar, Clock, Notebook } from "@phosphor-icons/react";
+import { PaperPlaneTilt, CaretDown, Minus, PencilSimple, MagicWand, Sparkle, Calendar, Clock, Notebook } from "@phosphor-icons/react";
+import MarkdownRender from "../../library/markdownRender";
 
 type ReasoningStep = { type: string; content: string };
 type ChatMessage = {
@@ -14,7 +15,7 @@ type ChatMessage = {
 };
 
 const FloatingChat = () => {
-    const { setIsFloatingChat } = useCalendar();
+    const { setIsFloatingChat, fetchEvents } = useCalendar();
     const [isExiting, setIsExiting] = useState(false);
     const [inputValue, setInputValue] = useState("");
     const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -89,6 +90,7 @@ const FloatingChat = () => {
                     content: data.message,
                     reasoning: data.reasoning || []
                 }]);
+                try { await fetchEvents(); } catch (e) { console.warn('fetchEvents failed', e); }
             } else {
                 setMessages(prev => [...prev, {
                     role: 'assistant',
@@ -161,12 +163,21 @@ const FloatingChat = () => {
                             </div>
                         </div>
                     </div>
-                    <button
-                        onClick={handleClose}
-                        className={`p-1.5 rounded-lg transition-all ${isDark ? 'text-white/20 hover:bg-white/5 hover:text-white' : 'text-neutral-400 hover:bg-neutral-100'}`}
-                    >
-                        <Minus size={16} weight="bold" />
-                    </button>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => setMessages([])}
+                            title="Clear chat"
+                            className={`p-1.5 rounded-lg transition-all ${isDark ? 'text-white/20 hover:bg-white/5 hover:text-white' : 'text-neutral-400 hover:bg-neutral-100'}`}
+                        >
+                            <PencilSimple size={16} weight="bold" />
+                        </button>
+                        <button
+                            onClick={handleClose}
+                            className={`p-1.5 rounded-lg transition-all ${isDark ? 'text-white/20 hover:bg-white/5 hover:text-white' : 'text-neutral-400 hover:bg-neutral-100'}`}
+                        >
+                            <Minus size={16} weight="bold" />
+                        </button>
+                    </div>
                 </div>
 
                 {/* Messages Area */}
@@ -194,7 +205,7 @@ const FloatingChat = () => {
                                         <ReasoningBlock reasoning={m.reasoning} isDark={isDark} />
                                     )}
                                     <div className={m.role === 'user' ? styles.userBubble : styles.assistantBubble}>
-                                        {m.content}
+                                        <MarkdownRender text={m.content} />
                                     </div>
                                 </div>
                             ))}
