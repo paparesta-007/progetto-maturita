@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Sparkles, Plus, Bot, FileText, Zap, ChevronRight, CheckCircle2, Search, Brain, LayoutDashboard, ShieldCheck, Cpu, Database, Layers, Github, Linkedin, Instagram } from 'lucide-react';
+import { ArrowRight, Sparkles, Plus, Bot, FileText, Zap, ChevronRight, CheckCircle2, Search, Brain, LayoutDashboard, ShieldCheck, Cpu, Database, Layers, Github, Linkedin, Instagram, ChevronDown } from 'lucide-react';
 import { LandingStyles, fadeUp } from './LandingStyles';
 
 function useScrolled(t = 16) {
@@ -49,6 +49,37 @@ function WordReveal({ text, className = "" }: { text: string, className?: string
 
 function Navbar() {
   const scrolled = useScrolled(20);
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [menuPosition, setMenuPosition] = useState({ left: 0, width: 0 });
+  const navRef = useRef<HTMLDivElement>(null);
+
+  const menuItems = [
+    { label: 'Prodotto', id: 'product', hasDropdown: true },
+    { label: 'Intelligenza', id: 'intelligence', hasDropdown: true },
+    { label: 'Flusso', id: 'workflow', hasDropdown: false },
+    { label: 'Sicurezza', id: 'security', hasDropdown: false },
+    { label: 'Assistenza', id: 'help', hasDropdown: false, isLink: true, path: '/help' }
+  ];
+
+  const handleMouseEnter = (id: string, e: React.MouseEvent<HTMLElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const navRect = navRef.current?.getBoundingClientRect();
+    if (navRect) {
+      let left = rect.left - navRect.left + rect.width / 2;
+      
+      // Shift 'product' dropdown to the left (not perfectly centered)
+      if (id === 'product') {
+        left -= 60; // Adjust this value to control how much it shifts
+      }
+      
+      setMenuPosition({
+        left,
+        width: rect.width
+      });
+    }
+    setActiveMenu(id);
+  };
+
   return (
     <header className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 ${scrolled ? 'bg-white/90 backdrop-blur-md border-b border-[#e5e5e5] h-16' : 'bg-transparent h-24'}`}>
       <div className="mx-auto max-w-7xl px-6 lg:px-8 h-full flex items-center justify-between">
@@ -58,11 +89,125 @@ function Navbar() {
           </div>
           <span className="font-semibold text-lg tracking-tight text-[#171717]">Smart AI</span>
         </Link>
-        <nav className="hidden md:flex items-center gap-10">
-          {[{label:'Prodotto', id:'product'}, {label:'Intelligenza', id:'intelligence'}, {label:'Flusso', id:'workflow'}, {label:'Sicurezza', id:'security'}].map(item => (
-            <a key={item.id} href={`#${item.id}`} className="text-sm font-medium text-[#737373] hover:text-[#171717] transition-colors">{item.label}</a>
+        
+        <nav 
+          ref={navRef}
+          className="hidden md:flex items-center gap-8 relative h-full"
+          onMouseLeave={() => setActiveMenu(null)}
+        >
+          {menuItems.map(item => (
+            <div key={item.id} className="h-full flex items-center">
+              {item.isLink ? (
+                <Link 
+                  to={item.path || '#'}
+                  className="flex items-center gap-1 text-sm font-medium text-[#737373] hover:text-[#171717] transition-colors py-2"
+                  onMouseEnter={(e) => handleMouseEnter(item.id, e)}
+                >
+                  {item.label}
+                </Link>
+              ) : (
+                <a 
+                  href={`#${item.id}`} 
+                  className="flex items-center gap-1 text-sm font-medium text-[#737373] hover:text-[#171717] transition-colors py-2"
+                  onMouseEnter={(e) => handleMouseEnter(item.id, e)}
+                >
+                  {item.label}
+                  {item.hasDropdown && (
+                    <motion.span
+                      animate={{ rotate: activeMenu === item.id ? 180 : 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <ChevronDown size={14} />
+                    </motion.span>
+                  )}
+                </a>
+              )}
+            </div>
           ))}
+
+          {/* Shared Dropdown Container */}
+          <AnimatePresence>
+            {activeMenu && menuItems.find(i => i.id === activeMenu)?.hasDropdown && (
+              <motion.div
+                layoutId="nav-dropdown"
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+                className="absolute top-full pt-2"
+                style={{ left: menuPosition.left, transform: 'translateX(-50%)' }}
+              >
+                <div className="bg-white border border-[#e5e5e5] rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.12)] overflow-hidden min-w-[480px] p-8 origin-top">
+                  <motion.div
+                    key={activeMenu}
+                    initial={{ opacity: 0, x: activeMenu === 'product' ? -30 : 30 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: activeMenu === 'product' ? 30 : -30 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                  >
+                    {activeMenu === 'product' && (
+                      <div className="grid grid-cols-1 gap-8">
+                        <div className="space-y-6">
+                          <div className="flex items-center gap-3">
+                             <div className="h-9 w-9 rounded-xl bg-[#f9f8f6] flex items-center justify-center shadow-sm"><Zap size={18} className="text-[#b08968]"/></div>
+                             <h4 className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#a3a3a3]">Capacità Core</h4>
+                          </div>
+                          <div className="grid grid-cols-2 gap-x-8 gap-y-6">
+                            {[
+                              { icon: Layers, title: 'RAG Engine', desc: 'Memoria semantica ad alta precisione.' },
+                              { icon: Zap, title: 'Calendar Agent', desc: 'Gestione autonoma del tuo tempo.' },
+                              { icon: Brain, title: 'Mind Mapping', desc: 'Visualizza connessioni tra progetti.' },
+                              { icon: LayoutDashboard, title: 'Ambiente Vivo', desc: 'Interfaccia dinamica e proattiva.' }
+                            ].map((sub, idx) => (
+                              <div key={idx} className="flex gap-4 group cursor-pointer">
+                                <div className="h-10 w-10 rounded-xl bg-[#fcfbf9] border border-[#e5e5e5] flex items-center justify-center group-hover:bg-[#171717] group-hover:text-white transition-all">
+                                  <sub.icon size={18} />
+                                </div>
+                                <div>
+                                  <div className="text-sm font-semibold text-[#171717] group-hover:text-[#b08968] transition-colors">{sub.title}</div>
+                                  <div className="text-[11px] text-[#a3a3a3] leading-relaxed line-clamp-2">{sub.desc}</div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {activeMenu === 'intelligence' && (
+                      <div className="grid grid-cols-1 gap-8">
+                        <div className="space-y-6">
+                          <div className="flex items-center gap-3">
+                             <div className="h-9 w-9 rounded-xl bg-[#f9f8f6] flex items-center justify-center shadow-sm"><Cpu size={18} className="text-[#b08968]"/></div>
+                             <h4 className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#a3a3a3]">Architettura</h4>
+                          </div>
+                          <div className="grid grid-cols-2 gap-x-8 gap-y-6">
+                            {[
+                              { icon: Cpu, title: 'Model Selection', desc: 'Integra GPT-4, Claude e Open Source.' },
+                              { icon: ShieldCheck, title: 'Secure Vault', desc: 'Crittografia end-to-end per i dati.' },
+                              { icon: Database, title: 'Knowledge Graph', desc: 'Mappatura automatica della realtà.' },
+                              { icon: Zap, title: 'Esecuzione', desc: 'Agenti proattivi per task complessi.' }
+                            ].map((sub, idx) => (
+                              <div key={idx} className="flex gap-4 group cursor-pointer">
+                                <div className="h-10 w-10 rounded-xl bg-[#fcfbf9] border border-[#e5e5e5] flex items-center justify-center group-hover:bg-[#171717] group-hover:text-white transition-all">
+                                  <sub.icon size={18} />
+                                </div>
+                                <div>
+                                  <div className="text-sm font-semibold text-[#171717] group-hover:text-[#b08968] transition-colors">{sub.title}</div>
+                                  <div className="text-[11px] text-[#a3a3a3] leading-relaxed line-clamp-2">{sub.desc}</div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </nav>
+
         <div className="flex items-center gap-6">
           <Link to="/login" className="text-sm font-medium text-[#737373] hover:text-[#171717] transition-colors">Accedi</Link>
           <Link to="/login" className="warm-btn-primary !py-2 !px-5 text-sm !rounded-full shadow-sm">Inizia Ora</Link>
