@@ -1,16 +1,17 @@
-# 05 - Gestione Conversazioni e Persistenza
+# 05 - Gestione della Persistenza
 
-La capacità di un'intelligenza artificiale di "ricordare" i messaggi precedenti è fondamentale per una conversazione naturale. In **Smart AI**, questa funzionalità è gestita attraverso un sistema di persistenza basato su **Supabase (PostgreSQL)**, che permette all'utente di riprendere le proprie chat da qualsiasi dispositivo.
+Perché una conversazione con un'IA sia utile, è fondamentale che il sistema ricordi i messaggi precedenti. In **SmartAI** questa funzionalità è gestita da un sistema di persistenza basato su **Supabase (PostgreSQL)**, che consente all'utente di riprendere le proprie chat da qualsiasi dispositivo in qualsiasi momento.
 
 ---
 
-## Il Modello dei Dati
+## 5.1 Il Modello dei Dati
 
-La struttura del database è progettata per gestire conversazioni multiple per ogni utente, mantenendo l'ordine cronologico dei messaggi.
+La struttura del database è pensata per gestire conversazioni multiple per ogni utente, preservando l'ordine cronologico dei messaggi.
 
-### Entità Principali:
-1.  **Conversations**: Contiene i metadati della chat (Titolo, ID Utente, Data di creazione, Modello AI preferito).
-2.  **Messages**: Contiene i singoli scambi (Ruolo: "user" o "assistant", Contenuto, Timestamp, Riferimento alla conversazione).
+### Entità Principali
+
+1. **Conversations**: Contiene i metadati della chat — titolo, ID utente, data di creazione e modello AI preferito.
+2. **Messages**: Contiene i singoli scambi — ruolo (`user` o `assistant`), contenuto, timestamp e riferimento alla conversazione di appartenenza.
 
 ```mermaid
 erDiagram
@@ -19,46 +20,44 @@ erDiagram
     
     CONVERSATION {
         uuid id PK
-        string title
         uuid user_id FK
-        timestamp created_at
-        string model_id
+        text title
+        bool favourite
     }
     
     MESSAGE {
-        uuid id PK
+         uuid id PK
         uuid conversation_id FK
-        string role
+        text sender
         text content
-        timestamp created_at
+        jsonb usage
     }
 ```
+---
+
+## 5.2 Operazioni CRUD sulla Chat
+
+Il sistema implementa tutte le operazioni fondamentali per la gestione del ciclo di vita di una conversazione:
+
+- **Creazione**: Al primo messaggio inviato, viene creata una nuova conversazione. Il titolo viene impostato inizialmente come "Nuova Chat" e potrà essere aggiornato in seguito.
+- **Recupero (Listing)**: La sidebar interroga il database per mostrare la cronologia delle chat dell'utente, ordinate per data di creazione.
+- **Rinomina**: L'utente può assegnare un nome personalizzato a ogni conversazione per organizzarle. In futuro è prevista la generazione automatica del titolo tramite IA, basata sul contenuto della chat.
+- **Eliminazione**: La rimozione di una conversazione sfrutta il vincolo `ON DELETE CASCADE`, che cancella automaticamente tutti i messaggi associati, garantendo la coerenza dei dati.
 
 ---
 
-## Funzionalità di Gestione (CRUD)
+## 5.3 Gestione del Contesto con la Sliding Window
 
-Il sistema implementa tutte le operazioni fondamentali per una gestione completa del ciclo di vita della chat:
+I modelli di linguaggio hanno un limite nel numero di token che possono elaborare in una singola richiesta. Per questo motivo, il sistema non invia mai l'intera storia della conversazione, ma adotta una strategia di **Sliding Window**:
 
-*   **Creazione**: Al primo messaggio inviato, viene creata una nuova istanza di conversazione. Il titolo viene inizialmente impostato come "Nuova Chat" e successivamente aggiornato.
-*   **Recupero (Listing)**: La sidebar dell'applicazione interroga il database per mostrare la cronologia delle chat dell'utente, ordinate per data.
-*   **Aggiornamento Titolo**: L'utente può rinominare le conversazioni per organizzarle meglio. (In futuro è prevista la generazione automatica del titolo tramite IA basandosi sul contenuto).
-*   **Eliminazione**: Permette di rimuovere una conversazione. Grazie ai vincoli di integrità referenziale (`ON DELETE CASCADE`), l'eliminazione di una conversazione rimuove automaticamente tutti i messaggi associati.
+1. Vengono recuperati dal database solo gli ultimi *N* messaggi. Quelli più vecchi vengono compressi in un unico messaggio di riepilogo, in modo da mantenere il filo della conversazione senza sovraccaricare il modello.
+2. I messaggi vengono formattati in un array JSON comprensibile dall'IA.
+3. A ogni richiesta viene anteposto un **System Prompt** che definisce il comportamento e il tono dell'assistente.
 
----
-
-## Gestione del Contesto (Windowing)
-
-Poiché i modelli di linguaggio hanno un limite di "token" (memoria a breve termine), il sistema non invia sempre l'intera storia della chat, ma adotta una strategia di **Sliding Window**:
-
-1.  Vengono recuperati gli ultimi *N* messaggi dal database.
-2.  I messaggi vengono formattati in un array di oggetti (JSON) comprensibile dall'IA.
-3.  Viene aggiunto un "System Prompt" iniziale che definisce il comportamento dell'assistente.
-
-Questa tecnica garantisce che l'IA abbia sempre i riferimenti più recenti della conversazione senza superare i limiti tecnici dei provider.
+Questa tecnica garantisce che il modello abbia sempre accesso ai riferimenti più recenti della conversazione, senza mai superare i limiti tecnici imposti dai provider.
 
 ---
 
-## Integrazione Frontend-Backend
+## 5.4 Integrazione Frontend-Backend
 
-Le chiamate al database avvengono tramite i servizi Supabase integrati nel client, garantendo tempi di risposta minimi grazie alle capacità di indicizzazione di PostgreSQL. Ogni volta che l'IA termina di generare una risposta (streaming completato), il contenuto finale viene salvato permanentemente nel database.
+Le chiamate al database avvengono tramite il client Supabase integrato nell'applicazione, con tempi di risposta ridotti grazie all'indicizzazione nativa di PostgreSQL. Il salvataggio è asincrono: non appena lo streaming della risposta dell'IA si conclude, il contenuto viene persistito nel database, pronto per essere recuperato alla sessione successiva.

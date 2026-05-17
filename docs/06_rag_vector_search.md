@@ -1,73 +1,63 @@
 # 06 - RAG e Vector Search: Il Cuore della Conoscenza
 
-Il sistema **RAG (Retrieval-Augmented Generation)** rappresenta il pilastro tecnologico che permette a **Smart AI** di evolvere da semplice chatbot a consulente esperto sui documenti dell'utente. Questa architettura supera i limiti dei modelli linguistici standard (conoscenza statica e "allucinazioni") fornendo un contesto dinamico e verificabile.
+Il **RAG (Retrieval Augmented Generation)** è la funzionalità che consente a SmartAI di interrogare documenti PDF complessi restituendo risposte precise e ancorate al testo, evitando il fenomeno delle "allucinazioni" — risposte plausibili ma inventate, del tutto scollegate dal materiale fornito.
 
 ---
 
 ## 6.1 Fondamenti e Vantaggi del RAG
 
-A differenza di un modello tradizionale che risponde in base a quanto appreso durante il suo addestramento (knowledge cutoff), il sistema RAG agisce come un assistente che consulta un manuale prima di rispondere.
+Il sistema RAG funziona come un assistente che consulta un manuale prima di rispondere, invece di affidarsi esclusivamente alla memoria. I vantaggi principali sono:
 
-I vantaggi principali di questo approccio nel progetto sono:
--   **Conoscenza Verticale:** Il sistema "sa" cose che il modello base ignora (es. appunti privati, tesine, documenti aziendali).
--   **Assenza di Bias e Allucinazioni:** Poiché il modello è istruito a rispondere *solo* citando il testo fornito, si riduce drasticamente il rischio di invenzioni.
--   **Memoria "Illimitata":** Invece di caricare migliaia di pagine nel prompt, salviamo miliardi di informazioni nel database e recuperiamo solo quelle necessarie al momento.
+- **Conoscenza Verticale**: Il sistema acquisisce informazioni che il modello base non conosce, come appunti privati, tesine, report aziendali o qualsiasi documento personale.
+- **Riduzione delle Allucinazioni**: Poiché il modello è istruito a rispondere *solo* citando il testo fornito, il rischio di risposte inventate si riduce drasticamente.
+- **Memoria Praticamemte Illimitata**: Invece di caricare centinaia di pagine nel prompt, il sistema salva i contenuti nel database e recupera solo i frammenti pertinenti al momento della domanda.
 
 ---
 
 ## 6.2 La Strategia di Chunking Ricorsivo
 
-Perché l'AI possa comprendere un documento di 100 pagine, non possiamo inviarlo tutto in una volta. Dobbiamo "spezzettarlo" in frammenti chiamati **chunk**. La nostra pipeline di elaborazione utilizza una strategia **ricorsiva**:
+Per consentire all'IA di elaborare un documento di 100 pagine, non è possibile inviarlo interamente in una sola volta. Il testo viene suddiviso in frammenti chiamati **chunk**, seguendo questa pipeline:
 
-1.  **Normalizzazione**: Pulizia del testo (rimozione caratteri di controllo, normalizzazione NFC).
-2.  **Heading Detection**: Il sistema identifica i titoli delle sezioni (es. "Capitolo 1", "1.2 Obiettivi") per mantenere il riferimento gerarchico.
-3.  **Split Multilivello**:
-    *   Si parte dai **paragrafi** (doppio newline).
-    *   Se un paragrafo è troppo grande, si scende alle **frasi**.
-    *   Se necessario, si arriva alle **singole parole**.
-4.  **Overlap (Sovrapposizione)**: Ogni chunk mantiene una parte del testo precedente (circa 300 caratteri) per non perdere il contesto semantico tra la fine di un frammento e l'inizio del successivo.
+1. **Normalizzazione**: Pulizia del testo con rimozione di caratteri di controllo e normalizzazione Unicode (NFC).
+2. **Heading Detection**: Il sistema identifica i titoli delle sezioni (es. "Capitolo 1", "1.2 Obiettivi") per preservare la struttura gerarchica del documento.
+3. **Split Multilivello**:
+   - Si parte dai **paragrafi** (doppio newline).
+   - Se un paragrafo supera la dimensione massima, si scende alle **frasi**.
+   - Se necessario, si arriva alle **singole parole**.
+4. **Overlap (Sovrapposizione)**: Ogni chunk mantiene circa 300 caratteri del frammento precedente, in modo da non perdere il contesto semantico tra la fine di un pezzo e l'inizio del successivo.
 
 ---
 
 ## 6.3 Il Concetto di Spazio Vettoriale (Embedding)
 
-Trasformiamo i frammenti di testo in coordinate matematiche chiamate **vettori**. Immaginiamo una mappa dove concetti simili sono geograficamente vicini. Per questo usiamo il modello `text-embedding-3-small`, che trasforma ogni chunk in un vettore di 1536 dimensioni.
-
-```mermaid
-graph TD
-    subgraph "Spazio dei Significati"
-    A[Cane] --- B[Gatto]
-    B --- C[Animale Domestico]
-    D[Acqua] --- E[Latte]
-    E --- F[Bevanda]
-    A -. x .-> D
-    end
-    style A fill:#f9f,stroke:#333
-    style D fill:#bbf,stroke:#333
-```
+Ogni frammento di testo viene trasformato in un insieme di coordinate numeriche chiamato **vettore** o **embedding**. Si può immaginare una mappa multidimensionale dove i concetti semanticamente simili si trovano geograficamente vicini. Per questa trasformazione viene utilizzato il modello `text-embedding-3-small`, che produce vettori da **1536 dimensioni**.
 
 ---
 
 ## 6.4 Meccanismo Matematico: La Similarità del Coseno
 
-Per calcolare quanto due concetti siano "vicini", utilizziamo la **Similarità del Coseno**. Misuriamo l'angolo tra il vettore della domanda dell'utente e i vettori dei frammenti salvati:
+Per stabilire quanto due concetti siano semanticamente vicini, il sistema utilizza la **Similarità del Coseno**: misura l'angolo formato tra il vettore della domanda dell'utente e i vettori dei frammenti salvati nel database.
 
 $$
 \text{Similarity} = \cos(\theta) = \frac{\mathbf{A} \cdot \mathbf{B}}{\|\mathbf{A}\| \|\mathbf{B}\|}
 $$
 
-*   **1.0**: Significato identico.
-*   **0.4**: Soglia minima di pertinenza utilizzata nel progetto.
-*   **0.0**: Nessuna correlazione.
+I valori si interpretano così:
+
+- **1.0** → Significato identico.
+- **0.4** → Soglia minima di pertinenza adottata nel progetto.
+- **0.0** → Nessuna correlazione semantica.
+
+<img src="../docs/static/img/cosine_similarity.png" alt="Illustrazione della similarità del coseno" style="width: 50%;">
+<small>L'illustrazione mostra la similarità del coseno applicata a due concetti (mela e arancia): più i due vettori sono vicini nello spazio, maggiore è il valore di similarità.</small>
 
 ---
 
-## 6.5 Ottimizzazione Database: La Funzione RPC
+## 6.5 Ottimizzazione: La Funzione RPC su PostgreSQL
 
-Per gestire migliaia di frammenti in millisecondi, abbiamo implementato una funzione **RPC (Remote Procedure Call)** direttamente in PostgreSQL su Supabase, sfruttando l'estensione `pgvector`.
+Per gestire migliaia di frammenti in pochi millisecondi, è stata implementata una funzione **RPC (Remote Procedure Call)** direttamente in PostgreSQL su Supabase, sfruttando l'estensione `pgvector`:
 
 ```sql
--- Funzione per la ricerca semantica ultra-rapida
 CREATE OR REPLACE FUNCTION match_documents (
   query_embedding vector(1536),
   match_threshold float,
@@ -92,7 +82,7 @@ BEGIN
     documents.metadata
   FROM documents
   WHERE documents.user_id = filter_user_id
-    AND documents.document_id = selected_id  
+    AND documents.document_id = selected_id
     AND 1 - (documents.embedding <=> query_embedding) > match_threshold
   ORDER BY documents.embedding <=> query_embedding
   LIMIT match_count;
@@ -100,68 +90,54 @@ END;
 $$;
 ```
 
-Questa funzione utilizza l'operatore `<=>` (distanza coseno) per ordinare i risultati e restituire solo i frammenti più rilevanti.
+L'operatore `<=>` calcola la distanza coseno tra vettori: i risultati vengono ordinati per rilevanza e restituiti solo se superano la soglia minima impostata.
 
 ---
 
-## 6.6 Roadmap Visiva del Flusso RAG
+## 6.6 Flusso RAG: Dal PDF alla Risposta
 
-Di seguito è illustrata la "strada" che percorrono i dati, dal caricamento del PDF alla risposta finale generata dall'AI.
+Di seguito è illustrato il percorso completo dei dati, dal caricamento del documento fino alla risposta generata dall'IA.
 
 <div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: #0f172a; border-radius: 15px; color: white;">
     <div style="display: flex; flex-direction: column; gap: 20px;">
-        <!-- Step 1 -->
         <div style="display: flex; align-items: center; gap: 15px;">
             <div style="background: #3b82f6; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">1</div>
             <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; flex-grow: 1; border: 1px solid rgba(59,130,246,0.3);">
                 <strong style="color: #60a5fa;">Ingestione PDF</strong><br>
-                L'utente carica il documento. Il server estrae il testo grezzo usando <code>pdf-parse</code>.
+                L'utente carica il documento. Il server estrae il testo grezzo con <code>pdf-parse</code>.
             </div>
         </div>
-        <!-- Connector -->
         <div style="margin-left: 20px; border-left: 2px dashed #334155; height: 20px;"></div>
-        <!-- Step 2 -->
         <div style="display: flex; align-items: center; gap: 15px;">
             <div style="background: #10b981; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">2</div>
             <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; flex-grow: 1; border: 1px solid rgba(16,185,129,0.3);">
                 <strong style="color: #34d399;">Recursive Chunking</strong><br>
-                Il testo viene diviso in frammenti da 1500 caratteri con 300 di overlap, preservando titoli e frasi.
+                Il testo viene suddiviso in frammenti da 1500 caratteri con 300 di overlap, preservando titoli e struttura delle frasi.
             </div>
         </div>
-        <!-- Connector -->
         <div style="margin-left: 20px; border-left: 2px dashed #334155; height: 20px;"></div>
-        <!-- Step 3 -->
         <div style="display: flex; align-items: center; gap: 15px;">
             <div style="background: #f59e0b; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">3</div>
             <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; flex-grow: 1; border: 1px solid rgba(245,158,11,0.3);">
                 <strong style="color: #fbbf24;">Vectorization & Storage</strong><br>
-                Ogni chunk diventa un vettore numerico e viene salvato su Supabase (pgvector).
+                Ogni chunk viene convertito in un vettore numerico e salvato su Supabase tramite pgvector.
             </div>
         </div>
-        <!-- Connector -->
         <div style="margin-left: 20px; border-left: 2px dashed #334155; height: 20px;"></div>
-        <!-- Step 4 -->
         <div style="display: flex; align-items: center; gap: 15px;">
             <div style="background: #ef4444; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">4</div>
             <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; flex-grow: 1; border: 1px solid rgba(239,68,68,0.3);">
                 <strong style="color: #f87171;">Semantic Retrieval</strong><br>
-                Alla domanda dell'utente, l'RPC cerca i 7 frammenti più simili tramite similarità del coseno.
+                Alla domanda dell'utente, la funzione RPC individua i 7 frammenti più pertinenti tramite similarità del coseno.
             </div>
         </div>
-        <!-- Connector -->
         <div style="margin-left: 20px; border-left: 2px dashed #334155; height: 20px;"></div>
-        <!-- Step 5 -->
         <div style="display: flex; align-items: center; gap: 15px;">
             <div style="background: #8b5cf6; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">5</div>
             <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; flex-grow: 1; border: 1px solid rgba(139,92,246,0.3);">
                 <strong style="color: #a78bfa;">Augmented Response</strong><br>
-                L'AI riceve i frammenti e risponde citando le fonti, garantendo precisione millimetrica.
+                L'IA riceve i frammenti recuperati e costruisce la risposta citando direttamente le fonti, garantendo precisione e tracciabilità.
             </div>
         </div>
     </div>
 </div>
-
----
-
-## 6.7 Conclusioni: L'AI come Ricercatore
-L'implementazione del RAG trasforma l'intelligenza artificiale da un generatore di testi a un vero e proprio **ricercatore semantico**. Questo approccio non solo aumenta l'affidabilità delle risposte, ma permette un'interazione profonda con la conoscenza personale dell'utente, rendendo **Smart AI** uno strumento indispensabile per lo studio e il lavoro professionale.

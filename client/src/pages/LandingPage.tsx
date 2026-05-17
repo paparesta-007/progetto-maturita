@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from 'react';
 import { motion, AnimatePresence, useScroll, useTransform } from 'framer-motion';
 import { Link } from 'react-router-dom';
-import { ArrowRight, Sparkles, Plus, Bot, FileText, Zap, ChevronRight, CheckCircle2, Search, Brain, LayoutDashboard, ShieldCheck, Cpu, Database, Layers } from 'lucide-react';
+import { ArrowRight, Sparkles, Plus, Bot, FileText, Zap, ChevronRight, CheckCircle2, Search, Brain, LayoutDashboard, ShieldCheck, Cpu, Database, Layers, Github, Linkedin, Instagram, ChevronDown } from 'lucide-react';
 import { LandingStyles, fadeUp } from './LandingStyles';
 
 function useScrolled(t = 16) {
@@ -49,6 +49,37 @@ function WordReveal({ text, className = "" }: { text: string, className?: string
 
 function Navbar() {
   const scrolled = useScrolled(20);
+  const [activeMenu, setActiveMenu] = useState<string | null>(null);
+  const [menuPosition, setMenuPosition] = useState({ left: 0, width: 0 });
+  const navRef = useRef<HTMLDivElement>(null);
+
+  const menuItems = [
+    { label: 'Prodotto', id: 'product', hasDropdown: true },
+    { label: 'Intelligenza', id: 'intelligence', hasDropdown: true },
+    { label: 'Flusso', id: 'workflow', hasDropdown: false },
+    { label: 'Sicurezza', id: 'security', hasDropdown: false },
+    { label: 'Assistenza', id: 'help', hasDropdown: false, isLink: true, path: '/help' }
+  ];
+
+  const handleMouseEnter = (id: string, e: React.MouseEvent<HTMLElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const navRect = navRef.current?.getBoundingClientRect();
+    if (navRect) {
+      let left = rect.left - navRect.left + rect.width / 2;
+      
+      // Shift 'product' dropdown to the left (not perfectly centered)
+      if (id === 'product') {
+        left -= 60; // Adjust this value to control how much it shifts
+      }
+      
+      setMenuPosition({
+        left,
+        width: rect.width
+      });
+    }
+    setActiveMenu(id);
+  };
+
   return (
     <header className={`fixed top-0 inset-x-0 z-50 transition-all duration-500 ${scrolled ? 'bg-white/90 backdrop-blur-md border-b border-[#e5e5e5] h-16' : 'bg-transparent h-24'}`}>
       <div className="mx-auto max-w-7xl px-6 lg:px-8 h-full flex items-center justify-between">
@@ -58,14 +89,128 @@ function Navbar() {
           </div>
           <span className="font-semibold text-lg tracking-tight text-[#171717]">Smart AI</span>
         </Link>
-        <nav className="hidden md:flex items-center gap-10">
-          {['Product', 'Intelligence', 'Workflow', 'Security'].map(item => (
-            <a key={item} href={`#${item.toLowerCase()}`} className="text-sm font-medium text-[#737373] hover:text-[#171717] transition-colors">{item}</a>
+        
+        <nav 
+          ref={navRef}
+          className="hidden md:flex items-center gap-8 relative h-full"
+          onMouseLeave={() => setActiveMenu(null)}
+        >
+          {menuItems.map(item => (
+            <div key={item.id} className="h-full flex items-center">
+              {item.isLink ? (
+                <Link 
+                  to={item.path || '#'}
+                  className="flex items-center gap-1 text-sm font-medium text-[#737373] hover:text-[#171717] transition-colors py-2"
+                  onMouseEnter={(e) => handleMouseEnter(item.id, e)}
+                >
+                  {item.label}
+                </Link>
+              ) : (
+                <a 
+                  href={`#${item.id}`} 
+                  className="flex items-center gap-1 text-sm font-medium text-[#737373] hover:text-[#171717] transition-colors py-2"
+                  onMouseEnter={(e) => handleMouseEnter(item.id, e)}
+                >
+                  {item.label}
+                  {item.hasDropdown && (
+                    <motion.span
+                      animate={{ rotate: activeMenu === item.id ? 180 : 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <ChevronDown size={14} />
+                    </motion.span>
+                  )}
+                </a>
+              )}
+            </div>
           ))}
+
+          {/* Shared Dropdown Container */}
+          <AnimatePresence>
+            {activeMenu && menuItems.find(i => i.id === activeMenu)?.hasDropdown && (
+              <motion.div
+                layoutId="nav-dropdown"
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                transition={{ type: 'spring', stiffness: 400, damping: 35 }}
+                className="absolute top-full pt-2"
+                style={{ left: menuPosition.left, transform: 'translateX(-50%)' }}
+              >
+                <div className="bg-white border border-[#e5e5e5] rounded-[2.5rem] shadow-[0_30px_60px_rgba(0,0,0,0.12)] overflow-hidden min-w-[480px] p-8 origin-top">
+                  <motion.div
+                    key={activeMenu}
+                    initial={{ opacity: 0, x: activeMenu === 'product' ? -30 : 30 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    exit={{ opacity: 0, x: activeMenu === 'product' ? 30 : -30 }}
+                    transition={{ duration: 0.25, ease: "easeOut" }}
+                  >
+                    {activeMenu === 'product' && (
+                      <div className="grid grid-cols-1 gap-8">
+                        <div className="space-y-6">
+                          <div className="flex items-center gap-3">
+                             <div className="h-9 w-9 rounded-xl bg-[#f9f8f6] flex items-center justify-center shadow-sm"><Zap size={18} className="text-[#b08968]"/></div>
+                             <h4 className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#a3a3a3]">Capacità Core</h4>
+                          </div>
+                          <div className="grid grid-cols-2 gap-x-8 gap-y-6">
+                            {[
+                              { icon: Layers, title: 'RAG Engine', desc: 'Memoria semantica ad alta precisione.' },
+                              { icon: Zap, title: 'Calendar Agent', desc: 'Gestione autonoma del tuo tempo.' },
+                              { icon: Brain, title: 'Mind Mapping', desc: 'Visualizza connessioni tra progetti.' },
+                              { icon: LayoutDashboard, title: 'Ambiente Vivo', desc: 'Interfaccia dinamica e proattiva.' }
+                            ].map((sub, idx) => (
+                              <div key={idx} className="flex gap-4 group cursor-pointer">
+                                <div className="h-10 w-10 rounded-xl bg-[#fcfbf9] border border-[#e5e5e5] flex items-center justify-center group-hover:bg-[#171717] group-hover:text-white transition-all">
+                                  <sub.icon size={18} />
+                                </div>
+                                <div>
+                                  <div className="text-sm font-semibold text-[#171717] group-hover:text-[#b08968] transition-colors">{sub.title}</div>
+                                  <div className="text-[11px] text-[#a3a3a3] leading-relaxed line-clamp-2">{sub.desc}</div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    {activeMenu === 'intelligence' && (
+                      <div className="grid grid-cols-1 gap-8">
+                        <div className="space-y-6">
+                          <div className="flex items-center gap-3">
+                             <div className="h-9 w-9 rounded-xl bg-[#f9f8f6] flex items-center justify-center shadow-sm"><Cpu size={18} className="text-[#b08968]"/></div>
+                             <h4 className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#a3a3a3]">Architettura</h4>
+                          </div>
+                          <div className="grid grid-cols-2 gap-x-8 gap-y-6">
+                            {[
+                              { icon: Cpu, title: 'Model Selection', desc: 'Integra GPT-4, Claude e Open Source.' },
+                              { icon: ShieldCheck, title: 'Secure Vault', desc: 'Crittografia end-to-end per i dati.' },
+                              { icon: Database, title: 'Knowledge Graph', desc: 'Mappatura automatica della realtà.' },
+                              { icon: Zap, title: 'Esecuzione', desc: 'Agenti proattivi per task complessi.' }
+                            ].map((sub, idx) => (
+                              <div key={idx} className="flex gap-4 group cursor-pointer">
+                                <div className="h-10 w-10 rounded-xl bg-[#fcfbf9] border border-[#e5e5e5] flex items-center justify-center group-hover:bg-[#171717] group-hover:text-white transition-all">
+                                  <sub.icon size={18} />
+                                </div>
+                                <div>
+                                  <div className="text-sm font-semibold text-[#171717] group-hover:text-[#b08968] transition-colors">{sub.title}</div>
+                                  <div className="text-[11px] text-[#a3a3a3] leading-relaxed line-clamp-2">{sub.desc}</div>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </motion.div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </nav>
+
         <div className="flex items-center gap-6">
-          <Link to="/login" className="text-sm font-medium text-[#737373] hover:text-[#171717] transition-colors">Sign in</Link>
-          <Link to="/login" className="warm-btn-primary !py-2 !px-5 text-sm !rounded-full shadow-sm">Get Started</Link>
+          <Link to="/login" className="text-sm font-medium text-[#737373] hover:text-[#171717] transition-colors">Accedi</Link>
+          <Link to="/login" className="warm-btn-primary !py-2 !px-5 text-sm !rounded-full shadow-sm">Inizia Ora</Link>
         </div>
       </div>
     </header>
@@ -81,25 +226,21 @@ function HeroSection() {
           <div className="max-w-2xl">
             <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}
               className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#f9f8f6] border border-[#e5e5e5] text-[12px] font-medium text-[#a3a3a3] uppercase tracking-wider mb-8">
-              <Zap size={12} className="text-[#b08968]" /> Precision Engineering for Thought
+              <Zap size={12} className="text-[#b08968]" /> Ingegneria di Precisione per il Pensiero
             </motion.div>
             <motion.h1 variants={fadeUp} initial="hidden" animate="show" custom={1}
               className="text-6xl sm:text-7xl lg:text-[7.5rem] font-normal tracking-[-0.04em] leading-[0.9] text-[#171717]">
-              Orchestrate <br />
-              <span className="serif-accent italic text-[#b08968]">your legacy.</span>
+              Un\'IA che <br />
+              <span className="serif-accent italic text-[#b08968]">lavora per te. Davvero.</span>
             </motion.h1>
             <WordReveal 
                 className="mt-12 text-xl font-light max-w-lg leading-relaxed" 
-                text="A high-performance workstation for the digital age. Smart AI transforms how you interact with information, merging the raw power of large language models with the structured precision of your own private document library." 
-            />
-            <WordReveal 
-                className="mt-6 text-base font-light max-w-md leading-relaxed text-[#a3a3a3]" 
-                text="Built for the relentless researcher who demands more than a simple chat box. Our architecture is designed to handle complex cross-document synthesis while maintaining the highest standard of cognitive clarity and speed." 
+                text="Oltre la semplice chat. Una forza lavoro ad alta utilità progettata per gestire il tuo calendario, strutturare i tuoi dati e ricordare ogni documento che hai letto con precisione assoluta. Costruita per chi crea: i nostri agenti non si limitano a rispondere alle domande, ma eseguono compiti, pianificano flussi e mappano in tempo reale le relazioni tra i tuoi progetti." 
             />
             <motion.div variants={fadeUp} initial="hidden" animate="show" custom={3} className="mt-12 flex items-center gap-6">
-              <Link to="/login" className="warm-btn-primary !px-8 !py-4 text-base !rounded-full">Start Building</Link>
+              <Link to="/login" className="warm-btn-primary !px-8 !py-4 text-base !rounded-full">Schiera il tuo Agente</Link>
               <button className="flex items-center gap-2 text-[#737373] hover:text-[#171717] font-medium transition-colors">
-                Explore the technical manifest <ChevronRight size={18} />
+                Guardalo in azione <ChevronRight size={18} />
               </button>
             </motion.div>
           </div>
@@ -111,7 +252,7 @@ function HeroSection() {
                 <div className="flex gap-1.5">
                   {[0, 1, 2].map(i => <div key={i} className="w-2.5 h-2.5 rounded-full bg-[#e5e5e5]" />)}
                 </div>
-                <div className="text-[11px] font-medium uppercase tracking-widest text-[#a3a3a3]">Research Environment v1.0</div>
+                <div className="text-[11px] font-medium uppercase tracking-widest text-[#a3a3a3]">Ambiente di Ricerca v1.0</div>
                 <div className="w-4 h-4 rounded-full bg-emerald-400/20 flex items-center justify-center">
                   <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
                 </div>
@@ -130,8 +271,8 @@ function HeroSection() {
                   </div>
                   <div className="bg-[#f9f8f6] rounded-2xl p-6 border border-[#e5e5e5] space-y-4">
                     <div className="flex items-center justify-between text-[11px] font-bold text-[#a3a3a3] uppercase tracking-tighter">
-                      <span>Vector Indexing</span>
-                      <span>94% Synchronized</span>
+                      <span>Indicizzazione Vettoriale</span>
+                      <span>94% Sincronizzato</span>
                     </div>
                     <div className="h-1.5 w-full bg-[#e5e5e5] rounded-full overflow-hidden">
                       <motion.div initial={{ width: 0 }} animate={{ width: '94%' }} transition={{ duration: 2, delay: 1 }} className="h-full bg-[#b08968]" />
@@ -147,7 +288,7 @@ function HeroSection() {
               <div className="p-6 border-t border-[#e5e5e5] bg-[#fcfbf9]">
                 <div className="flex items-center gap-3 bg-white border border-[#e5e5e5] rounded-xl px-4 py-4 text-sm text-[#a3a3a3]">
                   <Search size={16} />
-                  <span>Synthesize findings across library...</span>
+                  <span>Sintetizza i risultati in tutta la libreria...</span>
                 </div>
               </div>
             </div>
@@ -156,9 +297,9 @@ function HeroSection() {
               className="absolute -right-8 top-1/4 h-24 w-56 bg-white border border-[#e5e5e5] rounded-2xl editorial-shadow p-5 flex flex-col justify-between">
               <div className="flex items-center gap-2">
                 <div className="h-2 w-2 rounded-full bg-[#b08968]" />
-                <span className="text-[10px] font-bold uppercase text-[#737373]">Knowledge Hub</span>
+                <span className="text-[10px] font-bold uppercase text-[#737373]">Hub di Conoscenza</span>
               </div>
-              <div className="text-xs font-semibold text-[#171717]">482 Sources connected</div>
+              <div className="text-xs font-semibold text-[#171717]">482 Fonti connesse</div>
             </motion.div>
           </motion.div>
         </div>
@@ -173,24 +314,20 @@ function PhilosophySection() {
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-20 items-center">
           <div className="space-y-8">
-            <div className="warm-section-label">Philosophy of Focus</div>
-            <h2 className="text-4xl sm:text-6xl tracking-tight text-[#171717] leading-tight">Quiet tools for <br /><span className="serif-accent italic text-[#a3a3a3]">loud minds.</span></h2>
+            <div className="warm-section-label">Lo Standard di Utilità</div>
+            <h2 className="text-4xl sm:text-6xl tracking-tight text-[#171717] leading-tight">Agenti che <br /><span className="serif-accent italic text-[#a3a3a3]">agiscono concretamente.</span></h2>
             <WordReveal 
-                text="In an era of constant distraction, true breakthroughs happen in silence. Smart AI is built on the belief that software should vanish when you are working, leaving only the essentials at your fingertips. We don't build features to keep you in the app; we build them to help you get the work done." 
+                text="In un mondo pieno di hype sull\'IA, noi ci concentriamo sull\'utilità. Smart AI non è solo un\'altra interfaccia per gli LLM; è un motore per la produttività. Costruiamo agenti che comprendono il tuo contesto, rispettano il tuo tempo e gestiscono il carico amministrativo. Ogni funzionalità ha un obiettivo: il risultato. Che si tratti di riprogrammare una riunione per proteggere il tuo lavoro profondo o mappare una base di conoscenza, l\'IA lavora per te." 
                 className="text-lg font-light leading-relaxed max-w-xl"
-            />
-            <WordReveal 
-                text="Our interface is a direct manifestation of this philosophy. By removing gradients, glows, and noise, we create a sanctuary for thought. Every pixel has a purpose, every interaction is intentional. This is not just another SaaS tool; it is a dedicated environment for cognitive excellence." 
-                className="text-base font-light leading-relaxed text-[#737373] max-w-lg"
             />
             <div className="pt-6 grid grid-cols-2 gap-8">
               <div>
-                <div className="text-2xl font-normal text-[#171717] mb-2">Zero Friction</div>
-                <p className="text-sm text-[#a3a3a3] font-light">From idea to execution in seconds, not clicks.</p>
+                <div className="text-2xl font-normal text-[#171717] mb-2">Esecuzione Proattiva</div>
+                <p className="text-sm text-[#a3a3a3] font-light">Dalla pianificazione alla creazione di schemi, in autonomia.</p>
               </div>
               <div>
-                <div className="text-2xl font-normal text-[#171717] mb-2">Infinite Context</div>
-                <p className="text-sm text-[#a3a3a3] font-light">Your entire library, instantly accessible and understood.</p>
+                <div className="text-2xl font-normal text-[#171717] mb-2">Contesto Totale</div>
+                <p className="text-sm text-[#a3a3a3] font-light">Memoria illimitata per la tua libreria, sempre pronta.</p>
               </div>
             </div>
           </div>
@@ -214,27 +351,24 @@ function PhilosophySection() {
 
 function BentoFeatures() {
   const features = [
-    { title: 'Neural Retrieval Engine', desc: 'Our custom RAG pipeline doesn\'t just search; it understands. It identifies relationships across hundreds of documents, surfacing the exact paragraph you need with pinpoint citations and contextual relevance.', icon: Layers, color: 'text-indigo-500' },
-    { title: 'Multi-Model Fabric', desc: 'The ability to switch intelligence on the fly. Use Claude for reasoning, GPT-4 for logic, and Llama for speed—all within the same thread, preserving your workspace state and active document context.', icon: Brain, color: 'text-orange-500' },
-    { title: 'Privacy First Architecture', desc: 'Your research is your edge. We treat your data with absolute reverence. Local-first principles and enterprise-grade encryption ensure your knowledge base remains yours alone.', icon: ShieldCheck, color: 'text-emerald-500' }
+    { title: 'RAG con Memoria Illimitata', desc: 'Ancora la tua IA alla tua realtà. Il nostro motore a contesto infinito indicizza i tuoi PDF, email e appunti senza alcuna perdita di memoria. Ogni risposta è basata sui tuoi dati specifici.', icon: Layers, color: 'text-indigo-500' },
+    { title: 'Agente Calendario IA', desc: 'Your schedule, optimized autonomously. Our agent doesn\'t just remind you; it actively coordinates, reschedules meetings, and protects your focus time based on your current priorities.', icon: Zap, color: 'text-orange-500' },
+    { title: 'Mappa Mentale', desc: 'Visualizza le connessioni invisibili. Una mappa dinamica a nodi che rivela come i tuoi progetti, idee e documenti si intersecano, offrendoti un vero e proprio secondo cervello.', icon: Brain, color: 'text-emerald-500' },
+    { title: 'Architetto di Schemi', desc: 'Trasforma il caos in struttura. Genera istantaneamente schemi di database, strutture API e flussi di lavoro pronti per la produzione a partire da conversazioni grezze o appunti.', icon: Database, color: 'text-amber-500' }
   ];
 
   return (
     <section id="product" className="py-24 lg:py-40 bg-white">
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="mb-24 max-w-3xl">
-          <div className="warm-section-label mb-6">Technical Architecture</div>
-          <h2 className="text-4xl sm:text-6xl tracking-tight text-[#171717] mb-8 font-normal">Engineered for <br /> <span className="text-[#a3a3a3] italic serif-accent">uncompromising performance.</span></h2>
+          <div className="warm-section-label mb-6">Capacità Autonoma</div>
+          <h2 className="text-4xl sm:text-6xl tracking-tight text-[#171717] mb-8 font-normal">Oltre il <br /> <span className="text-[#a3a3a3] italic serif-accent">confine della chat.</span></h2>
           <WordReveal 
-            text="We built Smart AI from the ground up to solve the specific bottlenecks of academic and professional research. From vector synchronization to streaming inference, every layer is optimized for speed and reliability."
+            text="Abbiamo costruito Smart AI per essere più di una conversazione. È una forza lavoro. Integrando il recupero profondo della conoscenza con azioni autonome degli agenti, abbiamo creato un sistema che ti toglie concretamente il peso del lavoro. Smetti di passare ore a organizzare, cercare e pianificare. Lascia che i tuoi agenti gestiscano la logistica mentre tu ti concentri sulla strategia di alto livello."
             className="text-xl text-[#737373] font-light max-w-2xl leading-relaxed mb-6"
           />
-          <WordReveal 
-            text="Traditional LLM interfaces are broad and shallow. We chose a different path: narrow and deep. By focusing exclusively on the document-to-insight pipeline, we've achieved a level of integration that general-purpose AI simply cannot match."
-            className="text-base text-[#a3a3a3] font-light max-w-2xl leading-relaxed"
-          />
         </div>
-        <div className="grid md:grid-cols-3 gap-10">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
           {features.map((f, i) => (
             <motion.div key={f.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
               className="p-10 rounded-[2.5rem] bg-[#f9f8f6] border border-[#e5e5e5] hover:bg-white transition-all duration-500 group editorial-shadow">
@@ -259,7 +393,7 @@ function ProductQuote() {
           <Sparkles size={24} />
         </div>
         <blockquote className="text-4xl sm:text-6xl lg:text-7xl font-normal leading-[1.1] tracking-tight text-[#171717]">
-          "Precision is the <span className="serif-accent italic text-[#b08968]">final form</span> of intelligence. We don't just find answers; we reveal the architecture of knowledge."
+          "L\'utilità è la <span className="serif-accent italic text-[#b08968]">forma più alta</span> di intelligenza. Non elaboriamo solo informazioni; le trasformiamo in azioni autonome."
         </blockquote>
         <div className="mt-14 flex items-center justify-center gap-5">
           <img src={`https://ui-avatars.com/api/?name=TP&background=171717&color=fff`} className="h-12 w-12 rounded-2xl shadow-sm" alt="Author" />
@@ -273,11 +407,112 @@ function ProductQuote() {
   );
 }
 
+
+const CalendarPreview = () => (
+  <div className="h-full w-full bg-[#fcfbf9] p-4 flex flex-col gap-2 relative">
+    <div className="h-8 border-b border-[#e5e5e5] flex items-center justify-between mb-2">
+      <span className="text-xs font-semibold">Oggi</span>
+      <span className="text-[10px] text-[#a3a3a3]">Agente Attivo</span>
+    </div>
+    <div className="flex-1 border border-[#e5e5e5] rounded-xl bg-white p-3 relative flex flex-col gap-2">
+       <div className="h-12 w-full bg-blue-50/50 border border-blue-100 rounded-lg p-2">
+         <div className="text-[10px] font-semibold text-blue-800">Lavoro Profondo</div>
+         <div className="text-[9px] text-blue-600">09:00 - 12:00</div>
+       </div>
+       <div className="h-10 w-full bg-[#f9f8f6] border border-[#e5e5e5] rounded-lg p-2 opacity-50 relative">
+         <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-[10px] italic text-[#a3a3a3]">Riunione spostata</span>
+         </div>
+       </div>
+       <div className="absolute bottom-4 right-4 bg-white border border-[#e5e5e5] rounded-xl p-3 shadow-lg max-w-[150px] animate-[floating_3s_ease-in-out_infinite]">
+          <div className="flex items-center gap-2 mb-1">
+             <div className="w-4 h-4 rounded-full bg-[#171717] flex items-center justify-center"><Bot size={10} className="text-white"/></div>
+             <span className="text-[10px] font-bold">Agente</span>
+          </div>
+          <p className="text-[9px] text-[#737373] leading-tight">Ho spostato la riunione per proteggere il tuo lavoro profondo.</p>
+       </div>
+    </div>
+  </div>
+);
+
+const BrainMapPreview = () => (
+  <div className="h-full w-full bg-white relative overflow-hidden flex items-center justify-center">
+    <div className="absolute inset-0 bg-grid-pattern opacity-10" />
+    <svg className="absolute inset-0 w-full h-full" xmlns="http://www.w3.org/2000/svg">
+       <line x1="30%" y1="30%" x2="50%" y2="50%" stroke="#e5e5e5" strokeWidth="2" />
+       <line x1="70%" y1="30%" x2="50%" y2="50%" stroke="#e5e5e5" strokeWidth="2" />
+       <line x1="30%" y1="70%" x2="50%" y2="50%" stroke="#e5e5e5" strokeWidth="2" />
+       <line x1="70%" y1="70%" x2="50%" y2="50%" stroke="#e5e5e5" strokeWidth="2" />
+    </svg>
+    <div className="absolute top-[30%] left-[30%] -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#f9f8f6] border border-[#e5e5e5] flex items-center justify-center"><FileText size={12} className="text-[#a3a3a3]"/></div>
+    <div className="absolute top-[30%] left-[70%] -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#f9f8f6] border border-[#e5e5e5] flex items-center justify-center"><Brain size={12} className="text-[#a3a3a3]"/></div>
+    <div className="absolute top-[70%] left-[30%] -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#f9f8f6] border border-[#e5e5e5] flex items-center justify-center"><Database size={12} className="text-[#a3a3a3]"/></div>
+    <div className="absolute top-[70%] left-[70%] -translate-x-1/2 -translate-y-1/2 w-8 h-8 rounded-full bg-[#f9f8f6] border border-[#e5e5e5] flex items-center justify-center"><Layers size={12} className="text-[#a3a3a3]"/></div>
+    <div className="relative w-12 h-12 rounded-full bg-[#171717] border-4 border-white shadow-lg flex items-center justify-center z-10">
+      <Sparkles size={16} className="text-[#b08968]" />
+    </div>
+  </div>
+);
+
+const RAGPreview = () => (
+  <div className="h-full w-full bg-[#fcfbf9] relative overflow-hidden p-6 flex flex-col justify-center gap-3">
+     {[1, 2, 3].map(i => (
+        <div key={i} className={`h-12 bg-white border border-[#e5e5e5] rounded-lg p-2 flex items-center gap-3 shadow-sm transform transition-all ${i === 2 ? 'translate-x-4 border-[#b08968]' : ''}`}>
+           <div className={`w-8 h-8 rounded bg-[#f9f8f6] flex items-center justify-center ${i === 2 ? 'text-[#b08968]' : 'text-[#a3a3a3]'}`}>
+             <FileText size={14} />
+           </div>
+           <div className="flex-1 space-y-1.5">
+             <div className="h-2 w-3/4 bg-[#e5e5e5] rounded" />
+             <div className="h-2 w-1/2 bg-[#e5e5e5] rounded" />
+           </div>
+           {i === 2 && (
+             <div className="w-5 h-5 rounded-full bg-emerald-100 flex items-center justify-center text-emerald-600">
+               <CheckCircle2 size={12} />
+             </div>
+           )}
+        </div>
+     ))}
+     <div className="absolute bottom-4 left-4 right-4 bg-[#171717] text-white p-3 rounded-xl text-[10px] flex items-center gap-2">
+       <Search size={12} className="text-[#b08968]" /> 
+       <span>"Trovato nel documento 2, pag 4"</span>
+     </div>
+  </div>
+);
+
+function VisualShowcase() {
+  const showcase = [
+    { title: 'Memoria Infallibile', Component: RAGPreview, desc: 'RAG illimitata che non dimentica un dettaglio.' },
+    { title: 'Mappatura Mentale', Component: BrainMapPreview, desc: 'Visualizza le connessioni nella tua libreria.' },
+    { title: 'Agente Calendario', Component: CalendarPreview, desc: 'Pianificazione autonoma per il tuo tempo.' }
+  ];
+
+  return (
+    <section className="py-24 lg:py-40 bg-[#fcfbf9] overflow-hidden">
+      <div className="mx-auto max-w-7xl px-6 lg:px-8">
+        <div className="warm-section-label mb-12">Ambiente Visivo</div>
+        <div className="grid lg:grid-cols-3 gap-12">
+          {showcase.map((s, i) => (
+            <motion.div key={s.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.2 }}
+              className="group">
+              <div className="relative aspect-[4/5] rounded-[2.5rem] overflow-hidden border border-[#e5e5e5] editorial-shadow mb-8 bg-white transition-all duration-700 group-hover:shadow-xl group-hover:-translate-y-1">
+                <s.Component />
+              </div>
+              <h3 className="text-2xl font-normal text-[#171717] mb-3">{s.title}</h3>
+              <p className="text-[#a3a3a3] font-light text-sm tracking-wide uppercase">{s.desc}</p>
+            </motion.div>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
 function HowItWorks() {
   const steps = [
-    { step: '01', title: 'Contextual Ingestion', desc: 'Drop multi-format documents (PDF, MD, TXT). Our system immediately vectorizes the content, building a semantic map of every concept, date, and relationship within the data.' },
-    { step: '02', title: 'Intelligent Querying', desc: 'Engage with your library using natural language. Our system selects the most relevant chunks using hybrid search (Keyword + Semantic) and feeds them into the model of your choice.' },
-    { step: '03', title: 'Knowledge Synthesis', desc: 'Go beyond simple answers. Generate comprehensive literature reviews, structured study guides, or automated flashcards that are permanently linked to their sources.' }
+    { step: '01', title: 'Integrazione Profonda', desc: 'Collega i tuoi documenti, il calendario e i flussi di lavoro. Il nostro agente costruisce una mappa semantica unificata della tua vita professionale in pochi minuti.' },
+    { step: '02', title: 'Azione Autonoma', desc: 'Deploy agents to handle specific tasks. Whether it\'s organizing a research library or managing your weekly syncs, the AI works in the background.' },
+    { step: '03', title: 'Intuizioni Sintetizzate', desc: 'Vedi i risultati nel tuo grafo della conoscenza. Ogni azione e ogni documento è collegato, ricercabile e visualizzato nella mappa mentale.' }
   ];
 
   return (
@@ -285,15 +520,11 @@ function HowItWorks() {
       <div className="mx-auto max-w-7xl px-6 lg:px-8">
         <div className="grid lg:grid-cols-2 gap-24 items-start">
           <div className="sticky top-40">
-            <div className="warm-section-label mb-6">The Workflow</div>
-            <h2 className="text-4xl sm:text-7xl tracking-tighter text-[#171717] mb-10 leading-tight">From data to <br /> <span className="text-[#a3a3a3] italic serif-accent">wisdom.</span></h2>
+            <div className="warm-section-label mb-6">Il Flusso di Lavoro</div>
+            <h2 className="text-4xl sm:text-7xl tracking-tighter text-[#171717] mb-10 leading-tight">Dai dati alla <br /> <span className="text-[#a3a3a3] italic serif-accent">saggezza.</span></h2>
             <WordReveal 
-                text="The bridge between information and insight is a well-defined process. We've automated the heavy lifting of organization and retrieval so you can focus on the higher-order task: thinking."
+                text="Il ponte tra informazione e intuizione è un processo ben definito. Abbiamo automatizzato il duro lavoro di organizzazione e recupero, così tu puoi concentrarti sul pensiero di alto livello. La nostra pipeline RAG è ottimizzata per l\'integrità. Ogni affermazione è supportata da un link diretto ai tuoi documenti."
                 className="text-xl text-[#737373] font-light max-w-md mb-8 leading-relaxed"
-            />
-            <WordReveal 
-                text="Our RAG (Retrieval-Augmented Generation) pipeline is fine-tuned for academic integrity. Every claim made by the AI is backed by a direct link to your uploaded documents, ensuring that you never have to guess about the validity of a response."
-                className="text-base text-[#a3a3a3] font-light max-w-md mb-12 leading-relaxed"
             />
           </div>
           <div className="space-y-20">
@@ -319,14 +550,14 @@ function SecuritySection() {
   return (
     <section id="security" className="py-24 lg:py-40 bg-[#fcfbf9] border-t border-[#e5e5e5]">
       <div className="mx-auto max-w-7xl px-6 lg:px-8 text-center">
-        <div className="warm-section-label mb-6 mx-auto">Security & Trust</div>
-        <h2 className="text-4xl sm:text-6xl tracking-tight text-[#171717] mb-12 font-normal">Your intellectual property, <br /> <span className="text-[#a3a3a3] italic serif-accent">sovereign and secure.</span></h2>
+        <div className="warm-section-label mb-6 mx-auto">Sicurezza e Fiducia</div>
+        <h2 className="text-4xl sm:text-6xl tracking-tight text-[#171717] mb-12 font-normal">La tua proprietà intellettuale, <br /> <span className="text-[#a3a3a3] italic serif-accent">sovrana e al sicuro.</span></h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
            {[
-             { t: 'Encryption', d: 'AES-256 at rest and TLS 1.3 in transit.', i: ShieldCheck },
-             { t: 'Sovereignty', d: 'You own your data. We never train on your documents.', i: Database },
-             { t: 'Compliance', d: 'Built with rigorous data protection standards.', i: CheckCircle2 },
-             { t: 'Reliability', d: '99.9% uptime with distributed infrastructure.', i: Zap }
+             { t: 'Crittografia', d: 'AES-256 a riposo e TLS 1.3 in transito.', i: ShieldCheck },
+             { t: 'Sovranità', d: 'Tu possiedi i tuoi dati. Non addestriamo modelli sui tuoi documenti.', i: Database },
+             { t: 'Conformità', d: 'Costruito con rigorosi standard di protezione dei dati.', i: CheckCircle2 },
+             { t: 'Affidabilità', d: 'Uptime del 99,9% con infrastruttura distribuita.', i: Zap }
            ].map(item => (
              <div key={item.t} className="bg-white p-8 rounded-3xl border border-[#e5e5e5] text-left hover:shadow-md transition-shadow">
                <div className="h-10 w-10 rounded-xl bg-[#f9f8f6] border border-[#e5e5e5] flex items-center justify-center text-[#b08968] mb-6">
@@ -338,7 +569,7 @@ function SecuritySection() {
            ))}
         </div>
         <WordReveal 
-          text="We understand that for professional researchers, privacy is not a feature—it is a requirement. Smart AI is built to be a fortress for your ideas, combining the convenience of cloud-based AI with the security profile of a local workstation."
+          text="Comprendiamo che per i professionisti, la privacy non è una funzionalità—è un requisito. Smart AI è costruito per essere una fortezza per le tue idee."
           className="mt-16 text-lg text-[#a3a3a3] font-light max-w-3xl mx-auto leading-relaxed"
         />
       </div>
@@ -353,13 +584,13 @@ function FinalCTA() {
         <div className="relative rounded-[5rem] bg-[#171717] px-8 py-32 text-center overflow-hidden">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#262626_0%,_transparent_100%)] opacity-50" />
           <div className="relative z-10 max-w-3xl mx-auto">
-            <h2 className="text-5xl sm:text-7xl font-normal tracking-tight text-white mb-10 leading-tight">Begin your <br /> <span className="serif-accent italic text-[#b08968]">ascension.</span></h2>
-            <p className="text-neutral-400 text-xl mb-16 font-light leading-relaxed">Join a new generation of thinkers who are using precision intelligence to redefine the boundaries of their research.</p>
+            <h2 className="text-5xl sm:text-7xl font-normal tracking-tight text-white mb-10 leading-tight">Schiera la tua <br /> <span className="serif-accent italic text-[#b08968]">intelligenza.</span></h2>
+            <p className="text-neutral-400 text-xl mb-16 font-light leading-relaxed">Unisciti alla forza lavoro d'élite di domani. Inizia ad automatizzare la tua conoscenza e le tue azioni con agenti di precisione che fanno davvero il lavoro.</p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
               <Link to="/login" className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-12 py-6 bg-white text-[#171717] rounded-full text-lg font-semibold hover:bg-[#f9f8f6] transition-colors shadow-2xl">
-                Get Started for free <ArrowRight size={22} />
+                Inizia gratis <ArrowRight size={22} />
               </Link>
-              <button className="text-neutral-500 hover:text-white transition-colors text-lg font-medium">Talk to an architect</button>
+              <button className="text-neutral-500 hover:text-white transition-colors text-lg font-medium">Parla con un architetto</button>
             </div>
           </div>
         </div>
@@ -380,38 +611,40 @@ function Footer() {
               </div>
               <span className="font-semibold text-xl text-[#171717] tracking-tight">Smart AI</span>
             </div>
-            <p className="text-base text-[#737373] font-light leading-relaxed mb-8">A specialized workspace for deep thinking and intelligent interaction. We build tools that honor the complexity of human research and the speed of digital information.</p>
+            <p className="text-base text-[#737373] font-light leading-relaxed mb-8">Uno spazio di lavoro specializzato per l'interazione intelligente. Costruiamo strumenti che onorano la complessità della ricerca umana e la velocità digitale.</p>
             <div className="flex gap-4">
-               {[1, 2, 3].map(i => <div key={i} className="h-10 w-10 rounded-full border border-[#e5e5e5] bg-white" />)}
+               <a href="#" className="h-10 w-10 rounded-full border border-[#e5e5e5] bg-white flex items-center justify-center hover:bg-[#fcfbf9] transition-colors"><Github size={18} className="text-[#737373]"/></a>
+               <a href="#" className="h-10 w-10 rounded-full border border-[#e5e5e5] bg-white flex items-center justify-center hover:bg-[#fcfbf9] transition-colors"><Linkedin size={18} className="text-[#737373]"/></a>
+               <a href="#" className="h-10 w-10 rounded-full border border-[#e5e5e5] bg-white flex items-center justify-center hover:bg-[#fcfbf9] transition-colors"><Instagram size={18} className="text-[#737373]"/></a>
             </div>
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-16 lg:gap-24">
             <div>
-              <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#a3a3a3] mb-8">Platform</div>
+              <div className="text-sm font-medium italic text-[#737373] mb-8">Piattaforma</div>
               <div className="flex flex-col gap-4">
-                {['Intelligence', 'Documents', 'Security', 'Pricing', 'API'].map(l => <a key={l} href="#" className="text-sm text-[#737373] hover:text-[#171717] transition-colors">{l}</a>)}
+                {['Intelligenza', 'Documenti', 'Sicurezza', 'Prezzi', 'API'].map(l => <a key={l} href="#" className="text-sm text-[#737373] hover:text-[#171717] transition-colors italic font-light">{l}</a>)}
               </div>
             </div>
             <div>
-              <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#a3a3a3] mb-8">Company</div>
+              <div className="text-sm font-medium italic text-[#737373] mb-8">Azienda</div>
               <div className="flex flex-col gap-4">
-                {['Journal', 'About', 'Contact', 'Careers'].map(l => <a key={l} href="#" className="text-sm text-[#737373] hover:text-[#171717] transition-colors">{l}</a>)}
+                {['Giornale', 'Chi Siamo', 'Contatti', 'Lavora con noi'].map(l => <a key={l} href="#" className="text-sm text-[#737373] hover:text-[#171717] transition-colors italic font-light">{l}</a>)}
               </div>
             </div>
             <div className="hidden sm:block">
-              <div className="text-[11px] font-bold uppercase tracking-[0.2em] text-[#a3a3a3] mb-8">Support</div>
+              <div className="text-sm font-medium italic text-[#737373] mb-8">Supporto</div>
               <div className="flex flex-col gap-4">
-                {['Documentation', 'Help Center', 'Twitter', 'GitHub'].map(l => <a key={l} href="#" className="text-sm text-[#737373] hover:text-[#171717] transition-colors">{l}</a>)}
+                {['Documentazione', 'Assistenza', 'Twitter', 'GitHub'].map(l => <a key={l} href="#" className="text-sm text-[#737373] hover:text-[#171717] transition-colors italic font-light">{l}</a>)}
               </div>
             </div>
           </div>
         </div>
         <div className="mt-24 pt-10 border-t border-[#e5e5e5] flex flex-col md:flex-row justify-between items-center gap-8">
-          <div className="text-[12px] text-[#a3a3a3] uppercase tracking-[0.15em] font-medium">© 2025 Smart AI Systems Inc. Crafted for deep work.</div>
+          <div className="text-[12px] text-[#a3a3a3] uppercase tracking-[0.15em] font-medium">© 2025 Smart AI Systems Inc. Creato per il lavoro profondo.</div>
           <div className="flex gap-10 text-[12px] text-[#a3a3a3] uppercase tracking-[0.15em] font-medium">
             <a href="#" className="hover:text-[#171717]">Privacy Policy</a>
-            <a href="#" className="hover:text-[#171717]">Terms</a>
-            <a href="#" className="hover:text-[#171717]">Cookies</a>
+            <a href="#" className="hover:text-[#171717]">Termini</a>
+            <a href="#" className="hover:text-[#171717]">Cookie</a>
           </div>
         </div>
       </div>
@@ -429,6 +662,7 @@ export default function LandingPage() {
           <HeroSection />
           <PhilosophySection />
           <BentoFeatures />
+          <VisualShowcase />
           <ProductQuote />
           <HowItWorks />
           <SecuritySection />

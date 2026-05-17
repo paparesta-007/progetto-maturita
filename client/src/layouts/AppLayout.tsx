@@ -33,7 +33,7 @@ const AppLayout = () => {
   // --- Palette dinamica ---
   const style = useMemo(() => ({
     layoutContainer: `flex h-screen w-full relative transition-colors duration-300 ${isDark ? "bg-[#07070a] text-[#f4f1ea]" : "bg-[#faf9f6] text-[#2c2825]"}`,
-    modalOverlay: "fixed inset-0 bg-black/80 backdrop-blur-sm z-40",
+    modalOverlay: `fixed inset-0 z-40 transition-opacity duration-300 ${isDark ? "bg-black/80 backdrop-blur-sm" : "bg-black/20 backdrop-blur-[2px]"}`,
     modalContent: `fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 rounded-[2rem] shadow-[0_50px_100px_rgba(0,0,0,0.6)] w-[95vw] max-w-[800px] h-[85vh] max-h-[600px] flex flex-col md:flex-row overflow-hidden border transition-colors duration-300 ${isDark ? "bg-[#07070a] border-white/10" : "bg-[#faf9f6] border-[#e8e2d9]"}`,
     modalSidebar: `flex md:flex-col gap-1 md:w-[220px] md:min-w-[220px] border-b md:border-b-0 md:border-r p-5 overflow-x-auto md:overflow-visible transition-colors ${isDark ? "bg-white/[0.02] border-white/5 backdrop-blur-2xl" : "bg-[#f5f0eb] border-[#e8e2d9]"}`,
     navButton: (active: boolean) => `

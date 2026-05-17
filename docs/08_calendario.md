@@ -1,28 +1,45 @@
-# 08 - Integrazione Calendario: L'Era degli AI Agents
+# 08 - Integrazione Calendario: AI Agents
 
-In questo capitolo esploreremo come il progetto **Smart AI** superi il concetto di semplice "visualizzatore di dati" per diventare un sistema proattivo attraverso l'integrazione di un **AI Agent** dedicato alla gestione del tempo. Non si tratta solo di mostrare degli impegni su una griglia, ma di permettere a un'intelligenza artificiale di interagire attivamente con il mondo esterno (in questo caso, Google Calendar).
-
----
-
-## 1. Che cos'è un AI Agent?
-
-A differenza di un chatbot tradizionale che si limita a generare testo, un **AI Agent** (Agente Artificiale) è un sistema capace di **ragionare, pianificare ed eseguire azioni** per raggiungere un obiettivo. Se chiedi a un chatbot "Quando sono libero domani?", lui potrebbe solo rispondere. Un Agente, invece, va a leggere il tuo calendario, analizza i buchi liberi e ti propone una soluzione, o addirittura prenota l'appuntamento per te.
-
-Possiamo immaginare l'Agente come un "cervello" (il Modello di Linguaggio) collegato a delle "mani" (le API di Google Calendar).
-
-### I 4 Pilastri del Flusso Agente
-Per rendere l'integrazione fluida e affidabile, abbiamo implementato un flusso basato su quattro fasi chiave:
-
-1.  **Percezione e Contesto**: L'agente riceve la richiesta dell'utente insieme a informazioni vitali "di sistema", come la data e l'ora corrente e il fuso orario. Senza sapere che "oggi è lunedì", l'agente non potrebbe capire cosa significa "fissa per domani".
-2.  **Ragionamento (Reasoning)**: L'LLM analizza la richiesta. Se l'utente dice "Sposta la riunione con Marco a mercoledì", l'agente capisce che deve prima *cercare* la riunione esistente e poi *modificarla*.
-3.  **Pianificazione e Selezione Strumenti**: L'AI decide quale "tool" (funzione) chiamare. Nel nostro sistema, ha a disposizione strumenti come `list_events`, `create_event` e `delete_event`.
-4.  **Azione e Osservazione**: L'agente esegue la chiamata API, riceve il risultato (es. "Evento creato con successo") e lo "osserva" per formulare la risposta finale all'utente.
+Con un semplice messaggio, l’AI può leggere il calendario, creare eventi, modificarli o eliminarli grazie all’integrazione con Google Calendar.
 
 ---
 
-## 2. Il Flusso di Lavoro (Diagramma UML)
+## 8.1 Che cos’è un AI Agent?
 
-Il cuore tecnico dell'integrazione risiede nel **ciclo di feedback** tra il server e l'intelligenza artificiale. Di seguito è illustrato il processo esatto che avviene quando un utente interagisce con la *Floating Chat* del calendario.
+Un chatbot classico si limita a generare testo. Un **AI Agent**, invece, può anche eseguire azioni per raggiungere un obiettivo.
+
+Ad esempio, se un utente chiede: *"Quando sono libero domani?"*, un chatbot normale potrebbe solo suggerire di controllare il calendario. Un AI Agent, invece, può leggere gli eventi presenti, trovare gli orari liberi e persino creare un appuntamento.
+
+### I 4 passaggi principali
+
+Per far funzionare correttamente l’agente sono necessari quattro elementi:
+
+1. **Contesto**
+   
+   L’agente riceve il messaggio dell’utente insieme a informazioni importanti come data, ora e fuso orario. In questo modo riesce a capire richieste come *"sposta a domani"* oppure *"fissa per venerdì sera"*.
+
+2. **Ragionamento**
+   
+   Il modello analizza la richiesta e decide cosa fare. Se l’utente scrive *"Sposta la riunione con Marco a mercoledì"*, l’agente capisce che deve prima cercare l’evento e poi modificarlo.
+
+3. **Scelta degli strumenti**
+   
+   L’AI seleziona la funzione più adatta tra quelle disponibili, ad esempio:
+   
+   - `list_events`
+   - `create_event`
+   - `update_event`
+   - `delete_event`
+
+4. **Esecuzione**
+   
+   Il server esegue la richiesta tramite le API di Google Calendar e restituisce il risultato all’AI, che genera poi la risposta finale per l’utente.
+
+---
+
+## 8.2 Flusso di lavoro
+
+Il funzionamento dell’integrazione si basa su un ciclo continuo tra server e modello AI. Il diagramma seguente mostra cosa succede quando un utente usa la chat del calendario.
 
 ```mermaid
 sequenceDiagram
@@ -33,55 +50,48 @@ sequenceDiagram
     participant G as Google Calendar API
 
     U->>C: "Sposta la riunione di oggi alle 15:00"
-    C->>S: POST /api/calendar/action (Testo + Token Google)
+    C->>S: POST /api/calendar/action
     
-    Note over S,AI: Inizio Loop Agente (Max 6 iterazioni)
+    Note over S,AI: Loop agente (max 6 iterazioni)
     
-    S->>AI: Invia Messaggio + Elenco Tools (Function Calling)
-    AI-->>S: "Richiedo tool: list_events(oggi)"
+    S->>AI: Messaggio + elenco tools
+    AI-->>S: Richiesta tool: list_events
     
-    S->>G: fetch(GET events)
-    G-->>S: Elenco eventi (ID: 123, "Riunione", ore 10:00)
+    S->>G: GET eventi
+    G-->>S: Evento trovato
     
-    S->>AI: Risultato Tool: [Evento 123 trovato]
-    AI-->>S: "Richiedo tool: update_event(ID:123, start:15:00)"
+    S->>AI: Risultato ricerca
+    AI-->>S: Richiesta tool: update_event
     
-    S->>G: fetch(PATCH event 123)
-    G-->>S: Successo (Status 200)
+    S->>G: PATCH evento
+    G-->>S: Successo
     
-    S->>AI: Risultato Tool: [Modifica completata]
-    AI-->>S: "Risposta finale: Ho spostato la riunione alle 15:00."
+    S->>AI: Modifica completata
+    AI-->>S: Risposta finale
     
-    Note over S,AI: Fine Loop
-    
-    S->>C: JSON (Messaggio finale + Log Ragionamento)
-    C->>U: "Fatto! Ho spostato la riunione..."
+    S->>C: JSON finale
+    C->>U: "Ho spostato la riunione alle 15:00"
 ```
 
 ---
 
-## 3. Implementazione Tecnica e "Function Calling"
+## 8.3 Implementazione Tecnica e "Function Calling"
 
-L'aspetto più sofisticato non è la chiamata API in sé, ma il modo in cui l'AI "decide" di usarla. Questo avviene tramite una tecnica chiamata **Function Calling**.
-
+La parte più importante dell’integrazione è il Function Calling, cioè il sistema che permette all’AI di usare funzioni reali del server.
 ### Come l'AI "usa" il codice
 Abbiamo definito per l'AI uno schema JSON che descrive cosa può fare. Per esempio:
 *   **Nome**: `create_event`
 *   **Descrizione**: "Crea un nuovo impegno sul calendario."
 *   **Parametri**: Titolo, Descrizione, Data Inizio, Data Fine.
 
-Quando l'utente parla, il modello non scrive codice, ma restituisce un oggetto strutturato che dice: *"Ehi server, per favore esegui la funzione `create_event` con questi dati"*. Il nostro server Express agisce quindi come un esecutore fidato, effettuando la chiamata reale a Google con il token OAuth2 dell'utente.
+Quando l’utente invia un messaggio, il modello non esegue direttamente il codice. Restituisce invece una richiesta strutturata che indica quale funzione usare e con quali dati.
 
+Il server Express riceve la richiesta ed esegue la vera chiamata alle API di Google Calendar usando il token OAuth2 dell’utente.
 ### L'Assistente "Floating"
-L'interfaccia utente è stata progettata per non essere invasiva. Una **Floating Chat** (chat fluttuante) sovrapposta al calendario permette all'utente di:
-*   Vedere i "pensieri" dell'AI (il ragionamento step-by-step).
-*   Cambiare modello al volo (es. passare a un modello più veloce o uno più intelligente).
-*   Interagire con il calendario mentre lo guarda, vedendo gli eventi apparire o spostarsi in tempo reale grazie alla reattività di React.
+L'interfaccia utente è stata progettata per non essere invasiva. Una **Floating Chat** (chat fluttuante) o in modalità sidebar permette all'utente di interagire con l'AI mentre consulta i propri impegni. L'utente può anche cambiare modello al volo (es. passare a un modello più veloce o uno più intelligente), e interagire con il calendario mentre lo guarda, vedendo gli eventi apparire o spostarsi in tempo reale grazie alla reattività di React.
 
 ---
 
-## 4. Conclusione: Perché un Agente?
-
-L'integrazione del calendario in **Smart AI** non è un semplice widget, ma una dimostrazione di come l'intelligenza artificiale possa agire come **ponte tra il linguaggio naturale e le interfacce tecniche**. 
 
 Invece di navigare tra menu, selezionare orari e scrivere titoli, l'utente esprime un desiderio ("Organizza una cena con amici venerdì sera") e l'AI si occupa della logica: controlla la disponibilità, formatta i dati secondo gli standard ISO 8601 e comunica con i server di Google. Questo rappresenta il futuro della produttività: meno "clic", più conversazione.
+
