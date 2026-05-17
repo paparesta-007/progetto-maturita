@@ -1,38 +1,42 @@
-# 04 - Chat Multi Modello
+# 04 - Chat e Interazione con LLM
 
-Il modulo di **Chat Multi Modello** rappresenta il cuore operativo di **Smart AI**. A differenza delle interfacce tradizionali legate a un singolo provider, questa implementazione permette di interagire con decine di modelli diversi (OpenAI, Anthropic, Google Gemini, Meta Llama) attraverso un'unica interfaccia agnostica.
-
----
-
-## Architettura della Chat
-
-L'architettura segue un modello a "Gateway" per garantire sicurezza e flessibilità:
-
-1.  **Frontend (React)**: Gestisce lo stato della conversazione, il rendering del Markdown e la selezione dinamica del modello.
-2.  **Backend (Express)**: Funge da intermediario sicuro (Proxy). Invece di esporre le chiavi API sul client, il server riceve la richiesta, valida l'autenticazione dell'utente e inoltra la chiamata ai provider.
-3.  **OpenRouter API**: Utilizzato come aggregatore universale. Questo ci permette di avere un'unica implementazione di codice per parlare con modelli che avrebbero altrimenti API diverse.
+Il modulo di chat consente di interagire con decine di modelli diversi — OpenAI, Anthropic, Google Gemini, Meta Llama — attraverso un'unica interfaccia unificata: **OpenRouter**.
 
 ---
 
-## Caratteristiche Tecniche
+## 4.1 Architettura della Chat
+
+Il sistema è strutturato secondo un modello a **Gateway**, pensato per garantire sicurezza e flessibilità:
+
+1. **Frontend (React)**: Gestisce lo stato della conversazione, il rendering del Markdown e la selezione dinamica del modello da parte dell'utente.
+2. **Backend (Express)**: Agisce da intermediario sicuro (proxy). Le chiavi API non vengono mai esposte al client: il server riceve la richiesta, verifica l'autenticazione e inoltra la chiamata ai provider.
+3. **OpenRouter**: Funziona da aggregatore universale, offrendo un'unica implementazione per parlare con modelli che avrebbero altrimenti API differenti tra loro.
+
+---
+
+## 4.2 Caratteristiche Tecniche
 
 ### 1. Risposta in Streaming (SSE)
-Per migliorare la *User Experience*, la chat utilizza i **Server-Sent Events (SSE)**. Invece di attendere che l'IA generi l'intera risposta (che potrebbe richiedere diversi secondi), il testo viene visualizzato parola per parola man mano che viene generato.
+
+Per migliorare l'esperienza utente, la chat sfrutta i **Server-Sent Events (SSE)**. Invece di attendere che il modello generi l'intera risposta — operazione che può richiedere diversi secondi — il testo viene visualizzato parola per parola nel momento stesso in cui viene prodotto, esattamente come si vede su ChatGPT o Claude.
 
 ### 2. Selezione Dinamica del Modello
-Grazie a un servizio di recupero metadati (`getModels`), l'utente può scegliere il modello più adatto al compito:
-- **Modelli Veloci**: Per correzioni grammaticali o risposte rapide (es. GPT-4o-mini).
-- **Modelli Potenti**: Per programmazione o analisi complessa (es. Claude 3.5 Sonnet).
-- **Modelli di Ragionamento**: Per problemi logico-matematici (es. o1-preview).
+
+Tramite un servizio di recupero metadati (`getModels`), l'utente può scegliere il modello più adatto al proprio compito:
+
+- **Modelli Veloci**: Ideali per correzioni grammaticali o risposte rapide (es. GPT-5.5).
+- **Modelli Potenti**: Ottimali per programmazione o analisi complessa (es. Claude Opus 4.7).
+- **Modelli di Ragionamento**: Pensati per problemi logico-matematici (es. Gemini 3.1 Pro).
 
 ### 3. Gestione del Reasoning Effort
-Per i modelli di nuova generazione che supportano il "ragionamento interno", il sistema permette di configurare il `reasoning_effort`. Questo parametro indica all'IA quanto tempo "pensare" prima di rispondere, ottimizzando il bilanciamento tra precisione e velocità.
+
+I modelli di nuova generazione supportano un meccanismo di "ragionamento interno" prima di rispondere. Il sistema espone il parametro `reasoning_effort`, che permette di regolare quanto tempo il modello dedica a "pensare" prima di produrre l'output, trovando il giusto equilibrio tra precisione e velocità di risposta.
 
 ---
 
-## Flusso di Comunicazione (UML)
+## 4.3 Flusso di Comunicazione (UML)
 
-Il diagramma seguente illustra il viaggio di un messaggio, dalla digitazione dell'utente fino alla ricezione dei dati in streaming.
+Il diagramma illustra il percorso di un messaggio, dalla digitazione dell'utente fino alla ricezione della risposta in streaming.
 
 ```mermaid
 sequenceDiagram
@@ -42,24 +46,24 @@ sequenceDiagram
     participant S as Server (Express)
     participant OR as OpenRouter API
 
-    U->>C: Digita messaggio e preme Invio
-    C->>S: POST /api/chat (Payload: Messaggio + Modello)
-    S->>S: Validazione JWT & Controllo Crediti
-    S->>OR: Inoltro richiesta (Streaming: true)
-    
-    loop Streaming dei dati
+    U->>C: Digita un messaggio e preme Invio
+    C->>S: POST /api/chat (Messaggio + Modello selezionato)
+    S->>S: Validazione JWT e controllo crediti
+    S->>OR: Inoltro della richiesta (streaming: true)
+
+    loop Streaming della risposta
         OR-->>S: Chunk di testo (data: {...})
         S-->>C: Stream SSE verso il browser
-        C->>C: Aggiorna UI in tempo reale
+        C->>C: Aggiornamento dell'UI in tempo reale
     end
-    
-    Note over C,OR: La connessione rimane aperta fino alla fine della generazione
+
+    Note over C,OR: La connessione rimane aperta fino al completamento della generazione
 ```
 
 ---
 
-## Vantaggi dell'Approccio Agnostico
+## 4.4 Vantaggi dell'Approccio Centralizzato
 
-*   **Ridondanza**: Se un provider (es. OpenAI) è offline, l'utente può passare istantaneamente a un altro (es. Anthropic).
-*   **Costi Ottimizzati**: Possibilità di scegliere modelli più economici per task semplici.
-*   **Futuribilità**: L'aggiunta di un nuovo modello rilasciato sul mercato richiede zero modifiche al codice del frontend.
+- **Ridondanza**: Se un provider è temporaneamente non disponibile (es. OpenAI), l'utente può passare immediatamente a un altro (es. Anthropic), senza interruzioni.
+- **Ottimizzazione dei Costi**: È possibile scegliere modelli più economici per task semplici, riservando quelli più potenti — e costosi — alle operazioni che lo richiedono davvero.
+- **Facilità di Aggiornamento**: L'aggiunta di un nuovo modello sul mercato non richiede alcuna modifica al codice del frontend.

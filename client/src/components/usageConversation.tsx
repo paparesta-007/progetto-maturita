@@ -72,7 +72,7 @@ const UsageConversation: React.FC<UsageConversationProps> = ({ onClose }) => {
 
     return (
         <div
-            className="fixed inset-0 flex items-center justify-center z-[100] bg-black/60 backdrop-blur-md"
+            className={`fixed inset-0 flex items-center justify-center z-[100] transition-colors duration-300 ${isDark ? 'bg-black/60 backdrop-blur-md' : 'bg-black/10 backdrop-blur-[2px]'}`}
             onClick={handleBackdropClick}
         >
             <div

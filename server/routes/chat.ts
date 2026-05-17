@@ -1,5 +1,5 @@
 import express from "express";
-import getSystemPrompt from "../static/systemPrompt.js";
+import getSystemPrompt from "../static/prompt/systemPrompt.js";
 import { OPENROUTER_KEY } from "../config/enviroments.js";
 import { requireAuth } from "../middleware/auth.js";
 import { applyPromptCaching } from "../utils/promptCaching.js";

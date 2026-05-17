@@ -1,70 +1,72 @@
 # 01 - Introduzione
 
-Benvenuti nel progetto **Smart AI**, un ecosistema avanzato progettato per ridefinire il modo in cui interagiamo con l'informazione e gli strumenti digitali. Questo capitolo delinea il contesto tecnologico in cui nasce la piattaforma, gli obiettivi prefissati e le tecnologie che ne costituiscono le fondamenta.
+**SmartAI** è una piattaforma pensata per semplificare il lavoro con informazioni, documenti e strumenti digitali. In questo capitolo vengono presentati il contesto in cui nasce il progetto, i suoi obiettivi e le tecnologie usate per realizzarlo.
 
 ---
 
-## Il Contesto Tecnologico (2025-2026)
+## 1.1 Contesto tecnologico
 
-Il biennio 2025-2026 segna una transizione fondamentale nella storia dell'informatica: il passaggio dai semplici chatbot ai **Sistemi Agentici**. Non siamo più di fronte a strumenti che si limitano a rispondere a domande, ma a entità capaci di pianificare, ragionare e agire in modo semi-autonomo.
+Negli ultimi anni, l’intelligenza artificiale sta passando dai semplici chatbot a sistemi più completi, capaci non solo di rispondere, ma anche di eseguire azioni e supportare l’utente in modo più attivo.
 
-In questo scenario, tre tendenze chiave hanno guidato lo sviluppo di **Smart AI**:
+Tre tendenze hanno influenzato lo sviluppo di SmartAI:
+
+1. **Generative UI**
+   
+   Le interfacce non restano fisse, ma possono cambiare in base al tipo di contenuto richiesto, mostrando tabelle, grafici o diagrammi quando serve.
+
+2. **Multi-Model Orchestration**
+   
+   Non si usa un solo modello AI, ma più modelli diversi scelti in base al compito da svolgere, così da bilanciare qualità, velocità e costi.
+
+3. **Integrazione con gli strumenti dell’utente**
+   
+   L’AI può interagire con calendario, documenti e preferenze personali, diventando un supporto concreto nelle attività quotidiane.
 
 > [!NOTE]
-> **L'Evoluzione del RAG**: La ricerca vettoriale semplice è stata superata da sistemi di "Hybrid Retrieval" che combinano grafi di conoscenza e database vettoriali per una precisione semantica senza precedenti.
-
-1.  **Generative UI (GenUI)**: Le interfacce statiche sono un ricordo del passato. Oggi l'interfaccia si adatta in tempo reale all'intento dell'utente, generando componenti visuali (grafici, tabelle, mappe concettuali) dinamici.
-2.  **Multi-Model Orchestration**: La dipendenza da un singolo modello (LLM) è terminata. Le applicazioni moderne orchestrano decine di modelli specializzati, scegliendo il migliore per ogni micro-task in termini di costo e performance.
-3.  **Integrazione Agente-Utente**: L'AI non è più un'appendice, ma un collaboratore integrato che ha accesso al calendario, ai documenti e alle preferenze dell'utente, agendo come un vero e proprio "copilota" della produttività.
+> **Evoluzione del RAG**: oggi la ricerca nei documenti non si basa solo sulle parole chiave, ma anche sulla ricerca semantica, che permette di trovare informazioni più pertinenti.
 
 ---
 
-## Visione e Obiettivi di Smart AI
+## 1.2 Obiettivi di SmartAI
 
-Il progetto **Smart AI** nasce con la missione di centralizzare queste innovazioni in un'unica piattaforma coerente, accessibile e altamente personalizzabile. Gli obiettivi principali sono:
+SmartAI nasce con l’obiettivo di unire queste funzioni in un’unica piattaforma semplice da usare e personalizzabile.
 
--   **Efficienza Operativa**: Ridurre il tempo necessario per l'analisi documentale e la gestione dei task quotidiani (es. calendari e scadenze).
--   **Personalizzazione Dinamica**: Creare un'esperienza utente che non sia solo "responsive" ma "generativa", visualizzando le informazioni nel formato più utile al momento (testo, codice, diagrammi).
--   **Apprendimento Potenziato**: Fornire strumenti per lo studio assistito, come la generazione automatica di quiz e mappe concettuali a partire da documenti complessi.
+Gli obiettivi principali sono:
+
+- **Ridurre i tempi di lavoro** nella lettura dei documenti e nella gestione delle attività.
+- **Adattare l’interfaccia** al tipo di contenuto richiesto, mostrando il formato più utile.
+- **Supportare lo studio**, ad esempio con quiz automatici e mappe concettuali create a partire dai documenti.
 
 ---
 
-## I Pilastri dell'Innovazione
+## 1.3 I tre pilastri del progetto
 
-Il successo di Smart AI si basa su tre pilastri tecnologici fondamentali, descritti dettagliatamente nei capitoli successivi:
+Il progetto si basa su tre elementi principali:
 
-| Pilastro | Descrizione | Impatto |
+| Pilastro | Descrizione | Risultato |
 | :--- | :--- | :--- |
-| **Generative UI** | Parser intelligente che trasforma l'output dell'AI in componenti React interattivi. | Esperienza utente immersiva e visuale. |
-| **Multi-Model** | Integrazione con OpenRouter per l'accesso a GPT-4, Claude 3.5, Gemini 1.5 e modelli Open Source. | Ottimizzazione dei costi e delle capacità di ragionamento. |
-| **RAG Evoluto** | Pipeline di analisi PDF con database vettoriale per la ricerca semantica locale. | Risposte basate su fatti reali e documenti personali. |
+| **Generative UI** | Trasforma l’output dell’AI in componenti visivi interattivi. | Interfaccia più chiara e dinamica. |
+| **Didactic Engine** |Mappe concettuali, Schemi, Quiz, Flashcards, Riassunti | Strumenti di studio avanzati. |
+| **RAG evoluto** | Analizza PDF e documenti con ricerca semantica. | Risposte più precise e legate ai contenuti reali. |
 
 ---
 
-## Lo Stack Tecnologico
+## 1.4 Stack tecnologico
 
-Per supportare queste ambizioni, è stata selezionata una suite di tecnologie all'avanguardia che garantisce scalabilità, velocità e manutenibilità.
+Per costruire SmartAI sono state usate tecnologie moderne, scelte per garantire velocità, stabilità e facilità di manutenzione.
 
-### Frontend & UI
-*   **React 19**: L'ultima evoluzione della libreria di Meta, scelta per la gestione ottimizzata del rendering e dei componenti server-side.
-*   **Vite**: Tool di build ultra-veloce per garantire un ciclo di sviluppo fluido.
-*   **CSS Moderno**: Uso di variabili CSS e design system personalizzati per un'estetica premium.
+### Frontend e interfaccia
+- **React 19**: usato per creare l’interfaccia utente.
+- **Vite**: serve per uno sviluppo rapido e fluido.
+- **CSS moderno**: usato per definire uno stile personalizzato e ordinato.
 
-### Backend & Orchestrazione
-*   **Express 5 (Node.js)**: Middleware robusto per la gestione delle API e del flusso streaming NDJSON verso il client.
-*   **OpenRouter**: Gateway universale che ci permette di dialogare con oltre 100 modelli di linguaggio tramite un'unica interfaccia.
+### Backend e gestione delle richieste
+- **Express 5 (Node.js)**: gestisce le API e il flusso dei dati tra client e server.
+- **OpenRouter**: permette di usare diversi modelli AI tramite una sola interfaccia.
 
-### Infrastruttura & Dati
-*   **Supabase**: Una piattaforma BaaS (Backend as a Service) basata su PostgreSQL, fondamentale per:
-    *   **Autenticazione**: Gestione sicura delle sessioni utente.
-    *   **Vector Store**: Memorizzazione degli embeddings per la ricerca semantica (pgvector).
-    *   **Database**: Persistenza delle conversazioni e dei metadati.
-
----
-
-## Struttura dell'Elaborato
-
-Questa documentazione esplorerà ogni aspetto del progetto, dall'architettura software alla gestione della sicurezza, fino all'analisi delle performance e dei costi. Ogni capitolo è progettato per mostrare come la teoria dell'intelligenza artificiale si traduca in codice pratico e soluzioni reali.
-
-> [!TIP]
-> Per una visione d'insieme dei moduli, consultare il capitolo **[00 - Indice della Tesina](00_indice_tesina.md)**.
+### Dati e infrastruttura
+- **Supabase**: usato per:
+  - autenticazione degli utenti,
+  - salvataggio dei dati,
+  - gestione delle conversazioni,
+  - supporto alla ricerca semantica tramite `pgvector`.

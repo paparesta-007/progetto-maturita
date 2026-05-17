@@ -28,11 +28,11 @@ import deleteCurrentDocument from "../services/supabase/documents/deleteCurrentD
 import updateConversationTitle from "../services/supabase/Conversation/updateConversationTitle";
 
 /* ─── Classic & Cozy Sidebar Styles ─── */
-const SidebarStyles = () => (
+const SidebarStyles = ({ isDark }: { isDark: boolean }) => (
     <style>{`
         .sidebar-cozy {
-            background: #fcfbf9;
-            border-right: 1px solid #e5e5e5;
+            background: ${isDark ? '#07070a' : '#fcfbf9'};
+            border-right: 1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e5e5e5'};
         }
 
         .cozy-scrollbar::-webkit-scrollbar {
@@ -42,33 +42,43 @@ const SidebarStyles = () => (
             background: transparent;
         }
         .cozy-scrollbar::-webkit-scrollbar-thumb {
-            background: #e5e5e5;
+            background: ${isDark ? 'rgba(255,255,255,0.1)' : '#e5e5e5'};
             border-radius: 10px;
         }
 
         .nav-item-cozy {
             transition: all 0.2s ease;
-            color: #737373;
+            color: ${isDark ? 'rgba(255,255,255,0.5)' : '#737373'};
         }
         .nav-item-cozy:hover {
-            color: #171717;
-            background: #f5f3f0;
+            color: ${isDark ? '#ffffff' : '#171717'};
+            background: ${isDark ? 'rgba(255,255,255,0.05)' : '#f5f3f0'};
         }
         .nav-item-cozy.active {
-            color: #171717;
-            background: #f0eee6;
+            color: ${isDark ? '#ffffff' : '#171717'};
+            background: ${isDark ? 'rgba(255,255,255,0.1)' : '#f0eee6'};
             font-weight: 500;
         }
 
         .action-button {
-            background: #f0eee6;
-            color: #171717;
-            border: 1px solid #e5e5e5;
+            background: ${isDark ? 'rgba(255,255,255,0.05)' : '#f0eee6'};
+            color: ${isDark ? '#ffffff' : '#171717'};
+            border: 1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e5e5e5'};
             transition: all 0.2s ease;
         }
         .action-button:hover {
-            background: #e8e6de;
-            border-color: #d4d4d4;
+            background: ${isDark ? 'rgba(255,255,255,0.1)' : '#e8e6de'};
+            border-color: ${isDark ? 'rgba(255,255,255,0.2)' : '#d4d4d4'};
+        }
+
+        .sidebar-text-muted {
+            color: ${isDark ? 'rgba(255,255,255,0.4)' : '#a3a3a3'};
+        }
+        .sidebar-text-primary {
+            color: ${isDark ? '#ffffff' : '#171717'};
+        }
+        .sidebar-border {
+            border-color: ${isDark ? 'rgba(255,255,255,0.1)' : '#e5e5e5'};
         }
     `}</style>
 );
@@ -166,7 +176,7 @@ const Sidebar = ({
 
     return (
         <>
-            <SidebarStyles />
+            <SidebarStyles isDark={isDark} />
             <AnimatePresence>
                 {isRenamePopupOpen && (
                     <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/20 backdrop-blur-sm">
@@ -198,10 +208,10 @@ const Sidebar = ({
                             <div className="h-8 w-8 rounded-lg bg-[#171717] text-white flex items-center justify-center">
                                 <BrainCircuit size={18} />
                             </div>
-                            <span className="font-semibold text-[#171717] tracking-tight">Smart AI</span>
+                            <span className="font-semibold sidebar-text-primary tracking-tight">Smart AI</span>
                         </div>
                     )}
-                    <button onClick={() => setIsMinimized(!isMinimized)} className={`p-1.5 rounded-lg hover:bg-[#f5f3f0] text-[#a3a3a3] transition-colors ${isMinimized ? 'mx-auto' : ''}`}>
+                    <button onClick={() => setIsMinimized(!isMinimized)} className={`p-1.5 rounded-lg hover:bg-[#f5f3f0] ${isDark ? 'hover:bg-white/5' : ''} text-[#a3a3a3] transition-colors ${isMinimized ? 'mx-auto' : ''}`}>
                         <SidebarSimpleIcon size={20} />
                     </button>
                 </div>
@@ -219,7 +229,7 @@ const Sidebar = ({
 
                 {/* Navigation */}
                 <div className="px-3 space-y-1 flex-1 overflow-y-auto cozy-scrollbar">
-                    {!isMinimized && <p className="px-3 text-[10px] font-bold uppercase tracking-widest text-[#a3a3a3] mb-3">Workspace</p>}
+                    {!isMinimized && <p className="px-3 text-[10px] font-bold uppercase tracking-widest sidebar-text-muted mb-3">Workspace</p>}
                     {mainNav.map(item => (
                         <NavLink 
                             key={item.path} 
@@ -234,8 +244,8 @@ const Sidebar = ({
                     <div className="pt-8">
                         {!isMinimized && (
                             <div className="px-3 flex items-center justify-between mb-3">
-                                <p className="text-[10px] font-bold uppercase tracking-widest text-[#a3a3a3]">{isDocumentsPage ? "Library" : "Recent"}</p>
-                                <span className="text-[10px] font-medium text-[#a3a3a3] bg-[#f0eee6] px-1.5 py-0.5 rounded">{isDocumentsPage ? documentList.length : conversations.length}</span>
+                                <p className="text-[10px] font-bold uppercase tracking-widest sidebar-text-muted">{isDocumentsPage ? "Library" : "Recent"}</p>
+                                <span className={`text-[10px] font-medium sidebar-text-muted ${isDark ? 'bg-white/10' : 'bg-[#f0eee6]'} px-1.5 py-0.5 rounded`}>{isDocumentsPage ? documentList.length : conversations.length}</span>
                             </div>
                         )}
                         
@@ -280,17 +290,17 @@ const Sidebar = ({
                 </div>
 
                 {/* Footer */}
-                <div className="p-4 border-t border-[#e5e5e5]">
+                <div className="p-4 border-t sidebar-border">
                     <div className="relative" ref={menuRef}>
                         <button 
                             onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                            className={`w-full flex items-center gap-3 p-2 rounded-xl hover:bg-[#f5f3f0] transition-colors ${isMinimized ? 'justify-center' : ''}`}
+                            className={`w-full flex items-center gap-3 p-2 rounded-xl hover:bg-[#f5f3f0] ${isDark ? 'hover:bg-white/5' : ''} transition-colors ${isMinimized ? 'justify-center' : ''}`}
                         >
-                            <img src={userDetails?.avatar_url || `https://ui-avatars.com/api/?name=${userDetails?.full_name || 'U'}`} alt="User" className="h-8 w-8 rounded-lg bg-[#e5e5e5]" />
+                            <img src={userDetails?.avatar_url || `https://ui-avatars.com/api/?name=${userDetails?.full_name || 'U'}`} alt="User" className="h-8 w-8 rounded-lg sidebar-border bg-[#e5e5e5]" />
                             {!isMinimized && (
                                 <div className="flex-1 text-left truncate">
-                                    <p className="text-sm font-semibold text-[#171717] truncate">{userDetails?.full_name || "User"}</p>
-                                    <p className="text-[10px] text-[#a3a3a3] font-medium uppercase tracking-tighter">Pro Subscriber ✦</p>
+                                    <p className="text-sm font-semibold sidebar-text-primary truncate">{userDetails?.full_name || "User"}</p>
+                                    <p className="text-[10px] sidebar-text-muted font-medium uppercase tracking-tighter">Pro Subscriber ✦</p>
                                 </div>
                             )}
                             {!isMinimized && <ChevronUp size={16} className={`text-[#a3a3a3] transition-transform ${isUserMenuOpen ? 'rotate-180' : ''}`} />}
@@ -300,7 +310,7 @@ const Sidebar = ({
                             {isUserMenuOpen && (
                                 <motion.div 
                                     initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
-                                    className="absolute bottom-full left-0 w-full mb-2 p-2 bg-white rounded-2xl border border-[#e5e5e5] shadow-xl overflow-hidden"
+                                    className={`absolute bottom-full left-0 w-full mb-2 p-2 rounded-2xl border shadow-xl overflow-hidden ${isDark ? 'bg-[#12121a] border-white/10' : 'bg-white border-[#e5e5e5]'}`}
                                 >
                                     <button onClick={() => { setIsSettingOpen(true); setIsUserMenuOpen(false); }} className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-[#f9f8f6] text-sm text-[#737373] hover:text-[#171717] transition-all">
                                         <Settings size={16} /> Settings
@@ -308,7 +318,7 @@ const Sidebar = ({
                                     <button onClick={() => setTheme(isDark ? 'light' : 'dark')} className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-[#f9f8f6] text-sm text-[#737373] hover:text-[#171717] transition-all">
                                         {isDark ? <Sun size={16} /> : <Moon size={16} />} Theme
                                     </button>
-                                    <div className="h-px bg-[#e5e5e5] my-1 mx-2" />
+                                    <div className={`h-px ${isDark ? 'bg-white/5' : 'bg-[#e5e5e5]'} my-1 mx-2`} />
                                     <button onClick={handleLogOut} className="w-full flex items-center gap-3 p-2.5 rounded-xl hover:bg-red-50 text-sm text-red-500 transition-all">
                                         <LogOut size={16} /> Sign out
                                     </button>

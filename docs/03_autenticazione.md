@@ -1,10 +1,10 @@
-# 03 - Autenticazione
+# 03 - Autenticazione e Sicurezza
 
 Il sistema di autenticazione di **Smart AI** è basato su **Supabase Auth**, una soluzione robusta che gestisce l'intero ciclo di vita dell'utente, dalla registrazione alla gestione delle sessioni sicure tramite JWT (JSON Web Tokens).
 
 ---
 
-## Funzionamento del Sistema
+## 3.1 Funzionamento del Sistema
 
 L'autenticazione segue un approccio moderno e decentralizzato:
 1.  **Gestione Sessione**: Al momento del login, Supabase rilascia un JWT che viene memorizzato in modo sicuro nel browser dell'utente.
@@ -14,7 +14,7 @@ L'autenticazione segue un approccio moderno e decentralizzato:
 
 ---
 
-## Focus: Cos'è un JWT?
+## 3.2 Focus: Cos'è un JWT?
 
 Per capire meglio come funziona la sicurezza dietro le quinte, possiamo immaginare il **JWT (JSON Web Token)** come un **braccialetto elettronico** che ricevi all'ingresso di un club o di un festival:
 
@@ -26,40 +26,17 @@ Questo metodo rende l'applicazione **estremamente veloce** e **sicura**, perché
 
 ---
 
-## Interfaccia di Accesso
+## 3.3 Interfaccia di Accesso
 
 Di seguito è rappresentata la struttura della pagina di login dell'applicazione:
 
-```text
-+-----------------------------------------------------------+
-|                                                           |
-|                     [ IMMAGINE ]                          |
-|             (Rappresentazione Pagina Login)               |
-|                                                           |
-|       +-------------------------------------------+       |
-|       |                                           |       |
-|       |             Accedi a Smart AI             |       |
-|       |                                           |       |
-|       |  Email: [_____________________________]   |       |
-|       |  Password: [**************************]   |       |
-|       |                                           |       |
-|       |             [ BOTTONE ACCEDI ]            |       |
-|       |                                           |       |
-|       |     ----------- oppure -----------        |       |
-|       |                                           |       |
-|       |     [ G ] Accedi con Google               |       |
-|       |     [ git ] Accedi con GitHub             |       |
-|       |                                           |       |
-|       +-------------------------------------------+       |
-|                                                           |
-+-----------------------------------------------------------+
-```
-
+<img src="../docs/static/img/login.png" alt="login page"
+style="width: 50%;">
 ---
 
-## Flusso di Autenticazione (UML)
+## 3.4 Flusso di Autenticazione (UML)
 
-Il seguente schema descrive l'interazione tra l'utente, il client, Supabase e il server durante il processo di autenticazione e accesso ai dati protetti.
+Lo schema descrive l'interazione tra l'utente, il client, Supabase e il server durante il processo di autenticazione e accesso ai dati protetti.
 
 ```mermaid
 sequenceDiagram

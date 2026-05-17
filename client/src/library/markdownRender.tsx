@@ -20,7 +20,23 @@ const MarkdownRender = ({ text, isStreaming }: { text: string; isStreaming?: boo
         const latexMap = new Map<string, string>();
         let latexCounter = 0;
 
-        // 1. Protezione LaTeX
+        // 1. Protezione Code Block (evita che LaTeX tocchi il codice)
+        const codeMap = new Map<string, string>();
+        let codeCounter = 0;
+        
+        let safeText = rawText.replace(/```[\s\S]*?```/g, (match) => {
+            const placeholder = `CODEBLOCK${codeCounter++}ENDCODE`;
+            codeMap.set(placeholder, match);
+            return placeholder;
+        });
+        
+        safeText = safeText.replace(/`[^`\n]+`/g, (match) => {
+            const placeholder = `INLINECODE${codeCounter++}ENDCODE`;
+            codeMap.set(placeholder, match);
+            return placeholder;
+        });
+
+        // 2. Protezione LaTeX
         const protectLatex = (str: string) => {
             let protectedStr = str.replace(/\$\$([\s\S]+?)\$\$/g, (_match, formula) => {
                 const placeholder = `LATEXBLOCK${latexCounter++}ENDLATEX`;
@@ -39,7 +55,12 @@ const MarkdownRender = ({ text, isStreaming }: { text: string; isStreaming?: boo
             return protectedStr;
         };
 
-        const safeText = protectLatex(rawText);
+        safeText = protectLatex(safeText);
+
+        // 3. Ripristino Code Block
+        codeMap.forEach((match, placeholder) => {
+            safeText = safeText.replace(new RegExp(placeholder, 'g'), match);
+        });
         const highlighter = await getHighlighter();
         const shikiTheme = theme === 'dark' ? 'vitesse-dark' : 'github-light';
 
@@ -70,7 +91,50 @@ const MarkdownRender = ({ text, isStreaming }: { text: string; isStreaming?: boo
                         </div>
                         ${highlighter.codeToHtml(token.text, { lang, theme: shikiTheme })}
                     </div>`;
+                } else if (token.type === 'html' || token.type === 'text' || token.type === 'paragraph') {
+                    // Evidenzia eventuali blocchi <pre><code class="language-..."> nel testo normale (Better View mode)
+                    const htmlCodeRegex = /<pre><code\s+class="language-([^"]+)">([\s\S]*?)<\/code><\/pre>/gi;
+                    if (htmlCodeRegex.test(token.text)) {
+                        let match;
+                        let newText = token.text;
+                        // Reset regex lastIndex before looping
+                        htmlCodeRegex.lastIndex = 0;
+                        while ((match = htmlCodeRegex.exec(token.text)) !== null) {
+                            const [fullMatch, rawLang, codeContent] = match;
+                            const langs = highlighter.getLoadedLanguages();
+                            const lang = (rawLang && langs.includes(rawLang)) ? rawLang : 'text';
+                            
+                            const unescapedCode = codeContent
+                                .replace(/&lt;/g, '<')
+                                .replace(/&gt;/g, '>')
+                                .replace(/&amp;/g, '&')
+                                .replace(/&quot;/g, '"')
+                                .replace(/&#39;/g, "'");
+
+                            const codeContentEncoded = encodeURIComponent(unescapedCode);
+                            const copyButtonHtml = `
+                                <button class="copy-btn flex items-center gap-1 text-xs text-neutral-500 hover:text-neutral-900 dark:hover:text-neutral-200 transition-colors" data-code="${codeContentEncoded}">
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="copy-icon"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                                    <span>Copy</span>
+                                </button>
+                            `;
+
+                            const shikiHtml = highlighter.codeToHtml(unescapedCode, { lang, theme: shikiTheme });
+                            const finalHtml = `
+                            <div class="code-block-wrapper text-sm rounded-md overflow-hidden my-2 border ${theme === 'dark' ? 'border-neutral-700' : 'border-neutral-200'}">
+                                <div class="flex items-center justify-between px-3 py-1.5 bg-transparent ${theme === 'dark' ? 'text-neutral-500' : 'text-neutral-500'}">
+                                    <span class="text-xs font-mono font-bold">${lang}</span> 
+                                    ${copyButtonHtml}
+                                </div>
+                                ${shikiHtml}
+                            </div>`;
+                            
+                            newText = newText.replace(fullMatch, finalHtml);
+                        }
+                        token.text = newText;
+                    }
                 }
+                
                 if (token.items) await walkTokens(token.items);
             }
         };
@@ -84,7 +148,7 @@ const MarkdownRender = ({ text, isStreaming }: { text: string; isStreaming?: boo
 
         return DOMPurify.sanitize(rawHtml, {
             ADD_TAGS: ['math', 'semantics', 'mrow', 'mn', 'mo', 'mi', 'msup', 'msub', 'mfrac', 'mtext', 'annotation', 'annotation-xml', 'svg', 'path', 'g', 'div', 'span', 'pre', 'code', 'button', 'rect'],
-            ADD_ATTR: ['style', 'class', 'viewBox', 'd', 'fill', 'xmlns', 'width', 'height', 'data-language', 'data-code', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'x', 'y', 'rx', 'ry']
+            ADD_ATTR: ['style', 'class', 'viewBox', 'd', 'fill', 'xmlns', 'width', 'height', 'data-language', 'data-code', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'x', 'y', 'rx', 'ry', 'aria-hidden']
         });
     }, [theme]);
 
