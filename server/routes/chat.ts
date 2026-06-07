@@ -25,7 +25,8 @@ function isCodeOrDebugIntent(message: string): boolean {
 
 router.post("/api/completion/chat", requireAuth, async function (req: express.Request, res: express.Response, next: express.NextFunction) {
 	try {
-		const { message, history, modelName, systemPromptUser, personalInfo, tone, allowedCustomInstructions, reasoning, isBetterView } = req.body;
+		const { message, history: rawHistory, modelName, systemPromptUser, personalInfo, tone, allowedCustomInstructions, reasoning, isBetterView, temperature, webSearch } = req.body;
+		const history = Array.isArray(rawHistory) ? rawHistory : [];
 
 		const selectedModel = modelName ? modelName : "google/gemini-2.0-flash-001";
 		const betterViewRenderMode: BetterViewRenderMode = isBetterView && !isCodeOrDebugIntent(message || "") ? "html" : "markdown";
@@ -60,6 +61,13 @@ router.post("/api/completion/chat", requireAuth, async function (req: express.Re
 
 		const startTime = Date.now();
 
+		// Configure plugins if webSearch is active (OpenRouter Web Search Plugin)
+		const plugins = webSearch ? [
+			{
+				id: "web",
+			}
+		] : undefined;
+
 		const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
 			method: "POST",
 			headers: {
@@ -73,8 +81,10 @@ router.post("/api/completion/chat", requireAuth, async function (req: express.Re
 				model: selectedModel,
 				messages: messages,
 				stream: false,
+				temperature: temperature ?? 1.0,
 				reasoning: { effort: reasoningEffort },
-				provider: { allow_fallbacks: false }
+				provider: { allow_fallbacks: false },
+				plugins: plugins
 			})
 		});
 
@@ -130,7 +140,7 @@ router.post("/api/streamingOutput", requireAuth, async function (req: express.Re
 	try {
 
 		const { message, history, modelName, systemPromptUser, personalInfo,
-			tone, allowedCustomInstructions, reasoning, isBetterView } = req.body;
+			tone, allowedCustomInstructions, reasoning, isBetterView, temperature, webSearch } = req.body;
 		const selectedModel = modelName ? modelName : "google/gemini-2.0-flash-001";
 		const betterViewRenderMode: BetterViewRenderMode = isBetterView && !isCodeOrDebugIntent(message || "") ? "html" : "markdown";
 
@@ -181,6 +191,13 @@ router.post("/api/streamingOutput", requireAuth, async function (req: express.Re
 			controller.abort();
 		});
 
+		// Configure plugins if webSearch is active (OpenRouter Web Search Plugin)
+		const plugins = webSearch ? [
+			{
+				id: "web",
+			}
+		] : undefined;
+
 		const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
 			method: "POST",
 			signal: controller.signal,
@@ -196,8 +213,10 @@ router.post("/api/streamingOutput", requireAuth, async function (req: express.Re
 				messages: messages,
 				stream: true,
 				stream_options: { include_usage: true },
+				temperature: temperature ?? 1.0,
 				reasoning: { effort: reasoningEffort },
-				provider: { allow_fallbacks: false }
+				provider: { allow_fallbacks: false },
+				plugins: plugins
 			})
 		});
 

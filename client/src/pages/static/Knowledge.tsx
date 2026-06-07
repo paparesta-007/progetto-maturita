@@ -499,7 +499,7 @@ const CTAFooter = () => (
             </div>
 
             <div className="section-divider my-10" />
-            <p className="font-mono text-xs text-stone-400">NeuralTrust Knowledge • {new Date().getFullYear()}</p>
+            <p className="font-mono text-xs text-stone-400">Smarti AI Knowledge • {new Date().getFullYear()}</p>
         </div>
     </section>
 );

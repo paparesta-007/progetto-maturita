@@ -235,7 +235,7 @@ function HeroSection() {
             </motion.h1>
             <WordReveal 
                 className="mt-12 text-xl font-light max-w-lg leading-relaxed" 
-                text="Oltre la semplice chat. Una forza lavoro ad alta utilità progettata per gestire il tuo calendario, strutturare i tuoi dati e ricordare ogni documento che hai letto con precisione assoluta. Costruita per chi crea: i nostri agenti non si limitano a rispondere alle domande, ma eseguono compiti, pianificano flussi e mappano in tempo reale le relazioni tra i tuoi progetti." 
+                text="Oltre la chat. Una forza lavoro che gestisce il tuo tempo, organizza i tuoi dati e ricorda ogni documento con precisione assoluta. Progettata per chi crea." 
             />
             <motion.div variants={fadeUp} initial="hidden" animate="show" custom={3} className="mt-12 flex items-center gap-6">
               <Link to="/login" className="warm-btn-primary !px-8 !py-4 text-base !rounded-full">Schiera il tuo Agente</Link>
@@ -317,7 +317,7 @@ function PhilosophySection() {
             <div className="warm-section-label">Lo Standard di Utilità</div>
             <h2 className="text-4xl sm:text-6xl tracking-tight text-[#171717] leading-tight">Agenti che <br /><span className="serif-accent italic text-[#a3a3a3]">agiscono concretamente.</span></h2>
             <WordReveal 
-                text="In un mondo pieno di hype sull\'IA, noi ci concentriamo sull\'utilità. Smart AI non è solo un\'altra interfaccia per gli LLM; è un motore per la produttività. Costruiamo agenti che comprendono il tuo contesto, rispettano il tuo tempo e gestiscono il carico amministrativo. Ogni funzionalità ha un obiettivo: il risultato. Che si tratti di riprogrammare una riunione per proteggere il tuo lavoro profondo o mappare una base di conoscenza, l\'IA lavora per te." 
+                text="Ci concentriamo sull'utilità concreta. Smart AI è un motore di produttività che comprende il tuo contesto e gestisce il carico amministrativo in autonomia." 
                 className="text-lg font-light leading-relaxed max-w-xl"
             />
             <div className="pt-6 grid grid-cols-2 gap-8">
@@ -351,10 +351,10 @@ function PhilosophySection() {
 
 function BentoFeatures() {
   const features = [
-    { title: 'RAG con Memoria Illimitata', desc: 'Ancora la tua IA alla tua realtà. Il nostro motore a contesto infinito indicizza i tuoi PDF, email e appunti senza alcuna perdita di memoria. Ogni risposta è basata sui tuoi dati specifici.', icon: Layers, color: 'text-indigo-500' },
-    { title: 'Agente Calendario IA', desc: 'Your schedule, optimized autonomously. Our agent doesn\'t just remind you; it actively coordinates, reschedules meetings, and protects your focus time based on your current priorities.', icon: Zap, color: 'text-orange-500' },
-    { title: 'Mappa Mentale', desc: 'Visualizza le connessioni invisibili. Una mappa dinamica a nodi che rivela come i tuoi progetti, idee e documenti si intersecano, offrendoti un vero e proprio secondo cervello.', icon: Brain, color: 'text-emerald-500' },
-    { title: 'Architetto di Schemi', desc: 'Trasforma il caos in struttura. Genera istantaneamente schemi di database, strutture API e flussi di lavoro pronti per la produzione a partire da conversazioni grezze o appunti.', icon: Database, color: 'text-amber-500' }
+    { title: 'RAG con Memoria Illimitata', desc: 'Indicizza PDF, email e appunti senza perdita di memoria. Ogni risposta è basata esclusivamente sui tuoi dati.', icon: Layers, color: 'text-indigo-500' },
+    { title: 'Agente Calendario IA', desc: 'Ottimizzazione autonoma del tempo. L\'agente coordina riunioni e protegge il tuo lavoro profondo.', icon: Zap, color: 'text-orange-500' },
+    { title: 'Mappa Mentale', desc: 'Una mappa dinamica che rivela come progetti, idee e documenti si intersecano. Il tuo secondo cervello visivo.', icon: Brain, color: 'text-emerald-500' },
+    { title: 'Architetto di Schemi', desc: 'Trasforma il caos in struttura. Genera istantaneamente schemi e flussi di lavoro da conversazioni grezze.', icon: Database, color: 'text-amber-500' }
   ];
 
   return (
@@ -364,7 +364,7 @@ function BentoFeatures() {
           <div className="warm-section-label mb-6">Capacità Autonoma</div>
           <h2 className="text-4xl sm:text-6xl tracking-tight text-[#171717] mb-8 font-normal">Oltre il <br /> <span className="text-[#a3a3a3] italic serif-accent">confine della chat.</span></h2>
           <WordReveal 
-            text="Abbiamo costruito Smart AI per essere più di una conversazione. È una forza lavoro. Integrando il recupero profondo della conoscenza con azioni autonome degli agenti, abbiamo creato un sistema che ti toglie concretamente il peso del lavoro. Smetti di passare ore a organizzare, cercare e pianificare. Lascia che i tuoi agenti gestiscano la logistica mentre tu ti concentri sulla strategia di alto livello."
+            text="Smart AI è una forza lavoro autonoma. Smetti di organizzare e pianificare: lascia che i tuoi agenti gestiscano la logistica mentre tu ti concentri sulla strategia."
             className="text-xl text-[#737373] font-light max-w-2xl leading-relaxed mb-6"
           />
         </div>
@@ -379,28 +379,6 @@ function BentoFeatures() {
               <p className="text-[#737373] leading-relaxed font-light text-base">{f.desc}</p>
             </motion.div>
           ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ProductQuote() {
-  return (
-    <section className="py-24 lg:py-48 bg-[#fcfbf9] border-y border-[#e5e5e5]">
-      <div className="mx-auto max-w-5xl px-6 lg:px-8 text-center">
-        <div className="inline-flex h-12 w-12 items-center justify-center rounded-2xl bg-[#171717] text-white mb-12 shadow-lg">
-          <Sparkles size={24} />
-        </div>
-        <blockquote className="text-4xl sm:text-6xl lg:text-7xl font-normal leading-[1.1] tracking-tight text-[#171717]">
-          "L\'utilità è la <span className="serif-accent italic text-[#b08968]">forma più alta</span> di intelligenza. Non elaboriamo solo informazioni; le trasformiamo in azioni autonome."
-        </blockquote>
-        <div className="mt-14 flex items-center justify-center gap-5">
-          <img src={`https://ui-avatars.com/api/?name=TP&background=171717&color=fff`} className="h-12 w-12 rounded-2xl shadow-sm" alt="Author" />
-          <div className="text-left">
-            <div className="text-base font-semibold text-[#171717]">Tommaso Paparesta</div>
-            <div className="text-sm text-[#a3a3a3] font-light uppercase tracking-widest">Lead Architect • Smart AI</div>
-          </div>
         </div>
       </div>
     </section>
@@ -510,9 +488,9 @@ function VisualShowcase() {
 
 function HowItWorks() {
   const steps = [
-    { step: '01', title: 'Integrazione Profonda', desc: 'Collega i tuoi documenti, il calendario e i flussi di lavoro. Il nostro agente costruisce una mappa semantica unificata della tua vita professionale in pochi minuti.' },
-    { step: '02', title: 'Azione Autonoma', desc: 'Deploy agents to handle specific tasks. Whether it\'s organizing a research library or managing your weekly syncs, the AI works in the background.' },
-    { step: '03', title: 'Intuizioni Sintetizzate', desc: 'Vedi i risultati nel tuo grafo della conoscenza. Ogni azione e ogni documento è collegato, ricercabile e visualizzato nella mappa mentale.' }
+    { step: '01', title: 'Integrazione Profonda', desc: 'Connetti documenti e calendario. Creiamo una mappa semantica unificata della tua attività in pochi minuti.' },
+    { step: '02', title: 'Azione Autonoma', desc: 'Affida task specifici ai tuoi agenti. Dalla ricerca alla pianificazione, l\'IA lavora in background per te.' },
+    { step: '03', title: 'Intuizioni Sintetizzate', desc: 'Esplora i risultati nel tuo grafo della conoscenza. Ogni documento è collegato, ricercabile e visualizzato nella mappa.' }
   ];
 
   return (
@@ -523,7 +501,7 @@ function HowItWorks() {
             <div className="warm-section-label mb-6">Il Flusso di Lavoro</div>
             <h2 className="text-4xl sm:text-7xl tracking-tighter text-[#171717] mb-10 leading-tight">Dai dati alla <br /> <span className="text-[#a3a3a3] italic serif-accent">saggezza.</span></h2>
             <WordReveal 
-                text="Il ponte tra informazione e intuizione è un processo ben definito. Abbiamo automatizzato il duro lavoro di organizzazione e recupero, così tu puoi concentrarti sul pensiero di alto livello. La nostra pipeline RAG è ottimizzata per l\'integrità. Ogni affermazione è supportata da un link diretto ai tuoi documenti."
+                text="Automatizziamo l'organizzazione e il recupero delle informazioni. Ogni affermazione dell'IA è supportata da link diretti ai tuoi documenti."
                 className="text-xl text-[#737373] font-light max-w-md mb-8 leading-relaxed"
             />
           </div>
@@ -569,7 +547,7 @@ function SecuritySection() {
            ))}
         </div>
         <WordReveal 
-          text="Comprendiamo che per i professionisti, la privacy non è una funzionalità—è un requisito. Smart AI è costruito per essere una fortezza per le tue idee."
+          text="La privacy non è un'opzione, è un requisito. Smart AI è una fortezza per le tue idee e la tua proprietà intellettuale."
           className="mt-16 text-lg text-[#a3a3a3] font-light max-w-3xl mx-auto leading-relaxed"
         />
       </div>
@@ -585,7 +563,7 @@ function FinalCTA() {
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_#262626_0%,_transparent_100%)] opacity-50" />
           <div className="relative z-10 max-w-3xl mx-auto">
             <h2 className="text-5xl sm:text-7xl font-normal tracking-tight text-white mb-10 leading-tight">Schiera la tua <br /> <span className="serif-accent italic text-[#b08968]">intelligenza.</span></h2>
-            <p className="text-neutral-400 text-xl mb-16 font-light leading-relaxed">Unisciti alla forza lavoro d'élite di domani. Inizia ad automatizzare la tua conoscenza e le tue azioni con agenti di precisione che fanno davvero il lavoro.</p>
+            <p className="text-neutral-400 text-xl mb-16 font-light leading-relaxed">Automatizza la tua conoscenza. Inizia oggi con agenti di precisione che eseguono davvero il lavoro per te.</p>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
               <Link to="/login" className="w-full sm:w-auto inline-flex items-center justify-center gap-3 px-12 py-6 bg-white text-[#171717] rounded-full text-lg font-semibold hover:bg-[#f9f8f6] transition-colors shadow-2xl">
                 Inizia gratis <ArrowRight size={22} />
@@ -611,7 +589,7 @@ function Footer() {
               </div>
               <span className="font-semibold text-xl text-[#171717] tracking-tight">Smart AI</span>
             </div>
-            <p className="text-base text-[#737373] font-light leading-relaxed mb-8">Uno spazio di lavoro specializzato per l'interazione intelligente. Costruiamo strumenti che onorano la complessità della ricerca umana e la velocità digitale.</p>
+            <p className="text-base text-[#737373] font-light leading-relaxed mb-8">Strumenti intelligenti che onorano la complessità della ricerca e la velocità del digitale.</p>
             <div className="flex gap-4">
                <a href="#" className="h-10 w-10 rounded-full border border-[#e5e5e5] bg-white flex items-center justify-center hover:bg-[#fcfbf9] transition-colors"><Github size={18} className="text-[#737373]"/></a>
                <a href="#" className="h-10 w-10 rounded-full border border-[#e5e5e5] bg-white flex items-center justify-center hover:bg-[#fcfbf9] transition-colors"><Linkedin size={18} className="text-[#737373]"/></a>
@@ -663,7 +641,6 @@ export default function LandingPage() {
           <PhilosophySection />
           <BentoFeatures />
           <VisualShowcase />
-          <ProductQuote />
           <HowItWorks />
           <SecuritySection />
           <FinalCTA />

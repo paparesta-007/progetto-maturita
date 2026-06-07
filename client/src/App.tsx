@@ -17,6 +17,8 @@ import SchemaPage from './pages/SchemaPage/SchemaPage';
 import { SchemaProvider } from './context/SchemaContext';
 import { initRemoteLogger } from './utils/remoteLogger';
 import QuizPage from './pages/ArtifactsPages/QuizPage';
+import TranslatorPage from './pages/ArtifactsPages/TranslatorPage';
+import FlashcardPage from './pages/ArtifactsPages/FlashcardPage';
 import KnowledgePage from './pages/static/Knowledge';
 import HelpPage from './pages/HelpPage';
 import RoutePlaceholderPage from './pages/RoutePlaceholderPage';
@@ -55,6 +57,8 @@ function App() {
                 <Route path='artifacts'>
                   <Route index element={<ArtifactsPage />} /> {/* /app/artifacts */}
                   <Route path='quiz' element={<QuizPage />} /> {/* /app/artifacts/quiz */}
+                  <Route path='translate' element={<TranslatorPage />} />
+                  <Route path='flashcards' element={<FlashcardPage />} />
                   <Route path='schema' element={<SchemaProvider><SchemaPage /></SchemaProvider>} />
                 </Route>
 

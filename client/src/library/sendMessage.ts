@@ -10,8 +10,10 @@ export interface ChatOptions {
     allowedCustomInstructions?: string | boolean;
     isTemporary?: boolean;
     reasoning?: string;
+    temperature?: number;
     attachedFiles?: any[];
     signal?: AbortSignal;
+    webSearch?: boolean;
 }
 
 export interface QuizQuestion {
@@ -86,8 +88,10 @@ export const sendNormalMessage = async (
                 tone,
                 allowedCustomInstructions,
                 reasoning,
+                temperature: options.temperature,
                 attachedFiles: options.attachedFiles,
-                isBetterView
+                isBetterView,
+                webSearch: options.webSearch
             }),
         });
 
@@ -275,8 +279,10 @@ export const sendStreamedMessage = async (
                 tone,
                 allowedCustomInstructions,
                 reasoning,
+                temperature: options.temperature,
                 attachedFiles: options.attachedFiles,
-                isBetterView
+                isBetterView,
+                webSearch: options.webSearch // Aggiunto flag webSearch
             }),
         });
 
@@ -485,55 +491,31 @@ export const sendCanvasMessage = async (
     }
 };
 
-// ============================================================
-// WEB SEARCH: Mock function — no server request
-// ============================================================
-export const sendWebSearchMessage = async (
-    message: string,
-    setMessageHistory: React.Dispatch<React.SetStateAction<any[]>>,
-    setLoading: React.Dispatch<React.SetStateAction<boolean>>,
-    model: any,
-    _messageHistory: any[]
-) => {
-    if (!message.trim()) return;
-
-    setMessageHistory((prev) => [...prev, { role: 'user', content: message }]);
-    setLoading(true);
-
-    try {
-        // Mock delay
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-
-        const modelLabel = model?.name ?? model?.name_id ?? "Unknown";
-        const mockResponse = `**[Web Search Mock]**\n\nSearching the web for: "${message}"\n\n**Results:**\n1. *Example result 1* — This is a mock search result.\n2. *Example result 2* — Web search integration coming soon.\n3. *Example result 3* — Placeholder data.\n\n> Real web search will be connected to a backend endpoint.`;
-
-        setMessageHistory((prev) => [
-            ...prev,
-            { role: 'bot', content: mockResponse, usage: { total_tokens: 0 }, model: modelLabel },
-        ]);
-    } catch (error) {
-        console.error("Errore sendWebSearchMessage:", error);
-        setMessageHistory((prev) => [...prev, { role: 'bot', content: "Errore nella funzionalità Web Search.", model: "System" }]);
-    } finally {
-        setLoading(false);
-    }
-};
-
 export const SendQuizMessage = async (
     message: string,
     mode: string,
+    temperature?: number,
+    modelName?: string
 ): Promise<QuizResponse> => {
     if (!message.trim()) {
         return { success: false, data: [], error: "Inserisci un argomento prima di generare il quiz." };
     }
 
     try {
-        const response = await fetch("http://localhost:3000/api/quiz/generate", {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+
+        const response = await fetch("http://localhost:3000/api/artifacts/quiz/generate", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
             body: JSON.stringify({
                 topic: message,
-                mode
+                mode,
+                temperature,
+                modelName
             }),
         });
 
@@ -555,4 +537,46 @@ export const SendQuizMessage = async (
             error: error?.message || "Errore durante la generazione del quiz."
         };
     }
-}
+};
+
+export const fetchQuizExplanation = async (
+    question: QuizQuestion,
+    selectedOption: string,
+    modelName: string,
+    onChunk: (chunk: string) => void
+) => {
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+
+        const response = await fetch("http://localhost:3000/api/artifacts/quiz/explain", {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                domanda: question.domanda,
+                opzioni: question.opzioni,
+                rispostaCorretta: question.rispostaCorretta,
+                selectedOption,
+                modelName
+            }),
+        });
+
+        if (!response.ok || !response.body) throw new Error("Errore durante la spiegazione");
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            onChunk(chunk);
+        }
+    } catch (error) {
+        console.error("Errore fetchQuizExplanation:", error);
+        onChunk("⚠️ Errore nel caricamento della spiegazione.");
+    }
+};

@@ -1,0 +1,1715 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <title>SmartAI — Elaborato di Maturità</title>
+    <!-- Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600;1,700;1,800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- Mermaid.js -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <script>
+        mermaid.initialize({
+            startOnLoad: true,
+            theme: 'neutral',
+            securityLevel: 'loose',
+            flowchart: { useMaxWidth: true, htmlLabels: true }
+        });
+    </script>
+
+    <!-- MathJax for rendering equations -->
+    <script>
+        window.MathJax = {
+            tex: {
+                inlineMath: [['$', '$'], ['\\(', '\\)']],
+                displayMath: [['$$', '$$'], ['\\[', '\\]']],
+                processEscapes: true
+            },
+            options: {
+                ignoreHtmlClass: 'tex2jax_ignore',
+                processHtmlClass: 'tex2jax_process'
+            }
+        };
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js" id="MathJax-script" async></script>
+
+    <style>
+        :root {
+            --primary: #5d4037;
+            --primary-hover: #3e2723;
+            --primary-light: rgba(93, 64, 55, 0.1);
+            --text-main: #2c2c2c;
+            --text-muted: #5f5f5f;
+            --bg-body: #f4f1ea;
+            --bg-card: #fffdfa;
+            --border-color: #d1cfc7;
+            --sidebar-width: 300px;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            font-size: 11pt;
+            line-height: 1.6;
+            color: var(--text-main);
+            background-color: var(--bg-body);
+            margin: 0;
+            padding: 0;
+        }
+
+        /* Layout Grid */
+        .layout-container {
+            display: flex;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Sidebar styling */
+        .sidebar {
+            width: var(--sidebar-width);
+            height: 75vh;
+            position: fixed;
+            top: 12.5vh;
+            left: 20px;
+            background: var(--bg-card);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 40px 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            z-index: 100;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--primary-light) transparent;
+        }
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .sidebar::-webkit-scrollbar-thumb {
+            background-color: var(--primary-light);
+            border-radius: 10px;
+        }
+
+        .sidebar-header {
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .sidebar-header h3 {
+            font-family: 'EB Garamond', serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin: 0 0 8px 0;
+            color: var(--text-main);
+        }
+
+        /* Reading Progress Bar */
+        .progress-container {
+            width: 100%;
+            height: 4px;
+            background: #e2e8f0;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: var(--primary);
+            transition: width 0.1s ease;
+        }
+
+        /* Table of Contents Navigation */
+        .toc-nav {
+            flex-grow: 1;
+        }
+
+        .toc-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .toc-item {
+            margin: 0;
+            padding: 0;
+        }
+
+        .toc-link {
+            display: block;
+            padding: 8px 12px;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-family: 'Inter', sans-serif;
+            font-size: 0.9rem;
+            font-weight: 500;
+            border-radius: 6px;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border-left: 2px solid transparent;
+        }
+
+        .toc-link:hover {
+            color: var(--primary);
+            background-color: var(--primary-light);
+            text-decoration: none;
+            padding-left: 16px;
+        }
+
+        .toc-link.active {
+            color: var(--primary);
+            background-color: var(--primary-light);
+            font-weight: 600;
+            border-left-color: var(--primary);
+            padding-left: 16px;
+        }
+
+        /* Indentation for subchapters (h2 items) */
+        .toc-item-h2 {
+            padding-left: 16px;
+        }
+        .toc-item-h2 .toc-link {
+            font-size: 0.82rem;
+            font-weight: 400;
+        }
+
+        /* Main Content Container */
+        .main-content {
+            margin-left: calc(var(--sidebar-width) + 40px);
+            flex-grow: 1;
+            padding: 40px 60px;
+            max-width: calc(100% - var(--sidebar-width) - 40px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 40px; /* Space between pages */
+        }
+
+        .document-card {
+            background-color: var(--bg-card);
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+            border-radius: 2px;
+            padding: 2.5cm 2cm;
+            max-width: 210mm;
+            width: 100%;
+            min-height: 297mm;
+            position: relative;
+            /* Allow elements to avoid breaking across visual pages */
+            break-inside: auto;
+        }
+
+        /* Page Counter */
+        .page-counter {
+            position: fixed;
+            bottom: 30px;
+            right: 40px;
+            background: #fffdfa;
+            border: 2px solid #5d4037;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-family: 'EB Garamond', serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #5d4037;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+        }
+        .page-counter:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+        }
+
+        /* Prevent splitting of important blocks */
+        h1, h2, h3, .alert-box, .mermaid, img, table, pre {
+            break-inside: avoid;
+            page-break-inside: avoid;
+        }
+
+        /* Document Headings */
+        h1, h2, h3, h4, h5, h6 {
+            font-family: 'EB Garamond', serif;
+            color: var(--text-main);
+            margin-top: 2em;
+            margin-bottom: 0.8em;
+            font-weight: 700;
+            line-height: 1.2;
+            scroll-margin-top: 40px;
+        }
+
+        h1 {
+            font-size: 2.6em;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 12px;
+            margin-top: 1em;
+        }
+
+        h2 {
+            font-size: 1.8em;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+            margin-top: 1.8em;
+        }
+
+        h3 {
+            font-size: 1.4em;
+            margin-top: 1.5em;
+        }
+
+        p {
+            margin-top: 0;
+            margin-bottom: 1.5em;
+            text-align: justify;
+            color: #374151; /* Darker gray for better accessibility */
+            font-weight: 400;
+        }
+
+        a {
+            color: var(--primary);
+            text-decoration: none; /* Fixed: removed global underline */
+            transition: color 0.15s ease;
+        }
+        a:hover {
+            color: var(--primary-hover);
+            text-decoration: underline;
+            text-underline-offset: 2px;
+        }
+        
+        /* Code styling */
+        pre {
+            background-color: #fcfaf7;
+            border: 1px solid var(--border-color);
+            border-radius: 4px;
+            padding: 18px 22px;
+            overflow-x: auto;
+            margin: 1.8em 0;
+            page-break-inside: avoid;
+            font-size: 0.95em;
+        }
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9em;
+            background-color: #f1f1f1;
+            padding: 2px 4px;
+            border-radius: 3px;
+            color: #d32f2f;
+        }
+        pre code {
+            background-color: transparent;
+            padding: 0;
+            color: #333;
+        }
+
+        /* Alert boxes styling */
+        .alert-box {
+            display: flex;
+            gap: 15px;
+            margin: 1.8em 0;
+            padding: 20px;
+            border-radius: 4px;
+            border: 1px solid var(--border-color);
+            border-left: 4px solid;
+            page-break-inside: avoid;
+            background-color: #fffdfa;
+        }
+        .alert-note { border-left-color: #5d4037; }
+        .alert-tip { border-left-color: #2e7d32; }
+        .alert-important { border-left-color: #ef6c00; }
+        .alert-warning { border-left-color: #c62828; }
+        .alert-caution { border-left-color: #7b1fa2; }
+
+        /* Table styling */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 2em 0;
+            font-size: 10pt;
+            page-break-inside: avoid;
+        }
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f9f8f6;
+            font-weight: 700;
+            font-family: 'EB Garamond', serif;
+            font-size: 1.1em;
+        }
+
+        /* Image and Mermaid styles */
+        .mermaid {
+            display: flex;
+            justify-content: center;
+            margin: 2.5em 0;
+        }
+        img {
+            display: block;
+            max-width: 90%;
+            height: auto;
+            margin: 2.5em auto;
+            border: 1px solid var(--border-color);
+            padding: 5px;
+            background: white;
+        }
+        small {
+            display: block;
+            text-align: center;
+            color: var(--text-muted);
+            font-size: 0.9em;
+            margin-top: -1.5em;
+            margin-bottom: 2.5em;
+            font-style: italic;
+        }
+        hr {
+            border: 0;
+            border-top: 1px solid var(--border-color);
+            margin: 3.5em 0;
+        }
+
+        /* Mobile Header Title */
+        .mobile-header-title {
+            font-family: 'EB Garamond', serif;
+            font-size: 1.1rem;
+            font-weight: 700;
+        }
+
+        .toc-toggle-btn {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .toc-toggle-btn:active {
+            transform: scale(0.97);
+        }
+
+        /* Responsive Layout styles */
+        @media (max-width: 1100px) {
+            .sidebar {
+                height: 100vh;
+                top: 0;
+                left: 0;
+                border-radius: 0;
+                transform: translateX(-100%);
+                transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                box-shadow: 10px 0 30px rgba(0,0,0,0.05);
+            }
+            
+            .sidebar.open {
+                transform: translateX(0);
+            }
+
+            .mobile-header {
+                display: flex;
+            }
+
+            .main-content {
+                margin-left: 0;
+                max-width: 100%;
+                padding: 80px 20px 40px 20px;
+            }
+
+            .document-card {
+                padding: 30px 24px;
+                border-radius: 12px;
+                border: none;
+                box-shadow: none;
+                background-color: transparent;
+            }
+            
+            /* Sidebar overlay for mobile when open */
+            .sidebar-overlay {
+                display: none;
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100vw;
+                height: 100vh;
+                background: rgba(15, 23, 42, 0.3);
+                backdrop-filter: blur(2px);
+                z-index: 90;
+            }
+
+            .sidebar-overlay.active {
+                display: block;
+            }
+        }
+
+        /* Print Media Setup */
+        @media print {
+            @page {
+                size: A4;
+                margin: 2cm;
+            }
+            body {
+                background-color: #doc;
+                font-size: 11pt;
+            }
+            .sidebar, .mobile-header, .sidebar-overlay {
+                display: none !important;
+            }
+            .main-content {
+                margin-left: 0 !important;
+                max-width: 100% !important;
+                padding: 0 !important;
+            }
+            .document-card {
+                border: none !important;
+                box-shadow: none !important;
+                padding: 0 !important;
+                background-color: transparent !important;
+            }
+            h1, h2, h3 {
+                page-break-after: avoid;
+                break-after: avoid;
+            }
+            pre, blockquote, .alert-box, table, tr, img, .mermaid {
+                page-break-inside: avoid;
+                break-inside: avoid;
+            }
+        }
+    </style>
+</head>
+<body>
+  
+
+    <!-- Sidebar Overlay for Mobile -->
+    <div class="sidebar-overlay" id="mobile-overlay"></div>
+
+    <div class="layout-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar" id="sidebar-nav">
+            <div class="sidebar-header">
+                <h3>Indice Tesi</h3>
+                <span style="font-family: 'EB Garamond', serif; font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">SmartAI — Tommaso Paparesta</span>
+                <div class="progress-container">
+                    <div class="progress-bar" id="reading-progress"></div>
+                </div>
+            </div>
+            <nav class="toc-nav">
+                <ul class="toc-list" id="toc-container">
+                    <!-- TOC elements will be auto-generated here -->
+                </ul>
+            </nav>
+        </aside>
+
+        <!-- Main Document Area -->
+        <main class="main-content">
+            <article class="document-card">
+                <h1>SmartAI - Indice dell'Elaborato</h1>
+<p><strong>Studente:</strong> Tommaso Chuxiao Paparesta
+    <br>
+<strong>Classe:</strong> 5B Informatica
+    <br>
+<strong>Progetto:</strong> SmartAI - L'AI che serve davvero</p>
+<h2>Mappa dell'Elaborato</h2>
+<p><strong>Capitolo 1 — Introduzione</strong>
+Perché l'IA, nel modo in cui la utilizziamo oggi, non sfrutta appieno il suo potenziale e come SmartAI si propone di colmare questo divario, introducendo funzionalità pensate per valorizzarne le capacità.</p>
+<p><strong>Capitolo 2 — Architettura Generale</strong>
+Panoramica delle tecnologie adottate per la realizzazione del progetto: le dipendenze utilizzate, le scelte architetturali compiute e le motivazioni che le hanno guidate.</p>
+<p><strong>Capitolo 3 — Autenticazione e Sicurezza</strong>
+Introduzione al protocollo OAuth2 e descrizione dell'implementazione dell'autenticazione tramite Supabase Auth, con integrazione dei provider Google e GitHub.</p>
+<p><strong>Capitolo 4 — Chat e Interazione con i Modelli LLM</strong>
+Come vengono gestite le conversazioni, strutturati i prompt e implementato lo streaming NDJSON per ridurre la latenza percepita dall'utente.</p>
+<p><strong>Capitolo 5 — Gestione della Persistenza</strong>
+Come vengono salvate le chat, come si ottimizza lo storage e come è stata implementata la logica di salvataggio e recupero delle conversazioni.</p>
+<p><strong>Capitolo 6 — RAG: Retrieval Augmented Generation</strong>
+Descrizione della pipeline RAG integrata nel progetto, con focus sull'embedding dei documenti, la ricerca semantica e la costruzione del prompt da inviare all'LLM.</p>
+<p><strong>Capitolo 7 — Generative UI</strong>
+Funzionamento del sistema di Generative UI, in cui l'AI genera componenti grafici interattivi in tempo reale, adattandosi dinamicamente al contesto della conversazione.</p>
+<p><strong>Capitolo 8 — Integrazione Calendario</strong>
+Come SmartAI si integra con Google Calendar per automatizzare la gestione degli appuntamenti e delle scadenze.</p>
+<p><strong>Capitolo 9 — Strumenti di Apprendimento: Mindmap, Quiz, Flashcard e Schemi</strong>
+Come SmartAI implementa strumenti didattici come mappe mentali, quiz, flashcard e schemi riassuntivi per supportare un apprendimento più efficace e strutturato.</p>
+<p><strong>Capitolo 10 — Supporto e Manutenibilità</strong>
+Gestione del sistema di ticketing, dei log applicativi e degli audit log per garantire tracciabilità completa delle operazioni.</p>
+<p><strong>Capitolo 11 — Infrastruttura e Database</strong>
+Struttura del database su Supabase: tabelle, relazioni e scelte progettuali alla base dell'intera infrastruttura dati.</p>
+<p><strong>Capitolo 12 — Analisi delle Performance</strong>
+Dati alla mano: velocità del sistema, costo per singola interazione e le strategie adottate per ridurre la latenza, ottimizzare l'uso dei token e contenere i costi operativi.</p>
+<hr />
+<h1>01 - Introduzione</h1>
+<p><strong>SmartAI</strong> è una piattaforma pensata per semplificare il lavoro con informazioni, documenti e strumenti digitali. In questo capitolo vengono presentati il contesto in cui nasce il progetto, i suoi obiettivi e le tecnologie usate per realizzarlo.</p>
+<h2>1.1 Contesto tecnologico</h2>
+<p>Negli ultimi anni, l’intelligenza artificiale sta passando dai semplici chatbot a sistemi più completi, capaci non solo di rispondere, ma anche di eseguire azioni e supportare l’utente in modo più attivo.</p>
+<p>Tre tendenze hanno influenzato lo sviluppo di SmartAI:</p>
+<ol>
+<li><strong>Generative UI</strong></li>
+</ol>
+<p>Le interfacce non restano fisse, ma possono cambiare in base al tipo di contenuto richiesto, mostrando tabelle, grafici o diagrammi quando serve.</p>
+<ol>
+<li><strong>Multi-Model Orchestration</strong></li>
+</ol>
+<p>Non si usa un solo modello AI, ma più modelli diversi scelti in base al compito da svolgere, così da bilanciare qualità, velocità e costi.</p>
+<ol>
+<li><strong>Integrazione con gli strumenti dell’utente</strong></li>
+</ol>
+<p>L’AI può interagire con calendario, documenti e preferenze personali, diventando un supporto concreto nelle attività quotidiane.</p>
+<div class="alert-box alert-note">
+                <div class="alert-icon">ℹ️</div>
+                <div class="alert-content"><p><strong>Evoluzione del RAG</strong>: oggi la ricerca nei documenti non si basa solo sulle parole chiave, ma anche sulla ricerca semantica, che permette di trovare informazioni più pertinenti.</p></div>
+            </div>
+<h2>1.2 Obiettivi di SmartAI</h2>
+<p>SmartAI nasce con l’obiettivo di unire queste funzioni in un’unica piattaforma semplice da usare e personalizzabile.</p>
+<p>Gli obiettivi principali sono:</p>
+<ul>
+<li><strong>Ridurre i tempi di lavoro</strong> nella lettura dei documenti e nella gestione delle attività.</li>
+<li><strong>Adattare l’interfaccia</strong> al tipo di contenuto richiesto, mostrando il formato più utile.</li>
+<li><strong>Supportare lo studio</strong>, ad esempio con quiz automatici e mappe concettuali create a partire dai documenti.</li>
+</ul>
+<h2>1.3 I tre pilastri del progetto</h2>
+<p>Il progetto si basa su tre elementi principali:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Pilastro</th>
+<th style="text-align: left;">Descrizione</th>
+<th style="text-align: left;">Risultato</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><strong>Generative UI</strong></td>
+<td style="text-align: left;">Trasforma l’output dell’AI in componenti visivi interattivi.</td>
+<td style="text-align: left;">Interfaccia più chiara e dinamica.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Didactic Engine</strong></td>
+<td style="text-align: left;">Mappe concettuali, Schemi, Quiz, Flashcards, Riassunti</td>
+<td style="text-align: left;">Strumenti di studio avanzati.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>RAG evoluto</strong></td>
+<td style="text-align: left;">Analizza PDF e documenti con ricerca semantica.</td>
+<td style="text-align: left;">Risposte più precise e legate ai contenuti reali.</td>
+</tr>
+</tbody>
+</table>
+<h2>1.4 Stack tecnologico</h2>
+<p>Per costruire SmartAI sono state usate tecnologie moderne, scelte per garantire velocità, stabilità e facilità di manutenzione.</p>
+<h3>Frontend e interfaccia</h3>
+<ul>
+<li><strong>React 19</strong>: usato per creare l’interfaccia utente.</li>
+<li><strong>Vite</strong>: serve per uno sviluppo rapido e fluido.</li>
+<li><strong>CSS moderno</strong>: usato per definire uno stile personalizzato e ordinato.</li>
+</ul>
+<h3>Backend e gestione delle richieste</h3>
+<ul>
+<li><strong>Express 5 (Node.js)</strong>: gestisce le API e il flusso dei dati tra client e server.</li>
+<li><strong>OpenRouter</strong>: permette di usare diversi modelli AI tramite una sola interfaccia.</li>
+</ul>
+<h3>Dati e infrastruttura</h3>
+<ul>
+<li><strong>Supabase</strong>: usato per:</li>
+<li>autenticazione degli utenti,</li>
+<li>salvataggio dei dati,</li>
+<li>gestione delle conversazioni,</li>
+<li>supporto alla ricerca semantica tramite <code>pgvector</code>.</li>
+</ul>
+<hr />
+<h1>02 - Architettura Generale</h1>
+<p>L'architettura di <strong>SmartAI</strong> è stata progettata seguendo i principi di modularità, scalabilità e separazione delle responsabilità (<em>Separation of Concerns</em>). Il sistema si basa su un modello <strong>Client-Server</strong> moderno, organizzato in una struttura <strong>Monorepo</strong> — un singolo repository che ospita più progetti distinti — che consente una gestione centralizzata dell'intero ciclo di vita del software.</p>
+<h2>2.1 Macro-Architettura Monorepo</h2>
+<p>Il progetto adotta una struttura Monorepo coordinata tramite <strong>npm workspaces</strong>, che permette di mantenere frontend e backend in un unico repository pur conservando la loro indipendenza operativa.</p>
+<h3>Struttura delle Cartelle</h3>
+<ul>
+<li><strong><code>/client</code></strong>: Applicazione Single Page Application (SPA) costruita con React 19.</li>
+<li><strong><code>/server</code></strong>: API Gateway e motore di orchestrazione in Node.js con Express 5.</li>
+<li><strong><code>/docs</code></strong>: Documentazione tecnica completa, inclusa questa tesina.</li>
+</ul>
+<h3>Schema della Codebase</h3>
+<pre><code class="language-text">smart-ai/
+├── client/                  # Frontend React 19
+│   └── src/
+│       ├── components/      # Componenti UI atomici e riutilizzabili
+│       ├── context/         # Gestione dello stato globale
+│       ├── pages/           # Viste principali dell'applicazione
+│       ├── services/        # Client per le chiamate API
+│       └── library/         # Componenti per la Generative UI
+├── server/                  # Backend Express 5
+│   ├── server.ts            # Entry point dell'applicazione
+│   ├── routes/              # Definizione degli endpoint API
+│   ├── services/            # Logica di business, AI e RAG
+│   ├── middleware/          # Gestione auth, log e audit
+│   └── utils/               # Helper e funzioni di utilità
+└── docs/                    # Documentazione tecnica e tesina
+</code></pre>
+<h3>Gestione dei Processi in Sviluppo</h3>
+<p>Per lo sviluppo locale viene utilizzata la libreria <code>concurrently</code>, che consente di avviare simultaneamente il server Vite (frontend) e il processo TSX (backend) con un unico comando, centralizzando tutti i log in un'unica console.</p>
+<h2>2.2 Frontend: L'Interfaccia Intelligente (React 19)</h2>
+<p>Il client è costruito su <strong>React 19</strong>, sfruttando le ultime ottimizzazioni nel rendering. La gestione dello stato globale è affidata alla <strong>Context API</strong>, organizzata in provider specializzati:</p>
+<ul>
+<li><strong><code>AuthContext</code></strong>: Gestisce lo stato della sessione e l'integrazione con Supabase Auth.</li>
+<li><strong><code>AppContext</code></strong>: Coordina le impostazioni globali dell'applicazione.</li>
+<li><strong><code>SchemaContext</code> &amp; <code>CalendarContext</code></strong>: Gestiscono gli stati complessi delle funzionalità verticali, rispettivamente le mappe concettuali e il calendario.</li>
+</ul>
+<h3>Routing e Protezione delle Rotte</h3>
+<p>La navigazione è gestita da <code>react-router-dom</code> (v6), con una struttura di rotte nidificate:</p>
+<ol>
+<li><strong>Rotte Pubbliche</strong>: Landing page, Help, Knowledge base — accessibili da chiunque.</li>
+<li><strong>Rotte Protette</strong>: Accessibili solo previa autenticazione. Un componente <code>ProtectedRoute</code> verifica la validità del JWT rilasciato da Supabase prima di consentire l'accesso, garantendo la sicurezza dei dati sensibili.</li>
+</ol>
+<h2>2.3 Backend: Il Motore di Orchestrazione (Express 5)</h2>
+<p>Il server funge da <strong>API Gateway</strong> e orchestratore dei servizi AI. L'adozione di <strong>Express 5</strong> garantisce una gestione nativa e più fluida delle rotte asincrone basate su Promise. La persistenza è delegata a <strong>Supabase</strong>, una piattaforma BaaS (<em>Backend as a Service</em>) che fornisce database PostgreSQL, autenticazione, storage e API in tempo reale.</p>
+<h3>Middleware Stack</h3>
+<p>Ogni richiesta in ingresso attraversa una pipeline di middleware nell'ordine seguente:</p>
+<ol>
+<li><strong>CORS &amp; JSON Parsing</strong>: Configurazione della sicurezza cross-origin e limite del body a 10 MB.</li>
+<li><strong>HTTP Logging</strong>: Ogni chiamata viene registrata nel sistema di audit con metodo, percorso, IP e tempo di risposta.</li>
+<li><strong>Auth Middleware</strong>: Verifica la validità del token Supabase prima di inoltrare la richiesta alle rotte private.</li>
+</ol>
+<h3>Pipeline AI e Streaming</h3>
+<p>A differenza delle API tradizionali, SmartAI implementa lo <strong>streaming NDJSON</strong>. Quando l'utente invia un messaggio, il server non attende la risposta completa dell'LLM, ma apre un canale di streaming diretto verso il client. Questo approccio riduce drasticamente la latenza percepita, misurata come <em>Time To First Token (TTFT)</em>.</p>
+<h2>2.4 Persistenza e Integrazioni Esterne</h2>
+<p>La persistenza e l'intelligenza del sistema sono delegate a due infrastrutture esterne:</p>
+<ol>
+<li><strong>Supabase (Ecosistema PostgreSQL)</strong>:</li>
+<li><strong>Vector Store</strong>: L'estensione <code>pgvector</code> memorizza gli embeddings dei documenti e abilita la ricerca semantica per il sistema RAG.</li>
+<li>
+<p><strong>Database Relazionale</strong>: Gestione di utenti, conversazioni, messaggi e metadati applicativi.</p>
+</li>
+<li>
+<p><strong>OpenRouter (AI Gateway)</strong>:</p>
+</li>
+<li>Funziona come strato di astrazione sopra decine di modelli (OpenAI, Anthropic, Google, Meta e altri).</li>
+<li>Permette di cambiare il modello in uso dinamicamente, senza modificare il codice del server.</li>
+</ol>
+<h2>2.5 Diagrammi Architetturali</h2>
+<h3>Architettura di Sistema</h3>
+<div class="mermaid">%%{init: {'theme': 'neutral', 'themeVariables': { 'primaryColor': '#3b82f6', 'edgeColor': '#64748b' }}}%%
+graph TD
+    User(["Utente"]) <--> Client["Frontend — React 19"]
+    Client <--> Server["Backend — Express 5"]
+
+    subgraph "Cloud Services"
+        Server <--> Supabase[("Supabase: Auth / DB / Vector")]
+        Server <--> OpenRouter["OpenRouter: LLM Gateway"]
+    end
+
+    Supabase <--> VectorStore[("pgvector")]
+    OpenRouter <--> Models(["GPT-4, Claude, Gemini..."])</div>
+<h2>2.6 Sicurezza e Gestione dei Log</h2>
+<p>Un componente critico dell'architettura è il sistema di <strong>Unified Audit Log</strong>, che centralizza tre tipologie di informazioni:</p>
+<ol>
+<li><strong>Log di Sistema</strong>: Avvio del server ed errori critici.</li>
+<li><strong>Log HTTP</strong>: Tracciamento di ogni richiesta in entrata (metodo, path, IP, tempo di risposta).</li>
+<li><strong>Log del Client</strong>: Errori JavaScript generati nel browser dell'utente, trasmessi al server tramite l'endpoint <code>/logs</code>.</li>
+</ol>
+<p>Questa struttura garantisce che ogni malfunzionamento sia tracciabile, rendendo la piattaforma robusta e pronta per un utilizzo in produzione.</p>
+<h2>2.7 Appendice: Dipendenze del Progetto</h2>
+<h3>Frontend (Client)</h3>
+<ul>
+<li><strong>React 19 &amp; Vite</strong>: Core engine e tool di build.</li>
+<li><strong>Supabase JS</strong>: Integrazione con database e autenticazione.</li>
+<li><strong>Framer Motion</strong>: Animazioni e micro-interazioni fluide.</li>
+<li><strong>Lucide React &amp; Phosphor Icons</strong>: Set di icone vettoriali.</li>
+<li><strong>Marked &amp; KaTeX</strong>: Rendering di Markdown e formule matematiche.</li>
+<li><strong>Zod</strong>: Validazione degli schemi dati a runtime.</li>
+</ul>
+<h3>Backend (Server)</h3>
+<ul>
+<li><strong>Express 5</strong>: Framework web per Node.js.</li>
+<li><strong>Vercel AI SDK &amp; OpenRouter</strong>: Orchestrazione multi-modello.</li>
+<li><strong>Supabase JS</strong>: Gestione lato server dei dati e integrazione con <code>pgvector</code>.</li>
+<li><strong>Multer &amp; Express Fileupload</strong>: Gestione dell'upload di file PDF.</li>
+<li><strong>PDF-parse</strong>: Estrazione del testo dai documenti per il sistema RAG.</li>
+<li><strong>TSX</strong>: Esecuzione nativa di TypeScript in ambiente Node.js.</li>
+</ul>
+<hr />
+<h1>03 - Autenticazione e Sicurezza</h1>
+<p>Il sistema di autenticazione di <strong>Smart AI</strong> è basato su <strong>Supabase Auth</strong>, una soluzione robusta che gestisce l'intero ciclo di vita dell'utente, dalla registrazione alla gestione delle sessioni sicure tramite JWT (JSON Web Tokens).</p>
+<h2>3.1 Funzionamento del Sistema</h2>
+
+<p>L'autenticazione segue un approccio moderno e decentralizzato:</p>
+<ol>
+    <li><strong>Gestione Sessione</strong>: Al momento del login, Supabase rilascia un JWT che viene memorizzato in modo sicuro nel browser dell'utente.</li>
+    <li><strong>Protezione Frontend</strong>: Le rotte sensibili dell'applicazione (Chat, Calendario, Documenti) sono avvolte in un componente <code>ProtectedRoute</code> che reindirizza gli utenti non autenticati alla pagina di login.</li>
+    <li><strong>Autorizzazione API</strong>: Ogni richiesta inviata al backend include il token JWT nell'header <code>Authorization</code>. Il server verifica la validità del token prima di elaborare la richiesta.</li>
+    <li><strong>Social Login &amp; Provider</strong>: Il sistema supporta l'accesso tramite <strong>Google</strong> e <strong>GitHub</strong>. Grazie alla configurazione di Supabase, se un utente accede con diversi provider utilizzando la stessa email, gli account vengono automaticamente collegati, evitando la creazione di duplicati e garantendo l'accesso ai medesimi dati.</li>
+</ol>
+<h2>3.2 Focus: Cos'è un JWT?</h2>
+<p>Per capire meglio come funziona la sicurezza dietro le quinte, possiamo immaginare il <strong>JWT (JSON Web Token)</strong> come un <strong>braccialetto elettronico</strong> che ricevi all'ingresso di un club o di un festival:</p>
+<ol>
+<li><strong>Il Check-in</strong>: Quando fai il login, il sistema verifica chi sei e ti consegna questo "braccialetto" digitale.</li>
+<li><strong>Accesso Senza Domande</strong>: Da quel momento in poi, ogni volta che chiedi di vedere i tuoi messaggi o i tuoi documenti, non devi ripetere email e password. Ti basta mostrare il braccialetto (il token) e il server ti lascia passare immediatamente.</li>
+<li><strong>Sicurezza Garantita</strong>: Il braccialetto è firmato digitalmente. Se qualcuno provasse a modificarlo (ad esempio per fingere di essere un altro utente), la firma risulterebbe alterata e il sistema lo rifiuterebbe all'istante.</li>
+</ol>
+<p>Questo metodo rende l'applicazione <strong>estremamente veloce</strong> e <strong>sicura</strong>, perché il server sa chi sei semplicemente guardando il token, senza dover andare a cercare ogni volta i tuoi dati nel database principale.</p>
+<h2>3.3 Interfaccia di Accesso</h2>
+<p>Di seguito è rappresentata la struttura della pagina di login dell'applicazione:</p>
+<h2>3.4 Flusso di Autenticazione (UML)</h2>
+<p>Lo schema descrive l'interazione tra l'utente, il client, Supabase e il server durante il processo di autenticazione e accesso ai dati protetti.</p>
+<div class="mermaid">sequenceDiagram
+    autonumber
+    participant U as Utente
+    participant C as Client (React)
+    participant S as Supabase (Auth)
+    participant B as Backend (Express)
+
+    U->>C: Inserisce Credenziali
+    C->>S: Richiesta Login (Email/Pass)
+    S-->>C: Ritorna JWT + Sessione
+    Note over C: Memorizza Token in SessionStorage
+
+    U->>C: Accede a rotta protetta /chat
+    C->>B: Richiesta API (+ Authorization Header)
+    B->>B: Verifica validità JWT
+    alt Token Valido
+        B-->>C: Ritorna Dati (200 OK)
+        C-->>U: Mostra Interfaccia Chat
+    else Token Non Valido / Scaduto
+        B-->>C: Errore Auth (401 Unauthorized)
+        C->>U: Redirezione a Login
+    end</div>
+<hr />
+<h1>04 - Chat e Interazione con LLM</h1>
+<p>Il modulo di chat consente di interagire con decine di modelli diversi — OpenAI, Anthropic, Google Gemini, Meta Llama — attraverso un'unica interfaccia unificata: <strong>OpenRouter</strong>.</p>
+<h2>4.1 Architettura della Chat</h2>
+<p>Il sistema è strutturato secondo un modello a <strong>Gateway</strong>, pensato per garantire sicurezza e flessibilità:</p>
+<ol>
+<li><strong>Frontend (React)</strong>: Gestisce lo stato della conversazione, il rendering del Markdown e la selezione dinamica del modello da parte dell'utente.</li>
+<li><strong>Backend (Express)</strong>: Agisce da intermediario sicuro (proxy). Le chiavi API non vengono mai esposte al client: il server riceve la richiesta, verifica l'autenticazione e inoltra la chiamata ai provider.</li>
+<li><strong>OpenRouter</strong>: Funziona da aggregatore universale, offrendo un'unica implementazione per parlare con modelli che avrebbero altrimenti API differenti tra loro.</li>
+</ol>
+<h2>4.2 Caratteristiche Tecniche</h2>
+<h3>1. Risposta in Streaming (SSE)</h3>
+<p>Per migliorare l'esperienza utente, la chat sfrutta i <strong>Server-Sent Events (SSE)</strong>. Invece di attendere che il modello generi l'intera risposta — operazione che può richiedere diversi secondi — il testo viene visualizzato parola per parola nel momento stesso in cui viene prodotto, esattamente come si vede su ChatGPT o Claude.</p>
+<h3>2. Selezione Dinamica del Modello</h3>
+<p>Tramite un servizio di recupero metadati (<code>getModels</code>), l'utente può scegliere il modello più adatto al proprio compito:</p>
+<ul>
+<li><strong>Modelli Veloci</strong>: Ideali per correzioni grammaticali o risposte rapide (es. GPT-5.5).</li>
+<li><strong>Modelli Potenti</strong>: Ottimali per programmazione o analisi complessa (es. Claude Opus 4.7).</li>
+<li><strong>Modelli di Ragionamento</strong>: Pensati per problemi logico-matematici (es. Gemini 3.1 Pro).</li>
+</ul>
+<h3>3. Gestione del Reasoning Effort</h3>
+<p>I modelli di nuova generazione supportano un meccanismo di "ragionamento interno" prima di rispondere. Il sistema espone il parametro <code>reasoning_effort</code>, che permette di regolare quanto tempo il modello dedica a "pensare" prima di produrre l'output, trovando il giusto equilibrio tra precisione e velocità di risposta.</p>
+<h2>4.3 Flusso di Comunicazione (UML)</h2>
+<p>Il diagramma illustra il percorso di un messaggio, dalla digitazione dell'utente fino alla ricezione della risposta in streaming.</p>
+<div class="mermaid">sequenceDiagram
+    autonumber
+    participant U as Utente
+    participant C as Client (React)
+    participant S as Server (Express)
+    participant OR as OpenRouter API
+
+    U->>C: Digita un messaggio e preme Invio
+    C->>S: POST /api/chat (Messaggio + Modello selezionato)
+    S->>S: Validazione JWT e controllo crediti
+    S->>OR: Inoltro della richiesta (streaming: true)
+
+    loop Streaming della risposta
+        OR-->>S: Chunk di testo (data: {...})
+        S-->>C: Stream SSE verso il browser
+        C->>C: Aggiornamento dell'UI in tempo reale
+    end
+
+    Note over C,OR: La connessione rimane aperta fino al completamento della generazione</div>
+<h2>4.4 Vantaggi dell'Approccio Centralizzato</h2>
+<ul>
+<li><strong>Ridondanza</strong>: Se un provider è temporaneamente non disponibile (es. OpenAI), l'utente può passare immediatamente a un altro (es. Anthropic), senza interruzioni.</li>
+<li><strong>Ottimizzazione dei Costi</strong>: È possibile scegliere modelli più economici per task semplici, riservando quelli più potenti — e costosi — alle operazioni che lo richiedono davvero.</li>
+<li><strong>Facilità di Aggiornamento</strong>: L'aggiunta di un nuovo modello sul mercato non richiede alcuna modifica al codice del frontend.</li>
+</ul>
+<hr />
+<h1>05 - Gestione della Persistenza</h1>
+<p>Perché una conversazione con un'IA sia utile, è fondamentale che il sistema ricordi i messaggi precedenti. In <strong>SmartAI</strong> questa funzionalità è gestita da un sistema di persistenza basato su <strong>Supabase (PostgreSQL)</strong>, che consente all'utente di riprendere le proprie chat da qualsiasi dispositivo in qualsiasi momento.</p>
+<h2>5.1 Il Modello dei Dati</h2>
+<p>La struttura del database è pensata per gestire conversazioni multiple per ogni utente, preservando l'ordine cronologico dei messaggi.</p>
+<h3>Entità Principali</h3>
+<ol>
+<li><strong>Conversations</strong>: Contiene i metadati della chat — titolo, ID utente, data di creazione e modello AI preferito.</li>
+<li><strong>Messages</strong>: Contiene i singoli scambi — ruolo (<code>user</code> o <code>assistant</code>), contenuto, timestamp e riferimento alla conversazione di appartenenza.</li>
+</ol>
+<div class="mermaid">erDiagram
+    USER ||--o{ CONVERSATION : "crea"
+    CONVERSATION ||--o{ MESSAGE : "contiene"
+
+    CONVERSATION {
+        uuid id PK
+        uuid user_id FK
+        text title
+        bool favourite
+    }
+
+    MESSAGE {
+         uuid id PK
+        uuid conversation_id FK
+        text sender
+        text content
+        jsonb usage
+    }</div>
+<h2>5.2 Operazioni CRUD sulla Chat</h2>
+<p>Il sistema implementa tutte le operazioni fondamentali per la gestione del ciclo di vita di una conversazione:</p>
+<ul>
+<li><strong>Creazione</strong>: Al primo messaggio inviato, viene creata una nuova conversazione. Il titolo viene impostato inizialmente come "Nuova Chat" e potrà essere aggiornato in seguito.</li>
+<li><strong>Recupero (Listing)</strong>: La sidebar interroga il database per mostrare la cronologia delle chat dell'utente, ordinate per data di creazione.</li>
+<li><strong>Rinomina</strong>: L'utente può assegnare un nome personalizzato a ogni conversazione per organizzarle. In futuro è prevista la generazione automatica del titolo tramite IA, basata sul contenuto della chat.</li>
+<li><strong>Eliminazione</strong>: La rimozione di una conversazione sfrutta il vincolo <code>ON DELETE CASCADE</code>, che cancella automaticamente tutti i messaggi associati, garantendo la coerenza dei dati.</li>
+</ul>
+<h2>5.3 Gestione del Contesto con la Sliding Window</h2>
+<p>I modelli di linguaggio hanno un limite nel numero di token che possono elaborare in una singola richiesta. Per questo motivo, il sistema non invia mai l'intera storia della conversazione, ma adotta una strategia di <strong>Sliding Window</strong>:</p>
+<ol>
+<li>Vengono recuperati dal database solo gli ultimi <em>N</em> messaggi. Quelli più vecchi vengono compressi in un unico messaggio di riepilogo, in modo da mantenere il filo della conversazione senza sovraccaricare il modello.</li>
+<li>I messaggi vengono formattati in un array JSON comprensibile dall'IA.</li>
+<li>A ogni richiesta viene anteposto un <strong>System Prompt</strong> che definisce il comportamento e il tono dell'assistente.</li>
+</ol>
+<p>Questa tecnica garantisce che il modello abbia sempre accesso ai riferimenti più recenti della conversazione, senza mai superare i limiti tecnici imposti dai provider.</p>
+<h2>5.4 Integrazione Frontend-Backend</h2>
+<p>Le chiamate al database avvengono tramite il client Supabase integrato nell'applicazione, con tempi di risposta ridotti grazie all'indicizzazione nativa di PostgreSQL. Il salvataggio è asincrono: non appena lo streaming della risposta dell'IA si conclude, il contenuto viene persistito nel database, pronto per essere recuperato alla sessione successiva.</p>
+<hr />
+<h1>06 - RAG e Vector Search: Il Cuore della Conoscenza</h1>
+<p>Il <strong>RAG (Retrieval Augmented Generation)</strong> è la funzionalità che consente a SmartAI di interrogare documenti PDF complessi restituendo risposte precise e ancorate al testo, evitando il fenomeno delle "allucinazioni" — risposte plausibili ma inventate, del tutto scollegate dal materiale fornito.</p>
+<h2>6.1 Fondamenti e Vantaggi del RAG</h2>
+<p>Il sistema RAG funziona come un assistente che consulta un manuale prima di rispondere, invece di affidarsi esclusivamente alla memoria. I vantaggi principali sono:</p>
+<ul>
+<li><strong>Conoscenza Verticale</strong>: Il sistema acquisisce informazioni che il modello base non conosce, come appunti privati, tesine, report aziendali o qualsiasi documento personale.</li>
+<li><strong>Riduzione delle Allucinazioni</strong>: Poiché il modello è istruito a rispondere <em>solo</em> citando il testo fornito, il rischio di risposte inventate si riduce drasticamente.</li>
+<li><strong>Memoria Praticamemte Illimitata</strong>: Invece di caricare centinaia di pagine nel prompt, il sistema salva i contenuti nel database e recupera solo i frammenti pertinenti al momento della domanda.</li>
+</ul>
+<h2>6.2 La Strategia di Chunking Ricorsivo</h2>
+<p>Per consentire all'IA di elaborare un documento di 100 pagine, non è possibile inviarlo interamente in una sola volta. Il testo viene suddiviso in frammenti chiamati <strong>chunk</strong>, seguendo questa pipeline:</p>
+<ol>
+<li><strong>Normalizzazione</strong>: Pulizia del testo con rimozione di caratteri di controllo e normalizzazione Unicode (NFC).</li>
+<li><strong>Heading Detection</strong>: Il sistema identifica i titoli delle sezioni (es. "Capitolo 1", "1.2 Obiettivi") per preservare la struttura gerarchica del documento.</li>
+<li><strong>Split Multilivello</strong>:</li>
+<li>Si parte dai <strong>paragrafi</strong> (doppio newline).</li>
+<li>Se un paragrafo supera la dimensione massima, si scende alle <strong>frasi</strong>.</li>
+<li>Se necessario, si arriva alle <strong>singole parole</strong>.</li>
+<li><strong>Overlap (Sovrapposizione)</strong>: Ogni chunk mantiene circa 300 caratteri del frammento precedente, in modo da non perdere il contesto semantico tra la fine di un pezzo e l'inizio del successivo.</li>
+</ol>
+<h2>6.3 Il Concetto di Spazio Vettoriale (Embedding)</h2>
+<p>Ogni frammento di testo viene trasformato in un insieme di coordinate numeriche chiamato <strong>vettore</strong> o <strong>embedding</strong>. Si può immaginare una mappa multidimensionale dove i concetti semanticamente simili si trovano geograficamente vicini. Per questa trasformazione viene utilizzato il modello <code>text-embedding-3-small</code>, che produce vettori da <strong>1536 dimensioni</strong>.</p>
+<h2>6.4 Meccanismo Matematico: La Similarità del Coseno</h2>
+<p>Per stabilire quanto due concetti siano semanticamente vicini, il sistema utilizza la <strong>Similarità del Coseno</strong>: misura l'angolo formato tra il vettore della domanda dell'utente e i vettori dei frammenti salvati nel database.</p>
+<p>$$
+\text{Similarity} = \cos(\theta) = \frac{\mathbf{A} \cdot \mathbf{B}}{|\mathbf{A}| |\mathbf{B}|}
+$$</p>
+<p>I valori si interpretano così:</p>
+<ul>
+<li><strong>1.0</strong> → Significato identico.</li>
+<li><strong>0.4</strong> → Soglia minima di pertinenza adottata nel progetto.</li>
+<li><strong>0.0</strong> → Nessuna correlazione semantica.</li>
+</ul>
+<h2>6.5 Ottimizzazione: La Funzione RPC su PostgreSQL</h2>
+<p>Per gestire migliaia di frammenti in pochi millisecondi, è stata implementata una funzione <strong>RPC (Remote Procedure Call)</strong> direttamente in PostgreSQL su Supabase, sfruttando l'estensione <code>pgvector</code>:</p>
+<pre><code class="language-sql">CREATE OR REPLACE FUNCTION match_documents (
+  query_embedding vector(1536),
+  match_threshold float,
+  match_count int,
+  filter_user_id uuid,
+  selected_id uuid
+)
+RETURNS TABLE (
+  id uuid,
+  content text,
+  similarity float,
+  metadata jsonb
+)
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  RETURN QUERY
+  SELECT
+    documents.id,
+    documents.content,
+    1 - (documents.embedding &lt;=&gt; query_embedding) AS similarity,
+    documents.metadata
+  FROM documents
+  WHERE documents.user_id = filter_user_id
+    AND documents.document_id = selected_id
+    AND 1 - (documents.embedding &lt;=&gt; query_embedding) &gt; match_threshold
+  ORDER BY documents.embedding &lt;=&gt; query_embedding
+  LIMIT match_count;
+END;
+$$;
+</code></pre>
+<p>L'operatore <code>&lt;=&gt;</code> calcola la distanza coseno tra vettori: i risultati vengono ordinati per rilevanza e restituiti solo se superano la soglia minima impostata.</p>
+<h2>6.6 Flusso RAG: Dal PDF alla Risposta</h2>
+<p>Di seguito è illustrato il percorso completo dei dati, dal caricamento del documento fino alla risposta generata dall'IA.</p>
+<div style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: #0f172a; border-radius: 15px; color: white;">
+    <div style="display: flex; flex-direction: column; gap: 20px;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="background: #3b82f6; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">1</div>
+            <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; flex-grow: 1; border: 1px solid rgba(59,130,246,0.3);">
+                <strong style="color: #60a5fa;">Ingestione PDF</strong><br>
+                L'utente carica il documento. Il server estrae il testo grezzo con <code>pdf-parse</code>.
+            </div>
+        </div>
+        <div style="margin-left: 20px; border-left: 2px dashed #334155; height: 20px;"></div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="background: #10b981; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">2</div>
+            <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; flex-grow: 1; border: 1px solid rgba(16,185,129,0.3);">
+                <strong style="color: #34d399;">Recursive Chunking</strong><br>
+                Il testo viene suddiviso in frammenti da 1500 caratteri con 300 di overlap, preservando titoli e struttura delle frasi.
+            </div>
+        </div>
+        <div style="margin-left: 20px; border-left: 2px dashed #334155; height: 20px;"></div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="background: #f59e0b; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">3</div>
+            <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; flex-grow: 1; border: 1px solid rgba(245,158,11,0.3);">
+                <strong style="color: #fbbf24;">Vectorization & Storage</strong><br>
+                Ogni chunk viene convertito in un vettore numerico e salvato su Supabase tramite pgvector.
+            </div>
+        </div>
+        <div style="margin-left: 20px; border-left: 2px dashed #334155; height: 20px;"></div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="background: #ef4444; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">4</div>
+            <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; flex-grow: 1; border: 1px solid rgba(239,68,68,0.3);">
+                <strong style="color: #f87171;">Semantic Retrieval</strong><br>
+                Alla domanda dell'utente, la funzione RPC individua i 7 frammenti più pertinenti tramite similarità del coseno.
+            </div>
+        </div>
+        <div style="margin-left: 20px; border-left: 2px dashed #334155; height: 20px;"></div>
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <div style="background: #8b5cf6; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; flex-shrink: 0;">5</div>
+            <div style="background: rgba(255,255,255,0.05); padding: 15px; border-radius: 10px; flex-grow: 1; border: 1px solid rgba(139,92,246,0.3);">
+                <strong style="color: #a78bfa;">Augmented Response</strong><br>
+                L'IA riceve i frammenti recuperati e costruisce la risposta citando direttamente le fonti, garantendo precisione e tracciabilità.
+            </div>
+        </div>
+    </div>
+</div>
+
+<hr />
+<h1>07 - Generative UI: L'Interfaccia che Prende Forma</h1>
+<p>Uno dei limiti storici dei chatbot è la loro natura puramente testuale. In <strong>SmartAI</strong>, abbiamo superato questo vincolo implementando la <strong>Generative UI</strong>: un sistema che permette all'intelligenza artificiale di "decidere" non solo cosa dire, ma anche come mostrarlo, generando componenti grafici interattivi in tempo reale.
+
+<h2>7.1 Il Protocollo di Comunicazione</h2>
+<p>Il segreto della Generative UI risiede in un protocollo di messaggistica ibrido. L'AI risponde in Markdown standard, ma quando deve mostrare dati strutturati, inserisce dei tag XML-like nel flusso di testo:</p>
+<pre><code class="language-xml">Ecco un riepilogo delle tue spese:
+
+&lt;ui-component type=&quot;dynamic&quot;&gt;
+  {
+    &quot;root&quot;: {
+      &quot;type&quot;: &quot;container&quot;,
+      &quot;props&quot;: { &quot;direction&quot;: &quot;row&quot;, &quot;gap&quot;: 4 },
+      &quot;children&quot;: [
+        { &quot;type&quot;: &quot;metric&quot;, &quot;props&quot;: { &quot;label&quot;: &quot;Totale&quot;, &quot;value&quot;: &quot;€1.240&quot;, &quot;trend&quot;: &quot;+12%&quot; } },
+        { &quot;type&quot;: &quot;progress&quot;, &quot;props&quot;: { &quot;label&quot;: &quot;Budget&quot;, &quot;value&quot;: 80, &quot;max&quot;: 100, &quot;color&quot;: &quot;emerald&quot; } }
+      ]
+    }
+  }
+&lt;/ui-component&gt;
+</code></pre>
+<p>Il client intercetta questi tag tramite un <strong>Parser RegEx</strong> avanzato (<code>parseGenerativeUI.ts</code>) e divide il messaggio in "chunk" di testo e "chunk" di componenti React.</p>
+<h2>7.2 L'Architettura del Renderer</h2>
+<p>Il componente <code>GenerativeUIRenderer</code> funge da orchestratore. Riceve la stringa grezza dall'AI e coordina il rendering:</p>
+<ol>
+<li><strong>Parsing</strong>: Divide il testo dai componenti.</li>
+<li><strong>Lookup</strong>: Consulta il <code>COMPONENT_REGISTRY</code> per trovare il componente React corrispondente al <code>type</code>.</li>
+<li><strong>Injection</strong>: Passa il payload JSON come <code>data</code> al componente.</li>
+<li><strong>Fallback</strong>: Se il JSON è malformato (accade spesso durante lo streaming), il sistema renderizza il testo grezzo per evitare la perdita di informazioni.</li>
+</ol>
+<h2>7.3 I Due Pilastri: Dynamic Canvas e Sandbox</h2>
+<p>Abbiamo sviluppato due approcci complementari per la generazione della UI:</p>
+<h3>A. Dynamic Canvas (Low-Code Architecture)</h3>
+<p>È un sistema di componenti atomici pre-definiti (Text, Metric, Progress, Icon, Container). 
+- <strong>Vantaggio</strong>: Coerenza estetica assoluta con il design system dell'app.
+- <strong>Sicurezza</strong>: L'AI non scrive codice eseguibile, ma compone una struttura dati sicura.
+- <strong>Performance</strong>: Estremamente leggero e veloce da renderizzare.</p>
+<h3>B. Sandbox (High-Code Architecture)</h3>
+<p>Quando la complessità lo richiede (es. grafici complessi con Chart.js o D3), l'AI può generare un intero blocco di codice HTML, CSS e JavaScript.
+- <strong>Isolamento</strong>: Il codice gira all'interno di un <code>&lt;iframe&gt;</code> con l'attributo <code>sandbox="allow-scripts"</code>.
+- <strong>Librerie Auto-iniettate</strong>: La Sandbox include automaticamente TailwindCSS, Chart.js e D3 per permettere visualizzazioni professionali senza sforzo.
+- <strong>Resizing Dinamico</strong>: Un <code>ResizeObserver</code> comunica al client l'altezza esatta del contenuto per evitare barre di scorrimento antiestetiche.</p>
+<h2>7.4 Flusso di Generazione (UML)</h2>
+<p>Il seguente diagramma descrive il viaggio di un componente dalla mente dell'AI allo schermo dell'utente.</p>
+<div class="mermaid">sequenceDiagram
+    participant AI as LLM (OpenRouter)
+    participant S as Server (Express)
+    participant C as Client (React)
+    participant P as Parser
+    participant R as Component Registry
+
+    AI->>S: Stream di testo con tag <ui-component>
+    S->>C: Inoltro chunk NDJSON
+    C->>P: Analisi del testo (RegEx)
+    P-->>C: Array di [{type: 'text'}, {type: 'component'}]
+    C->>R: Risoluzione componente (es. "dynamic")
+    R-->>C: React Component reference
+    C->>C: Rendering con Framer Motion (Animate Presence)
+    Note over C: L'utente vede il componente apparire con un fade-in</div>
+<h2>7.5 Sfide Tecniche e Ottimizzazioni</h2>
+<ul>
+<li><strong>Streaming Content</strong>: Durante la generazione, il tag XML è incompleto. Il parser è istruito per ignorare i tag aperti fino a quando non sono chiusi o validi, garantendo che l'interfaccia non "salti" durante la digitazione.</li>
+<li><strong>Memoizzazione</strong>: Usiamo <code>React.memo</code> intensivamente sui renderer per evitare ricaricamenti costosi dell'iframe Sandbox ogni volta che arriva un nuovo token di testo.</li>
+<li><strong>Design Tokens</strong>: Il <code>DynamicCanvas</code> mappa i nomi dei colori dell'AI (es. "emerald") su classi Tailwind specifiche, mantenendo l'armonia cromatica con la Dark Mode dell'applicazione.</li>
+</ul>
+<hr />
+<h1>08 - Integrazione Calendario: AI Agents</h1>
+<p>Con un semplice messaggio, l’AI può leggere il calendario, creare eventi, modificarli o eliminarli grazie all’integrazione con Google Calendar.</p>
+<h2>8.1 Che cos’è un AI Agent?</h2>
+<p>Un chatbot classico si limita a generare testo. Un <strong>AI Agent</strong>, invece, può anche eseguire azioni per raggiungere un obiettivo.</p>
+<p>Ad esempio, se un utente chiede: <em>"Quando sono libero domani?"</em>, un chatbot normale potrebbe solo suggerire di controllare il calendario. Un AI Agent, invece, può leggere gli eventi presenti, trovare gli orari liberi e persino creare un appuntamento.</p>
+<h3>I 4 passaggi principali</h3>
+<p>Per far funzionare correttamente l’agente sono necessari quattro elementi:</p>
+<ol>
+<li><strong>Contesto</strong></li>
+</ol>
+<p>L’agente riceve il messaggio dell’utente insieme a informazioni importanti come data, ora e fuso orario. In questo modo riesce a capire richieste come <em>"sposta a domani"</em> oppure <em>"fissa per venerdì sera"</em>.</p>
+<ol>
+<li><strong>Ragionamento</strong></li>
+</ol>
+<p>Il modello analizza la richiesta e decide cosa fare. Se l’utente scrive <em>"Sposta la riunione con Marco a mercoledì"</em>, l’agente capisce che deve prima cercare l’evento e poi modificarlo.</p>
+<ol>
+<li><strong>Scelta degli strumenti</strong></li>
+</ol>
+<p>L’AI seleziona la funzione più adatta tra quelle disponibili, ad esempio:</p>
+<ul>
+<li><code>list_events</code></li>
+<li><code>create_event</code></li>
+<li><code>update_event</code></li>
+<li>
+<p><code>delete_event</code></p>
+</li>
+<li>
+<p><strong>Esecuzione</strong></p>
+</li>
+</ul>
+<p>Il server esegue la richiesta tramite le API di Google Calendar e restituisce il risultato all’AI, che genera poi la risposta finale per l’utente.</p>
+<h2>8.2 Flusso di lavoro</h2>
+<p>Il funzionamento dell’integrazione si basa su un ciclo continuo tra server e modello AI. Il diagramma seguente mostra cosa succede quando un utente usa la chat del calendario.</p>
+<div class="mermaid">sequenceDiagram
+    participant U as Utente
+    participant C as Client (React)
+    participant S as Server (Express)
+    participant AI as AI Model (OpenRouter)
+    participant G as Google Calendar API
+
+    U->>C: "Sposta la riunione di oggi alle 15:00"
+    C->>S: POST /api/calendar/action
+
+    Note over S,AI: Loop agente (max 6 iterazioni)
+
+    S->>AI: Messaggio + elenco tools
+    AI-->>S: Richiesta tool: list_events
+
+    S->>G: GET eventi
+    G-->>S: Evento trovato
+
+    S->>AI: Risultato ricerca
+    AI-->>S: Richiesta tool: update_event
+
+    S->>G: PATCH evento
+    G-->>S: Successo
+
+    S->>AI: Modifica completata
+    AI-->>S: Risposta finale
+
+    S->>C: JSON finale
+    C->>U: "Ho spostato la riunione alle 15:00"</div>
+<h2>8.3 Implementazione Tecnica e "Function Calling"</h2>
+<p>La parte più importante dell’integrazione è il Function Calling, cioè il sistema che permette all’AI di usare funzioni reali del server.</p>
+<h3>Come l'AI "usa" il codice</h3>
+<p>Abbiamo definito per l'AI uno schema JSON che descrive cosa può fare. Per esempio:
+*   <strong>Nome</strong>: <code>create_event</code>
+*   <strong>Descrizione</strong>: "Crea un nuovo impegno sul calendario."
+*   <strong>Parametri</strong>: Titolo, Descrizione, Data Inizio, Data Fine.</p>
+<p>Quando l’utente invia un messaggio, il modello non esegue direttamente il codice. Restituisce invece una richiesta strutturata che indica quale funzione usare e con quali dati.</p>
+<p>Il server Express riceve la richiesta ed esegue la vera chiamata alle API di Google Calendar usando il token OAuth2 dell’utente.</p>
+<h3>L'Assistente "Floating"</h3>
+<p>L'interfaccia utente è stata progettata per non essere invasiva. Una <strong>Floating Chat</strong> (chat fluttuante) o in modalità sidebar permette all'utente di interagire con l'AI mentre consulta i propri impegni. L'utente può anche cambiare modello al volo (es. passare a un modello più veloce o uno più intelligente), e interagire con il calendario mentre lo guarda, vedendo gli eventi apparire o spostarsi in tempo reale grazie alla reattività di React.</p>
+<p>Invece di navigare tra menu, selezionare orari e scrivere titoli, l'utente esprime un desiderio ("Organizza una cena con amici venerdì sera") e l'AI si occupa della logica: controlla la disponibilità, formatta i dati secondo gli standard ISO 8601 e comunica con i server di Google. Questo rappresenta il futuro della produttività: meno "clic", più conversazione.</p>
+<hr />
+<h1>09 - Strumenti di Apprendimento: Mindmap, Quiz, Flashcard e Diagrammi</h1>
+<p>Questo capitolo esplora la dimensione educativa di SmartAI, analizzando come l'architettura del sistema supporti metodi pedagogici moderni come l'<strong>Apprendimento Costruttivista</strong>. In questa visione, l'utente non è un fruitore passivo di contenuti, ma un partecipante attivo che costruisce la propria conoscenza interagendo con strumenti dinamici. SmartAI facilita questo processo riducendo il carico cognitivo e stimolando il pensiero critico.</p>
+<h2>9.1 Mappe Mentali e Strutturazione della Conoscenza</h2>
+<p>Secondo la teoria della doppia codifica di Paivio, l'informazione viene elaborata e memorizzata meglio quando è presentata contemporaneamente in formato verbale e visuale. Le mappe mentali sono il pilastro della visualizzazione concettuale in SmartAI: a differenza di una lettura lineare, permettono di cogliere immediatamente le relazioni gerarchiche e spaziali tra i concetti.</p>
+<div class="mermaid">sequenceDiagram
+    participant U as Utente
+    participant C as Client (React)
+    participant S as Server (Node.js)
+    participant AI as LLM Engine
+    participant DB as Vector DB (RAG)
+
+    U->>C: "Crea una mappa concettuale"
+    C->>S: Invio prompt e parametri
+    S->>DB: Ricerca documenti correlati
+    DB-->>S: Restituzione contesto (Chunks)
+    S->>AI: Prompt: genera JSON gerarchico
+    AI-->>S: JSON (nodi e relazioni)
+    S-->>C: Payload strutturato
+    C->>C: Rendering canvas (React Flow)
+    C-->>U: Mappa interattiva visualizzata
+    U->>C: Click su un nodo
+    C-->>U: Animazione ed espansione dei sotto-nodi</div>
+<h2>9.2 Quiz Interattivi e Valutazione Formativa</h2>
+<p>Il modulo Quiz implementa la <strong>Valutazione Formativa</strong>: una valutazione continua che avviene durante il processo di apprendimento, pensata per identificare lacune in tempo reale, non per assegnare un voto finale.</p>
+<h3>Tipologie di Domande e Feedback Adattivo</h3>
+<p>L'IA genera domande di tre tipologie:</p>
+<ul>
+<li><strong>Scelta Multipla</strong>: per testare il riconoscimento di fatti e definizioni.</li>
+<li><strong>Vero/Falso</strong>: per verificare la comprensione di concetti fondamentali.</li>
+<li><strong>Domande di Ragionamento</strong>: in cui l'utente deve collegare due concetti tra loro.</li>
+</ul>
+<p>Il feedback non si limita a "Corretto" o "Errato". SmartAI genera una <strong>spiegazione contestuale</strong> che chiarisce il perché una risposta sia sbagliata, citando direttamente i documenti caricati dall'utente tramite il sistema RAG.</p>
+<div class="mermaid">sequenceDiagram
+    participant U as Utente
+    participant QM as Quiz Manager
+    participant AI as AI Generator
+    participant RAG as RAG System
+
+    U->>QM: Inizio nuovo quiz
+    QM->>RAG: Estrazione concetti chiave
+    RAG-->>QM: Lista argomenti
+    QM->>AI: Genera 5 domande + spiegazioni
+    AI-->>QM: Quiz in formato JSON
+    loop Per ogni domanda
+        QM->>U: Mostra domanda
+        U->>QM: Selezione risposta
+        QM->>QM: Validazione interna
+        alt Risposta corretta
+            QM-->>U: Feedback positivo + punteggio
+        else Risposta errata
+            QM-->>U: Spiegazione dettagliata dell'errore
+        end
+    end
+    QM->>U: Report finale e statistiche</div>
+<h2>9.3 Flashcard e Ripetizione Spaziata (SRS)</h2>
+<p>Le Flashcard di SmartAI si basano sul <strong>Sistema Leitner</strong>, una tecnica di studio che ottimizza il tempo di ripasso concentrandosi sui concetti più difficili da ricordare.</p>
+<h3>Integrazione Algoritmica</h3>
+<p>Ogni interazione con una flashcard aggiorna i metadati della carta nel database:</p>
+<ul>
+<li><strong>Ease Factor</strong>: Un moltiplicatore che determina l'intervallo di tempo prima del prossimo ripasso.</li>
+<li><strong>Interval</strong>: Il numero di giorni tra una sessione di ripasso e la successiva.</li>
+</ul>
+<div class="mermaid">sequenceDiagram
+    participant U as Utente
+    participant UI as Dashboard Studio
+    participant SRS as SRS Engine
+    participant DB as Supabase DB
+
+    U->>UI: Apertura sessione Flashcard
+    UI->>SRS: Richiesta carte in scadenza
+    SRS->>DB: Query: cards.due_date <= today
+    DB-->>SRS: Lista carte da ripassare
+    SRS-->>UI: Deck filtrato
+    loop Studio
+        UI->>U: Mostra fronte della carta
+        U->>UI: Click "Mostra risposta"
+        UI-->>U: Mostra retro della carta
+        U->>UI: Valutazione (Facile / Media / Difficile)
+        UI->>SRS: Aggiornamento metadati difficoltà
+        SRS->>DB: Update last_review e interval
+    end
+    UI-->>U: Sessione completata</div>
+<h2>9.4 Generazione e Rendering di Diagrammi UML</h2>
+<p>In ambito tecnico, saper visualizzare strutture logiche è essenziale. SmartAI funge da <strong>traduttore semantico-grafico</strong>: l'utente descrive un sistema in linguaggio naturale e il modello genera il diagramma corrispondente in sintassi Mermaid.js — diagrammi di classe, di flusso o di sequenza — con rendering in tempo reale.</p>
+<div class="mermaid">sequenceDiagram
+    participant U as Utente
+    participant AI as AI Architect
+    participant V as Syntax Validator
+    participant R as Mermaid Renderer
+
+    U->>AI: "Disegna il flusso di login OAuth2"
+    AI->>AI: Generazione codice Mermaid
+    AI->>V: Controllo errori sintattici
+    alt Errore rilevato
+        V-->>AI: Segnalazione errore
+        AI->>AI: Auto-correzione
+    end
+    V-->>R: Codice validato
+    R->>R: Rendering SVG
+    R-->>U: Diagramma finale visualizzato
+    U->>AI: "Aggiungi il passaggio di log"
+    AI-->>U: Diagramma aggiornato</div>
+<h2>9.5 Impatto Didattico</h2>
+<p>L'integrazione di questi strumenti trasforma il rapporto tra studente e intelligenza artificiale. Non si tratta più di chiedere la risposta, ma di usare l'IA per costruire impalcature cognitive (<strong>scaffolding</strong>): strutture di supporto che rendono accessibili anche gli argomenti più complessi.</p>
+<p>I vantaggi principali dell'approccio multimodale adottato sono:</p>
+<ol>
+<li><strong>Personalizzazione Massima</strong>: Tutti gli esercizi sono generati a partire dai propri appunti e documenti.</li>
+<li><strong>Riduzione dell'Ansia da Studio</strong>: Suddividere argomenti complessi in mappe e schemi rende il lavoro più gestibile e meno intimidatorio.</li>
+<li><strong>Versatilità</strong>: Gli strumenti si adattano a qualsiasi materia, dalla storia alla programmazione.</li>
+</ol>
+<p>SmartAI si posiziona così non come un semplice generatore di risposte, ma come un catalizzatore tecnologico che rende accessibili metodi di apprendimento scientificamente fondati.</p>
+<hr />
+<h1>10 - Supporto e Manutenibilità</h1>
+<p>Un sistema complesso come SmartAI non deve solo offrire buone funzionalità, ma anche essere facile da controllare e da supportare.</p>
+<h2>10.1 Logging centralizzato</h2>
+<p>Per tenere sotto controllo il sistema, è stato creato un sistema di logging su due livelli: uno per il server e uno per il client.</p>
+<h3>A. Logging del server</h3>
+<p>Nel backend è stato aggiunto un middleware personalizzato (<code>httpLoggingMiddleware</code>) che intercetta ogni richiesta e risposta. Questo permette di:</p>
+<ul>
+<li><strong>Misurare le prestazioni</strong>: viene salvata la durata in millisecondi di ogni chiamata API.</li>
+<li><strong>Tenere traccia delle operazioni</strong>: ogni accesso a Supabase e ogni chiamata ai modelli AI viene registrata con data, ora e ID della richiesta.</li>
+<li><strong>Registrare i messaggi di console</strong>: <code>console.log</code> e <code>console.error</code> sono stati modificati in modo che ogni messaggio venga salvato anche in un buffer interno di audit, senza perdere il metodo originale.</li>
+</ul>
+<h3>B. Remote logging del frontend</h3>
+<p>Gli errori che si verificano nel browser dell’utente non sono sempre visibili agli sviluppatori. Per questo è stato creato un <strong>Remote Logger</strong>:</p>
+<ul>
+<li><strong>Rilevamento dei crash</strong>: se l’app React genera un errore non gestito o una Promise viene rifiutata, il client invia subito un report all’endpoint <code>/api/logs</code>.</li>
+<li><strong>Supporto in sviluppo</strong>: durante la fase di sviluppo vengono intercettati anche alcuni errori legati a Vite e all’HMR.</li>
+<li><strong>Dati completi</strong>: ogni log include stack trace, user agent, IP del client e URL della pagina in cui si è verificato il problema.</li>
+</ul>
+<p>Tutti i log sono visibili solo agli amministratori. Nessun dato sensibile viene inviato a servizi esterni.</p>
+<h2>10.2 Gestione dei ticket</h2>
+<p>Il supporto utenti si basa su una tabella dedicata in Supabase (<code>support_tickets</code>) e segue questi passaggi:</p>
+<ol>
+<li><strong>Creazione</strong>: l’utente compila il form nella Help Page, scegliendo la categoria del problema e scrivendo il messaggio.</li>
+<li><strong>Salvataggio</strong>: il ticket viene inserito nel database con stato iniziale <code>open</code> e associato all’utente.</li>
+<li><strong>Monitoraggio</strong>: l’utente può controllare in ogni momento lo storico dei propri ticket e vedere eventuali risposte degli amministratori.</li>
+</ol>
+<blockquote>
+<p>[!TODO]
+<strong>Possibile sviluppo futuro</strong>: SmartAI potrebbe analizzare automaticamente il contenuto del ticket con RAG e proporre una risposta iniziale basata sulla documentazione interna, così da ridurre i tempi di attesa.</p>
+</blockquote>
+<h2>10.3 Audit log e sicurezza</h2>
+<p>Per ogni operazione importante — come l’eliminazione di una conversazione, la modifica dei dati utente o l’accesso da parte di utenti sospetti — il sistema genera un <strong>Audit Log</strong>. Questi record servono a:</p>
+<ul>
+<li><strong>Sapere chi ha fatto cosa</strong> e in quale momento.</li>
+<li><strong>Ricostruire eventuali problemi</strong> in caso di errore.</li>
+<li><strong>Individuare attività anomale</strong> o tentativi di accesso non autorizzati.</li>
+</ul>
+<h2>10.4 Flusso di monitoraggio</h2>
+<p>Il diagramma mostra come un errore nel browser venga inviato al server e salvato nel sistema di monitoraggio.</p>
+<div class="mermaid">sequenceDiagram
+    participant U as Utente (Browser)
+    participant RL as Remote Logger
+    participant S as Server Express
+    participant AL as Audit Log Buffer
+    participant DB as Supabase (Tickets)
+
+    Note over U,RL: Si verifica un errore JavaScript
+    RL->>S: POST /api/logs (dettagli errore)
+    S->>AL: Salva nel buffer ClientLogs
+
+    Note over U,DB: L'utente apre un ticket
+    U->>S: POST /api/support/submit
+    S->>DB: INSERT INTO support_tickets
+    S->>AL: Log azione "Submit Ticket"
+    DB-->>S: Successo (UUID ticket)
+    S-->>U: Conferma invio</div>
+<h2>10.5 Politica di Retention dei Log</h2>
+<p>Per evitare di saturare la memoria, il sistema adotta una politica di rotazione automatica:</p>
+<ul>
+<li><strong>Audit Log Server</strong>: Vengono conservati gli ultimi 500 eventi HTTP e di sistema.</li>
+<li><strong>Client Log</strong>: Vengono conservati gli ultimi 100 report di crash provenienti dal frontend.</li>
+<li><strong>Persistenza Selettiva</strong>: solo i ticket di supporto vengono salvati in modo permanente nel database. I log tecnici restano temporanei per mantenere buone prestazioni, ma i limiti possono essere cambiati in qualsiasi momento.</li>
+</ul>
+<hr />
+<h1>11 - Infrastruttura e Database</h1>
+<p>Di seguito è riportata la struttura del database di SmartAI.</p>
+<h2>11.1 Tabella <code>profiles</code></h2>
+<p>Questa tabella collega il sistema di autenticazione ai dati dell’utente.</p>
+<div class="mermaid">erDiagram
+    auth_users ||--|| profiles : "user_id"
+    profiles {
+        int8 id PK
+        uuid user_id FK
+        text full_name
+        jsonb preferences
+        jsonb instructions
+    }</div>
+<h3>Campi principali</h3>
+<ul>
+<li><strong><code>user_id</code> (UUID)</strong>: collega il profilo alla tabella <code>auth.users</code>.</li>
+<li><strong><code>subscription_level</code> (int2)</strong>: salva il livello di abbonamento dell’utente.</li>
+<li><strong><code>instructions</code> (jsonb)</strong>: contiene le istruzioni personalizzate usate dall’AI.</li>
+</ul>
+<p>Il formato JSONB permette di salvare dati con struttura variabile senza modificare continuamente il database.</p>
+<h2>11.2 Tabella <code>conversations</code></h2>
+<p>Gestisce le conversazioni create dagli utenti.</p>
+<div class="mermaid">erDiagram
+    profiles ||--o{ conversations : "user_id"
+    conversations {
+        uuid id PK
+        uuid user_id FK
+        text title
+        bool favourite
+    }</div>
+<h3>Campi principali</h3>
+<ul>
+<li><strong><code>id</code> (UUID)</strong>: identificatore unico della conversazione.</li>
+<li><strong><code>favourite</code> (bool)</strong>: permette di salvare le chat importanti.</li>
+<li><strong><code>updated_at</code> (timestamptz)</strong>: usato per ordinare le conversazioni in base all’ultima modifica.</li>
+</ul>
+<h2>11.3 Tabella <code>messages</code></h2>
+<p>Contiene tutti i messaggi delle chat.</p>
+<div class="mermaid">erDiagram
+    conversations ||--o{ messages : "conversation_id"
+    messages {
+        uuid id PK
+        uuid conversation_id FK
+        text sender
+        text content
+        jsonb usage
+    }</div>
+<h3>Campi principali</h3>
+<ul>
+<li><strong><code>sender</code> (text)</strong>: indica se il messaggio arriva dall’utente o dall’AI.</li>
+<li><strong><code>content</code> (text)</strong>: testo del messaggio.</li>
+<li><strong><code>usage</code> (jsonb)</strong>: salva informazioni sui token utilizzati dai modelli AI.</li>
+<li><strong><code>reasoning_text</code> (text)</strong>: contiene eventuali passaggi di ragionamento prodotti dal modello.</li>
+</ul>
+<p>JSONB viene usato perché modelli diversi restituiscono dati differenti.</p>
+<h2>11.4 Tabella <code>documents</code></h2>
+<p>Questa tabella viene usata dal sistema RAG per la memoria a lungo termine.</p>
+<div class="mermaid">erDiagram
+    profiles ||--o{ documents : "user_id"
+    documents {
+        int8 id PK
+        uuid user_id FK
+        vector embedding
+        text content
+    }</div>
+<h3>Campi principali</h3>
+<ul>
+<li><strong><code>embedding</code> (vector)</strong>: contiene la rappresentazione numerica del testo.</li>
+<li><strong><code>content</code> (text)</strong>: testo del documento.</li>
+<li><strong><code>metadata</code> (jsonb)</strong>: salva informazioni sul file originale, come nome e data.</li>
+</ul>
+<p>Il tipo <code>vector</code> viene fornito da pgvector ed è necessario per la ricerca semantica.</p>
+<h2>11.5 Tabella <code>api_providers</code></h2>
+<p>Permette agli utenti di usare chiavi API personali.</p>
+<div class="mermaid">erDiagram
+    profiles ||--o{ api_providers : "user_id"
+    api_providers {
+        int8 id PK
+        uuid user_id FK
+        text providerName
+        text apiKey
+    }</div>
+<h3>Campi principali</h3>
+<ul>
+<li><strong><code>providerName</code> (text)</strong>: nome del provider AI.</li>
+<li><strong><code>apiKey</code> (text)</strong>: chiave API dell’utente.</li>
+</ul>
+<p>In un ambiente di produzione, le chiavi dovrebbero essere crittografate prima del salvataggio.</p>
+<h2>11.6 Tabella <code>support_tickets</code></h2>
+<p>Gestisce il sistema di assistenza.</p>
+<div class="mermaid">erDiagram
+    profiles ||--o{ support_tickets : "user_id"
+    support_tickets {
+        uuid id PK
+        uuid user_id FK
+        text status
+        text admin_reply
+    }</div>
+<h3>Campi principali</h3>
+<ul>
+<li><strong><code>problem_type</code> (text)</strong>: categoria del problema.</li>
+<li><strong><code>status</code> (text)</strong>: stato del ticket.</li>
+<li><strong><code>admin_reply</code> (text)</strong>: risposta dell’amministratore.</li>
+</ul>
+<h2>11.7 Scelta dei tipi di dato</h2>
+<h4>UUID</h4>
+<p>Usato per le chiavi principali perché rende più difficile prevedere gli ID degli utenti e facilita la scalabilità.</p>
+<h4>JSONB</h4>
+<p>Permette di salvare dati con struttura variabile senza dover modificare continuamente le tabelle.</p>
+<h4>TIMESTAMPTZ</h4>
+<p>Serve per gestire correttamente date e orari anche tra utenti con fusi orari diversi.</p>
+<h4>VECTOR</h4>
+<p>Utilizzato per la ricerca semantica e per le funzionalità AI basate sugli embedding.</p>
+<hr />
+<h1>12 - Analisi delle performance e ottimizzazioni</h1>
+<p>Questo capitolo descrive le tecniche usate per rendere SmartAI veloce, fluido ed efficiente. In un sistema basato su AI, le performance non dipendono solo dal caricamento delle pagine, ma soprattutto dalla velocità con cui vengono generate le risposte e dal consumo di token.</p>
+<h2>12.1 Ottimizzazioni server-side</h2>
+<h3>1. Streaming NDJSON</h3>
+<p>Le risposte generate dai modelli AI possono richiedere alcuni secondi. Per evitare che l’utente aspetti troppo tempo senza vedere nulla, SmartAI utilizza lo <strong>streaming NDJSON</strong>.</p>
+<ul>
+<li>Il server invia il testo poco alla volta, man mano che viene generato.</li>
+<li>L’utente vede subito comparire la risposta senza attendere il completamento totale.</li>
+</ul>
+<p>Questo riduce molto il tempo percepito di attesa.</p>
+<h3>2. Caching dei prompt</h3>
+<p>Ogni richiesta inviata all’AI contiene istruzioni e cronologia della chat. Inviare sempre tutto il contesto aumenta costi e tempi di risposta.</p>
+<p>Per migliorare le prestazioni viene usato il <strong>prompt caching</strong>:</p>
+<ul>
+<li>le parti statiche del prompt vengono salvate temporaneamente,</li>
+<li>il sistema evita di reinviarle a ogni richiesta,</li>
+<li>diminuiscono sia i token usati sia il tempo di elaborazione.</li>
+</ul>
+<h3>3. Ricerca semantica con pgvector</h3>
+<p>Per il sistema RAG, la ricerca nei documenti deve essere molto veloce.</p>
+<p>Per questo vengono usati:</p>
+<ul>
+<li><strong>pgvector</strong> per gli embeddings,</li>
+<li>indici <strong>HNSW</strong> per accelerare la ricerca vettoriale.</li>
+</ul>
+<p>In questo modo il sistema trova informazioni nei documenti in pochi millisecondi.</p>
+<div class="mermaid">sequenceDiagram
+    participant U as Utente
+    participant S as Server
+    participant AI as LLM Provider
+
+    U->>S: Domanda
+    S->>AI: Richiesta Streaming
+    AI-->>S: Chunk 1 (0.2s)
+    S-->>U: Rendering Chunk 1
+    AI-->>S: Chunk 2 (0.4s)
+    S-->>U: Rendering Chunk 2
+    Note over U,AI: Latenza percepita ridotta del 95%</div>
+<h2>12.2 Ottimizzazioni Client-Side</h2>
+<h3>1. Code Splitting e Lazy Loading</h3>
+<p>Per mantenere il bundle JavaScript leggero, SmartAI utilizza il <strong>Code Splitting</strong>.
+- <strong>Implementazione</strong>: I componenti pesanti come le Mappe Mentali (Mermaid/React Flow) o i grafici dei Quiz vengono caricati solo quando necessari. 
+- <strong>Risultato</strong>: Il caricamento iniziale della Dashboard è istantaneo, poiché il browser scarica solo il codice essenziale per la prima vista.</p>
+<h3>2. Optimistic UI Updates</h3>
+<p>Per operazioni come il salvataggio di una conversazione o l'aggiunta di un "preferito", SmartAI utilizza aggiornamenti ottimistici.
+- <strong>Logica</strong>: La UI riflette il cambiamento <em>prima</em> che il server confermi l'operazione. Se la chiamata fallisce, lo stato viene ripristinato (rollback). Questo elimina la sensazione di ritardo dovuta alla latenza di rete.</p>
+<h3>3. Memoization e Pre-fetching</h3>
+<p>Utilizzo di <code>React.memo</code> e <code>useMemo</code> per prevenire re-render inutili di componenti complessi durante lo streaming dei messaggi. Inoltre, i dati delle chat passate vengono pre-fethcati in background quando l'utente passa il mouse sopra un titolo nella sidebar.</p>
+<h2>12.3 Efficienza dei Token e Cost Management</h2>
+<p>Il costo di un sistema AI è direttamente proporzionale al numero di token inviati e ricevuti. SmartAI adotta diverse tattiche per massimizzare il valore di ogni interazione:</p>
+<ol>
+<li><strong>Context Pruning</strong>: Invece di inviare tutta la cronologia, il sistema invia solo gli ultimi $N$ messaggi rilevanti, riassumendo quelli più vecchi per mantenere il filo conduttore senza saturare la finestra di contesto.</li>
+<li><strong>Schema Enforcement</strong>: Richiedendo all'AI di rispondere in formati strutturati (JSON), si riduce la verbosità inutile delle risposte ("Ecco il tuo quiz...", "Certo, ecco la mappa..."), risparmiando token di output.</li>
+<li><strong>Model Routing</strong>: 
+Si può decidere di usare modelli diversi a seconda della complessità della richiesta. Ad esempio si può usare Claude Opus 4.7 per task molto complesse e invece Gemini 3 Flash per task più semplici.</li>
+</ol>
+<h2>12.4 Tabella Comparativa delle Performance</h2>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Metrica</th>
+<th style="text-align: left;">Senza ottimizzazione</th>
+<th style="text-align: left;">Con ottimizzazioni</th>
+<th style="text-align: left;">Miglioramento</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">TTFT (primo token)</td>
+<td style="text-align: left;">2500ms - 5000ms</td>
+<td style="text-align: left;">150ms - 300ms</td>
+<td style="text-align: left;">~94%</td>
+</tr>
+<tr>
+<td style="text-align: left;">Ricerca RAG</td>
+<td style="text-align: left;">1200ms</td>
+<td style="text-align: left;">45ms</td>
+<td style="text-align: left;">~96%</td>
+</tr>
+<tr>
+<td style="text-align: left;">Bundle iniziale</td>
+<td style="text-align: left;">1.8 MB</td>
+<td style="text-align: left;">450 KB</td>
+<td style="text-align: left;">~75%</td>
+</tr>
+<tr>
+<td style="text-align: left;">Costo medio per chat</td>
+<td style="text-align: left;">$0.12</td>
+<td style="text-align: left;">$0.02</td>
+<td style="text-align: left;">~75%</td>
+</tr>
+</tbody>
+</table>
+<p>Le ottimizzazioni adottate permettono a SmartAI di essere non solo potente, ma anche veloce e piacevole da usare.</p>
+<p>L’obiettivo principale è ridurre tempi di attesa, consumi e caricamenti inutili, migliorando l’esperienza dell’utente durante l’uso quotidiano.</p>
+            </article>
+        </main>
+    </div>
+
+    <!-- ScrollSpy and dynamic TOC JavaScript -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const headings = Array.from(document.querySelectorAll('.document-card h1, .document-card h2'));
+            const tocContainer = document.getElementById('toc-container');
+            const readingProgress = document.getElementById('reading-progress');
+            
+            // Mobile Sidebar elements
+            const mobileToggle = document.getElementById('mobile-toc-toggle');
+            const sidebar = document.getElementById('sidebar-nav');
+            const overlay = document.getElementById('mobile-overlay');
+
+            // Page Counter Setup
+            const pageCounter = document.createElement('div');
+            pageCounter.className = 'page-counter';
+            pageCounter.id = 'dynamic-page-counter';
+            pageCounter.innerHTML = 'Pagina <span id="current-page">1</span>';
+            document.body.appendChild(pageCounter);
+            const currentPageSpan = document.getElementById('current-page');
+
+            // 1. Generate Table of Contents dynamically and assign IDs to headings
+            const tocLinks = [];
+            
+            headings.forEach((heading, idx) => {
+                const text = heading.textContent.trim();
+                
+                // Skip the document's main index heading if it's the title
+                if (idx === 0 && text.toLowerCase().includes("indice dell'elaborato")) {
+                    heading.id = "indice-elaborato";
+                    return;
+                }
+                
+                // Generate a clean slug ID
+                let slug = text
+                    .toLowerCase()
+                    .replace(/[^a-z0-9]+/g, '-') // Replace non-alphanumeric
+                    .replace(/(^-|-$)/g, '');    // Remove leading/trailing dashes
+                
+                if (!slug) {
+                    slug = `heading-${idx}`;
+                }
+                
+                heading.id = slug;
+                
+                const isH1 = heading.tagName.toLowerCase() === 'h1';
+                
+                // Create LI item
+                const li = document.createElement('li');
+                li.className = isH1 ? 'toc-item' : 'toc-item toc-item-h2';
+                
+                // Create link
+                const link = document.createElement('a');
+                link.href = `#${slug}`;
+                link.className = 'toc-link';
+                
+                // Format the text inside TOC nicely
+                link.textContent = text;
+                
+                li.appendChild(link);
+                tocContainer.appendChild(li);
+                tocLinks.push(link);
+                
+                // Add click listener for smooth scroll & close mobile sidebar if open
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    
+                    // Close mobile sidebar if open
+                    if (sidebar.classList.contains('open')) {
+                        sidebar.classList.remove('open');
+                        overlay.classList.remove('active');
+                    }
+                    
+                    // Smooth scroll to target heading
+                    const targetElement = document.getElementById(slug);
+                    if (targetElement) {
+                        const headerOffset = window.innerWidth <= 1100 ? 80 : 40;
+                        const elementPosition = targetElement.getBoundingClientRect().top;
+                        const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
+                        
+                        window.scrollTo({
+                            top: offsetPosition,
+                            behavior: 'smooth'
+                        });
+                        
+                        // Update active state manually to feel super snappy
+                        tocLinks.forEach(l => l.classList.remove('active'));
+                        link.classList.add('active');
+                        
+                        // Update URL hash without jumping page
+                        history.pushState(null, null, `#${slug}`);
+                    }
+                });
+            });
+
+            // 2. Mobile Drawer Actions
+            if (mobileToggle && sidebar && overlay) {
+                const toggleSidebar = () => {
+                    sidebar.classList.toggle('open');
+                    overlay.classList.toggle('active');
+                };
+
+                mobileToggle.addEventListener('click', toggleSidebar);
+                overlay.addEventListener('click', toggleSidebar);
+            }
+
+            // 3. ScrollSpy and Progress Tracker
+            const updateScrollMetrics = () => {
+                const scrollPos = window.scrollY || window.pageYOffset;
+                const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+                
+                // Reading progress percentage
+                if (docHeight > 0) {
+                    const percentage = Math.min((scrollPos / docHeight) * 100, 100);
+                    readingProgress.style.width = `${percentage}%`;
+                }
+
+                // Page Counting logic (based on 297mm pages)
+                const docCard = document.querySelector('.document-card');
+                if (docCard && currentPageSpan) {
+                    const cardRect = docCard.getBoundingClientRect();
+                    const absoluteCardTop = cardRect.top + scrollPos;
+                    const relativeScroll = scrollPos - absoluteCardTop + (window.innerHeight / 3); // Calculate based on top 1/3 of view
+                    
+                    const mmPerPx = 210 / cardRect.width; // A4 width is 210mm
+                    const scrollInMm = relativeScroll * mmPerPx;
+                    const page = Math.max(1, Math.ceil(scrollInMm / 297)); // Use exact A4 height
+                    
+                    if (currentPageSpan.textContent !== String(page)) {
+                        currentPageSpan.textContent = page;
+                    }
+                }
+
+                // Active heading highlights
+                const triggerPoint = window.innerWidth <= 1100 ? 100 : 60; // Offset from viewport top
+                let activeHeading = null;
+                
+                // Filter headings inside the document-card
+                const contentHeadings = headings.filter(h => h.id !== "indice-elaborato");
+                
+                for (let i = 0; i < contentHeadings.length; i++) {
+                    const heading = contentHeadings[i];
+                    const offsetTop = heading.getBoundingClientRect().top + scrollPos;
+                    
+                    if (scrollPos + triggerPoint >= offsetTop) {
+                        activeHeading = heading;
+                    } else {
+                        break;
+                    }
+                }
+                
+                if (!activeHeading && contentHeadings.length > 0) {
+                    activeHeading = contentHeadings[0];
+                }
+                
+                if (activeHeading) {
+                    const activeId = activeHeading.id;
+                    
+                    tocLinks.forEach(link => {
+                        if (link.getAttribute('href') === `#${activeId}`) {
+                            link.classList.add('active');
+                            
+                            // Scroll the dynamic TOC sidebar to show active item
+                            const activeLinkRect = link.getBoundingClientRect();
+                            const sidebarRect = sidebar.getBoundingClientRect();
+                            
+                            if (activeLinkRect.top < sidebarRect.top || activeLinkRect.bottom > sidebarRect.bottom) {
+                                link.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                            }
+                        } else {
+                            link.classList.remove('active');
+                        }
+                    });
+                }
+            };
+
+            // Throttle scroll event for buttery performance
+            let isScrolling = false;
+            window.addEventListener('scroll', () => {
+                if (!isScrolling) {
+                    window.requestAnimationFrame(() => {
+                        updateScrollMetrics();
+                        isScrolling = false;
+                    });
+                    isScrolling = true;
+            }
+            }, { passive: true });
+
+            // Run once on load to initialize
+            setTimeout(updateScrollMetrics, 100);
+        });
+    </script>
+</body>
+</html>

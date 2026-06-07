@@ -142,22 +142,16 @@ const AnalysisPreview = ({ isDark }: { isDark: boolean }) => {
 
 const FlashcardPreview = ({ isDark }: { isDark: boolean }) => {
     const c = isDark
-        ? { bg: "#1a0e1e", card1: "#be185d", card2: "#9d174d", card3: "#831843", text: "#fce7f3", muted: "#4a044e" }
-        : { bg: "#fff1f2", card1: "#f43f5e", card2: "#e11d48", card3: "#be123c", text: "#ffffff", muted: "#ffe4e6" };
+        ? { bg: "#0d1117", card: "#1e293b", accent: "#6366f1", text: "#f8fafc", border: "#334155" }
+        : { bg: "#f8fafc", card: "#ffffff", accent: "#4f46e5", text: "#1e293b", border: "#e2e8f0" };
     return (
         <svg viewBox="0 0 240 120" fill="none" className="w-full h-full">
             <rect width="240" height="120" rx="8" fill={c.bg} />
-            {/* Stacked cards */}
-            <rect x="52" y="24" width="136" height="80" rx="10" fill={c.card3} opacity="0.4" transform="rotate(3 120 64)" />
-            <rect x="52" y="22" width="136" height="80" rx="10" fill={c.card2} opacity="0.6" transform="rotate(-2 120 62)" />
-            <rect x="52" y="20" width="136" height="80" rx="10" fill={c.card1} />
-            {/* Card content */}
-            <text x="120" y="50" textAnchor="middle" fontSize="8" fontWeight="600" fill={c.text}>Cos'è il DNA?</text>
-            <line x1="80" y1="58" x2="160" y2="58" stroke={c.text} strokeWidth="0.5" opacity="0.4" />
-            <text x="120" y="72" textAnchor="middle" fontSize="6.5" fill={c.text} opacity="0.8">Tocca per rivelare</text>
-            {/* Counter */}
-            <rect x="98" y="82" width="44" height="12" rx="6" fill="rgba(255,255,255,0.15)" />
-            <text x="120" y="91" textAnchor="middle" fontSize="6" fill={c.text}>3 / 20</text>
+            {/* Main card */}
+            <rect x="60" y="20" width="120" height="80" rx="12" fill={c.card} stroke={c.border} strokeWidth="1" />
+            <rect x="80" y="45" width="80" height="4" rx="2" fill={c.accent} opacity="0.3" />
+            <rect x="90" y="55" width="60" height="4" rx="2" fill={c.accent} opacity="0.3" />
+            <circle cx="120" cy="85" r="4" fill={c.accent} />
         </svg>
     );
 };
@@ -245,7 +239,7 @@ const ARTIFACTS: ArtifactCard[] = [
         description: "Trasforma interi blocchi di testo noioso in veloci e comode flashcard digitali pronte per essere sfogliate. La tecnica della ripetizione spaziata (Spaced Repetition) combinata al front/back delle card ti consentirà di fissare velocemente date, vocaboli, definizioni e formule senza inutili sforzi mnemonici.",
         route: "/app/artifacts/flashcards",
         tags: ["Studio", "Memorizzazione", "Ripasso", "Vocaboli"],
-        accentColor: "text-rose-500",
+        accentColor: "text-indigo-500",
         Preview: FlashcardPreview,
     },
     {

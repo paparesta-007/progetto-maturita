@@ -119,7 +119,7 @@ async function executeTool(name: string, args: any, token: string) {
 // --- ENDPOINT AGENTE ---
 router.post("/api/calendar/action", requireAuth, async (req: express.Request, res: express.Response) => {
     try {
-        const { text, modelName, messages: history = [] } = req.body;
+        const { text, modelName, messages: history = [], temperature } = req.body;
         const googleToken = req.body.googleToken || req.headers['x-google-token'] || "";
         const selectedModel = modelName || "deepseek/deepseek-chat";
 
@@ -154,6 +154,7 @@ router.post("/api/calendar/action", requireAuth, async (req: express.Request, re
                     messages: cachedMessages,
                     tools: TOOLS,
                     tool_choice: "auto",
+                    temperature: temperature ?? 0.5,
                     provider: { allow_fallbacks: false }
                 })
             });
@@ -208,6 +209,7 @@ router.post("/api/calendar/action", requireAuth, async (req: express.Request, re
                                             messages: cachedMessages,
                                             tools: TOOLS,
                                             tool_choice: "auto",
+                                            temperature: temperature ?? 0.5,
                                             provider: { allow_fallbacks: false }
                                         })
                                     });

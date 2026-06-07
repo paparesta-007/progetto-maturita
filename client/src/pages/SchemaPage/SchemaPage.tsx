@@ -1,13 +1,27 @@
-import React, { useRef, useEffect,useState } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useSchema, type SchemaNodeData } from '../../context/SchemaContext';
 import { useAuth } from '../../context/AuthContext';
 import SchemaTextbar from './Textbar';
-import { PlusIcon, TrashIcon } from '@phosphor-icons/react';
+import { PlusIcon, TrashIcon, DownloadSimple, FileCode, FilePdf, Palette, MagnifyingGlassPlus, MagnifyingGlassMinus,ArrowsOutCardinal } from '@phosphor-icons/react';
+import { toPng } from 'html-to-image';
+import jsPDF from 'jspdf';
 
 const generateId = () => {
     if (typeof crypto !== 'undefined' && crypto.randomUUID) return crypto.randomUUID();
     return Math.random().toString(36).substring(2, 11);
 };
+
+const SOFT_COLORS = [
+    { name: 'Default', value: '' },
+    { name: 'Blue', value: 'rgb(96, 165, 250)' },
+    { name: 'Green', value: 'rgb(74, 222, 128)' },
+    { name: 'Purple', value: 'rgb(192, 132, 252)' },
+    { name: 'Pink', value: 'rgb(244, 114, 182)' },
+    { name: 'Orange', value: 'rgb(251, 146, 60)' },
+    { name: 'Red', value: 'rgb(248, 113, 113)' },
+    { name: 'Teal', value: 'rgb(45, 212, 191)' },
+    { name: 'Yellow', value: 'rgb(250, 204, 21)' },
+];
 
 // --- 1. The Recursive Node Component ---
 const SchemaNode = ({ 
@@ -19,12 +33,30 @@ const SchemaNode = ({
     isRoot = false
 }: { 
     node: SchemaNodeData, 
-    onUpdate: (id: string, field: string, value: string) => void,
+    onUpdate: (id: string, field: string, value: any) => void,
     onAddChild: (id: string) => void,
     onDelete: (id: string) => void,
     isDark: boolean,
     isRoot?: boolean
 }) => {
+    const [showColorPicker, setShowColorPicker] = useState(false);
+    const pickerRef = useRef<HTMLDivElement>(null);
+
+    // Close picker when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
+                setShowColorPicker(false);
+            }
+        };
+        if (showColorPicker) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showColorPicker]);
+
     return (
         <li>
             {/* The Node Card */}
@@ -32,14 +64,17 @@ const SchemaNode = ({
                 isDark 
                     ? 'bg-[#0f0f13] border-white/10 hover:border-white/20' 
                     : 'bg-white border-neutral-200 shadow-sm hover:border-orange-300 hover:shadow-orange-500/10'
-            }`}>
+            }`}
+            style={{ borderColor: node.color ? `${node.color}44` : undefined }}
+            >
                 <div className="flex flex-col flex-grow items-center">
                     <input
                         type="text"
                         value={node.title}
                         onChange={(e) => onUpdate(node.id, 'title', e.target.value)}
                         placeholder="Titolo"
-                        className={`w-full text-sm font-bold bg-transparent text-center focus:outline-none placeholder-neutral-400 transition-colors ${isDark ? 'text-white focus:text-orange-400' : 'text-neutral-900 focus:text-orange-500'}`}
+                        style={{ color: node.color || undefined }}
+                        className={`w-full text-sm font-bold bg-transparent text-center focus:outline-none placeholder-neutral-400 transition-colors ${!node.color && (isDark ? 'text-white focus:text-orange-400' : 'text-neutral-900 focus:text-orange-500')}`}
                     />
                     <textarea
                         value={node.description}
@@ -66,23 +101,56 @@ const SchemaNode = ({
                         onClick={() => onAddChild(node.id)}
                         title="Aggiungi nodo figlio"
                         className={`p-1.5 rounded-full shadow-md transition-all active:scale-95 ${
-                            isDark ? 'text-white bg-neutral-800 hover:bg-neutral-700' : 'text-neutral-900 bg-white border border-neutral-200 hover:bg-neutral-50'
+                            isDark ? 'text-white bg-[rgb(38,38,38)] hover:bg-[rgb(64,64,64)]' : 'text-neutral-900 bg-white border border-neutral-200 hover:bg-neutral-50'
                         }`}
                     >
                         <PlusIcon size={14} weight="bold" />
+                    </button>
+                    <button 
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setShowColorPicker(!showColorPicker);
+                        }}
+                        title="Cambia colore"
+                        className={`p-1.5 rounded-full shadow-md transition-all active:scale-95 ${
+                            isDark ? 'text-white bg-[rgb(38,38,38)] hover:bg-[rgb(64,64,64)]' : 'text-neutral-900 bg-white border border-neutral-200 hover:bg-neutral-50'
+                        }`}
+                    >
+                        <Palette size={14} weight="bold" />
                     </button>
                     {!isRoot && (
                         <button 
                             onClick={() => onDelete(node.id)} 
                             title="Elimina nodo"
                             className={`p-1.5 rounded-full shadow-md text-red-500 transition-all active:scale-95 ${
-                                isDark ? 'bg-neutral-800 hover:bg-neutral-700' : 'bg-white border border-neutral-200 hover:bg-neutral-50'
+                                isDark ? 'bg-[rgb(38,38,38)] hover:bg-[rgb(64,64,64)]' : 'bg-white border border-neutral-200 hover:bg-neutral-50'
                             }`}
                         >
                             <TrashIcon size={14} weight="bold" />
                         </button>
                     )}
                 </div>
+
+                {/* Color Picker Popup */}
+                {showColorPicker && (
+                    <div 
+                        ref={pickerRef}
+                        className={`absolute top-full left-1/2 -translate-x-1/2 mt-2 p-2 rounded-xl border shadow-xl flex gap-1 z-20 ${isDark ? 'bg-[rgb(23,23,23)] border-[rgb(255,255,255,0.1)]' : 'bg-white border-neutral-200'}`}
+                    >
+                        {SOFT_COLORS.map((c) => (
+                            <button
+                                key={c.name}
+                                onClick={() => {
+                                    onUpdate(node.id, 'color', c.value);
+                                    setShowColorPicker(false);
+                                }}
+                                className="w-5 h-5 rounded-full border border-black/10 transition-transform hover:scale-125"
+                                style={{ backgroundColor: c.value || (isDark ? '#fff' : '#000') }}
+                                title={c.name}
+                            />
+                        ))}
+                    </div>
+                )}
             </div>
 
             {/* Children container with connecting lines */}
@@ -110,6 +178,14 @@ const SchemaBuilder = () => {
     const { schema, setSchema } = useSchema();
     const { theme } = useAuth();
     const isDark = theme === 'dark';
+    const containerRef = useRef<HTMLDivElement>(null);
+    const orgTreeRef = useRef<HTMLDivElement>(null);
+
+    // Zoom and Pan State
+    const [zoom, setZoom] = useState(1);
+    const [pan, setPan] = useState({ x: 0, y: 0 });
+    const [isPanning, setIsPanning] = useState(false);
+    const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
 
     const updateTree = (nodes: SchemaNodeData[], id: string, action: string, payload?: any): SchemaNodeData[] => {
         return nodes.reduce((acc: SchemaNodeData[], node) => {
@@ -123,7 +199,7 @@ const SchemaBuilder = () => {
                 } else if (action === 'ADD_CHILD') {
                     updatedNode.children = [
                         ...updatedNode.children,
-                        { id: generateId(), title: '', description: '', children: [] }
+                        { id: generateId(), title: '', description: '', x: 0, y: 0, children: [] }
                     ];
                 }
             } else if (updatedNode.children.length > 0) {
@@ -135,7 +211,7 @@ const SchemaBuilder = () => {
         }, []);
     };
 
-    const handleUpdate = (id: string, field: string, value: string) => {
+    const handleUpdate = (id: string, field: string, value: any) => {
         setSchema((prev) => updateTree(prev, id, 'UPDATE', { field, value }));
     };
 
@@ -150,8 +226,109 @@ const SchemaBuilder = () => {
     const handleAddRoot = () => {
         setSchema([
             ...schema,
-            { id: generateId(), title: '', description: '', children: [] }
+            { id: generateId(), title: '', description: '', x: 0, y: 0, children: [] }
         ]);
+    };
+
+    // Zoom Logic
+    const handleWheel = (e: React.WheelEvent) => {
+        // Use wheel for zoom without requiring Ctrl/Meta to avoid browser conflict
+        // Prevent default scrolling only if we are zooming
+        const delta = e.deltaY > 0 ? -0.1 : 0.1;
+        setZoom((prev) => {
+            const newZoom = Math.min(Math.max(prev + delta, 0.2), 3);
+            return newZoom;
+        });
+    };
+
+    // Pan Logic (Right Click)
+    const handleMouseDown = (e: React.MouseEvent) => {
+        if (e.button === 2) { // Right click
+            setIsPanning(true);
+            setLastMousePos({ x: e.clientX, y: e.clientY });
+        }
+    };
+
+    const handleMouseMove = useCallback((e: MouseEvent) => {
+        if (!isPanning) return;
+        const dx = e.clientX - lastMousePos.x;
+        const dy = e.clientY - lastMousePos.y;
+        setPan((prev) => ({ x: prev.x + dx, y: prev.y + dy }));
+        setLastMousePos({ x: e.clientX, y: e.clientY });
+    }, [isPanning, lastMousePos]);
+
+    const handleMouseUp = () => {
+        setIsPanning(false);
+    };
+
+    useEffect(() => {
+        if (isPanning) {
+            window.addEventListener('mousemove', handleMouseMove);
+            window.addEventListener('mouseup', handleMouseUp);
+        } else {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        }
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [isPanning, handleMouseMove]);
+
+    const resetView = () => {
+        setZoom(1);
+        setPan({ x: 0, y: 0 });
+    };
+
+    // Export Logic
+    const exportAsJSON = () => {
+        const dataStr = JSON.stringify(schema, null, 2);
+        const dataUri = 'data:application/json;charset=utf-8,'+ encodeURIComponent(dataStr);
+        const exportFileDefaultName = 'schema.json';
+        const linkElement = document.createElement('a');
+        linkElement.setAttribute('href', dataUri);
+        linkElement.setAttribute('download', exportFileDefaultName);
+        linkElement.click();
+    };
+
+    const exportAsPDF = async () => {
+        if (!orgTreeRef.current) return;
+        
+        const oldZoom = zoom;
+        const oldPan = pan;
+
+        try {
+            // Reset for capture
+            setZoom(1);
+            setPan({ x: 0, y: 0 });
+
+            // Wait for render
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            const element = orgTreeRef.current;
+            const dataUrl = await toPng(element, {
+                backgroundColor: isDark ? '#07070a' : '#f9fafb',
+                quality: 1,
+                pixelRatio: 2,
+                skipFonts: true // Faster and often avoids issues
+            });
+
+            const pdf = new jsPDF({
+                orientation: 'landscape',
+                unit: 'px',
+                format: [element.scrollWidth, element.scrollHeight]
+            });
+
+            pdf.addImage(dataUrl, 'PNG', 0, 0, element.scrollWidth, element.scrollHeight);
+            pdf.save('schema.pdf');
+
+        } catch (error) {
+            console.error('Errore durante esportazione PDF:', error);
+            alert('Errore durante l\'esportazione del PDF. Riprova.');
+        } finally {
+            setZoom(oldZoom);
+            setPan(oldPan);
+        }
     };
 
     return (
@@ -159,14 +336,50 @@ const SchemaBuilder = () => {
             <div className="w-full flex-1 flex flex-col space-y-6 min-h-0">
                 <div className="flex items-center justify-between">
                     <h2 className="text-2xl font-bold tracking-tight">Schema Builder</h2>
-                    <button 
-                        onClick={handleAddRoot} 
-                        className={`text-sm px-4 py-2 rounded-xl font-bold transition-all ${
-                            isDark ? 'bg-white text-black hover:bg-neutral-200' : 'bg-black text-white hover:bg-neutral-800'
-                        }`}
-                    >
-                        + Add Root Node
-                    </button>
+                    
+                    <div className="flex items-center gap-2">
+                         {/* Controls */}
+                         <div className={`flex items-center gap-1 p-1 rounded-xl border ${isDark ? 'bg-rgb(23,23,23) border-[rgb(255,255,255,0.1)]' : 'bg-neutral-100 border-neutral-200'}`}>
+                            <button onClick={() => setZoom(prev => Math.max(prev - 0.1, 0.2))} className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors" title="Zoom Out"><MagnifyingGlassMinus size={18}/></button>
+                            <span className="text-xs font-mono w-10 text-center">{Math.round(zoom * 100)}%</span>
+                            <button onClick={() => setZoom(prev => Math.min(prev + 0.1, 3))} className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors" title="Zoom In"><MagnifyingGlassPlus size={18}/></button>
+                            <div className="w-px h-4 bg-white/10 mx-1"/>
+                            <button onClick={resetView} className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors" title="Reset View"><ArrowsOutCardinal size={18}/></button>
+                        </div>
+
+                        <div className="w-px h-6 bg-white/10 mx-1"/>
+
+                        {/* Export Buttons */}
+                        <div className="flex items-center gap-2">
+                            <button 
+                                onClick={exportAsJSON}
+                                className={`flex items-center gap-2 text-xs px-3 py-2 rounded-xl font-bold transition-all ${
+                                    isDark ? 'bg-neutral-800 text-white hover:bg-neutral-700' : 'bg-neutral-200 text-black hover:bg-neutral-300'
+                                }`}
+                            >
+                                <FileCode size={16} /> JSON
+                            </button>
+                            <button 
+                                onClick={exportAsPDF}
+                                className={`flex items-center gap-2 text-xs px-3 py-2 rounded-xl font-bold transition-all ${
+                                    isDark ? 'bg-neutral-800 text-white hover:bg-neutral-700' : 'bg-neutral-200 text-black hover:bg-neutral-300'
+                                }`}
+                            >
+                                <FilePdf size={16} /> PDF
+                            </button>
+                        </div>
+
+                        <div className="w-px h-6 bg-white/10 mx-1"/>
+
+                        <button 
+                            onClick={handleAddRoot} 
+                            className={`text-sm px-4 py-2 rounded-xl font-bold transition-all ${
+                                isDark ? 'bg-white text-black hover:bg-neutral-200' : 'bg-black text-white hover:bg-neutral-800'
+                            }`}
+                        >
+                            + Add Root Node
+                        </button>
+                    </div>
                 </div>
                 
                 <style>{`
@@ -176,6 +389,8 @@ const SchemaBuilder = () => {
                         justify-content: center;
                         align-items: flex-start;
                         padding: 2rem;
+                        transition: transform 0.1s ease-out;
+                        transform-origin: center center;
                     }
                     .org-tree ul {
                         padding-top: 2rem;
@@ -238,8 +453,13 @@ const SchemaBuilder = () => {
                     }
                 `}</style>
                 
-                <div className={`w-full flex-1 h-full overflow-auto rounded-2xl border ${isDark ? 'bg-[#07070a] border-white/[0.08]' : 'bg-neutral-50 border-neutral-200'}`} style={{
-                     backgroundImage: `radial-gradient(${isDark ? '#ffffff1a' : '#0000001a'} 1px, transparent 0)`,
+                <div 
+                    ref={containerRef}
+                    onWheel={handleWheel}
+                    onMouseDown={handleMouseDown}
+                    onContextMenu={(e) => e.preventDefault()}
+                    className={`relative w-full flex-1 h-full overflow-hidden rounded-2xl border cursor-grab active:cursor-grabbing ${isDark ? 'bg-[#07070a] border-[rgb(255,255,255,0.1)]' : 'bg-[#f9fafb] border-neutral-200'}`} style={{
+                     backgroundImage: `radial-gradient(${isDark ? '#ffffff1a' : '#0000001a'} 1px, rgba(0,0,0,0) 0)`,
                      backgroundSize: '30px 30px'
                 }}>
                     {schema.length === 0 ? (
@@ -247,7 +467,13 @@ const SchemaBuilder = () => {
                             Nessun nodo presente. Aggiungi una radice per iniziare.
                         </div>
                     ) : (
-                        <div className="org-tree min-w-max">
+                        <div 
+                            ref={orgTreeRef}
+                            className="org-tree min-w-max"
+                            style={{ 
+                                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                            }}
+                        >
                             <ul>
                                 {schema.map((node) => (
                                     <SchemaNode
@@ -263,6 +489,11 @@ const SchemaBuilder = () => {
                             </ul>
                         </div>
                     )}
+
+                    {/* Hint */}
+                    <div className="absolute bottom-4 left-4 text-[10px] opacity-40 uppercase tracking-widest font-bold">
+                        Rotellina per Zoom • Tasto Destro per Pan
+                    </div>
                 </div>
             </div>
         </div>

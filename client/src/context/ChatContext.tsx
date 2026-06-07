@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import getAllConversation from "../services/supabase/Conversation/getAllConversation";
 import { useAuth } from "./AuthContext";
 import getMessages from "../services/supabase/Conversation/getMessages";
-import { sendNormalMessage, sendStreamedMessage, sendCanvasMessage, sendWebSearchMessage, type ChatOptions, type RenderMode } from "../library/sendMessage";
+import { sendNormalMessage, sendStreamedMessage, sendCanvasMessage, type ChatOptions, type RenderMode } from "../library/sendMessage";
 import { useNavigate } from "react-router-dom";
 interface ChatContextType {
     sendMessage: (message: string, functionality: string, reasoning: string, files?: any[]) => Promise<void>;
@@ -35,6 +35,9 @@ interface ChatContextType {
     isBetterView: boolean;
     setIsBetterView: React.Dispatch<React.SetStateAction<boolean>>;
 
+    temperature: number;
+    setTemperature: React.Dispatch<React.SetStateAction<number>>;
+
     draftMessage: string;
     setDraftMessage: React.Dispatch<React.SetStateAction<string>>;
     abortRequest: () => void;
@@ -57,6 +60,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const [currentConversationName, setCurrentConversationName] = useState<string | null>(null);
     const [isTemporaryConversation, setIsTemporaryConversation] = useState(false);
     const [isBetterView, setIsBetterView] = useState(true);
+    const [temperature, setTemperature] = useState(1.0);
     const [draftMessage, setDraftMessage] = useState("");
     const [abortController, setAbortController] = useState<AbortController | null>(null);
     const navigate = useNavigate();
@@ -114,15 +118,15 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
             allowedCustomInstructions,
             isTemporary: isTemporaryConversation,
             reasoning,
+            temperature,
             attachedFiles: files,
-            signal: controller.signal
+            signal: controller.signal,
+            webSearch: functionality === "web_search"
         };
 
         try {
             const res = await (functionality === "canvas" 
                 ? sendCanvasMessage(message, setMessageHistory, setLoading, model, messageHistory)
-                : functionality === "web_search"
-                ? sendWebSearchMessage(message, setMessageHistory, setLoading, model, messageHistory)
                 : isStreamTextEnabled
                 ? sendStreamedMessage(message, setMessageHistory, setLoading, model, messageHistory, currentConversationId, user?.id, setCurrentConversationId, fetchConversations, navigate, chatOptions,isBetterView)
                 : sendNormalMessage(message, setMessageHistory, setLoading, model, messageHistory, currentConversationId, user?.id, setCurrentConversationId, fetchConversations, navigate, chatOptions,isBetterView));
@@ -137,7 +141,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         } finally {
             setAbortController(null);
         }
-    }, [abortController, isStreamTextEnabled, model, messageHistory, currentConversationId, user, systemPrompt, personalInfo, tone, allowedCustomInstructions, fetchConversations, navigate, isTemporaryConversation, updateConversationPosition, isBetterView]);
+    }, [abortController, isStreamTextEnabled, model, messageHistory, currentConversationId, user, systemPrompt, personalInfo, tone, allowedCustomInstructions, fetchConversations, navigate, isTemporaryConversation, updateConversationPosition, isBetterView, temperature]);
 
     const loadConversation = useCallback(async (conversationId: string) => {
         try {
@@ -269,6 +273,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         updateConversationPosition,
         isBetterView,
         setIsBetterView,
+        temperature,
+        setTemperature,
         draftMessage,
         setDraftMessage,
         abortRequest
@@ -291,6 +297,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         updateConversationPosition,
         isBetterView,
         setIsBetterView,
+        temperature,
+        setTemperature,
         draftMessage,
         setDraftMessage,
         abortRequest
