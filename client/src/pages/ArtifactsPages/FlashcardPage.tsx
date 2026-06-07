@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { useChat } from "../../context/ChatContext";
-import OptionsPopup from "../../components/other/OptionsPopup";
 import { 
     Cards as CardsIcon,
     Plus,
@@ -31,7 +29,6 @@ interface Flashcard {
 
 const FlashcardPage = () => {
     const { theme } = useAuth();
-    const { temperature } = useChat();
     const isDark = theme === 'dark';
 
     const [inputText, setInputText] = useState("");
@@ -61,7 +58,7 @@ const FlashcardPage = () => {
                     "Content-Type": "application/json",
                     "Authorization": `Bearer ${token}`
                 },
-                body: JSON.stringify({ text: inputText, difficulty, temperature }),
+                body: JSON.stringify({ text: inputText, difficulty, temperature: 0.5 }),
             });
 
             if (!response.ok) throw new Error("Errore durante la generazione");
@@ -103,7 +100,7 @@ const FlashcardPage = () => {
                 body: JSON.stringify({ 
                     card: cards[currentIndex],
                     contextText: inputText.substring(0, 1000),
-                    temperature
+                    temperature: 0.5
                 }),
             });
 
@@ -192,17 +189,14 @@ const FlashcardPage = () => {
                             <p className={`text-[10px] font-medium opacity-60 ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>Metodo di studio avanzato</p>
                         </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                        {cards.length > 0 && (
-                            <div className={`flex items-center gap-4 px-4 py-2 rounded-2xl border ${isDark ? "bg-white/5 border-white/5" : "bg-neutral-50 border-neutral-100"}`}>
-                                <div className="flex items-center gap-1.5 opacity-40">
-                                    <Keyboard size={14} />
-                                    <span className="text-[10px] font-bold uppercase tracking-widest">Space to Flip • Arrows to Nav • D for Details • H for Hint</span>
-                                </div>
+                    {cards.length > 0 && (
+                        <div className={`flex items-center gap-4 px-4 py-2 rounded-2xl border ${isDark ? "bg-white/5 border-white/5" : "bg-neutral-50 border-neutral-100"}`}>
+                            <div className="flex items-center gap-1.5 opacity-40">
+                                <Keyboard size={14} />
+                                <span className="text-[10px] font-bold uppercase tracking-widest">Space to Flip • Arrows to Nav • D for Details • H for Hint</span>
                             </div>
-                        )}
-                        <OptionsPopup />
-                    </div>
+                        </div>
+                    )}
                 </div>
             </header>
 

@@ -1,7 +1,5 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { useChat } from "../../context/ChatContext";
-import OptionsPopup from "../../components/other/OptionsPopup";
 import { 
     Translate as TranslateIcon, 
     Copy, 
@@ -13,7 +11,11 @@ import {
     Flask,
     X,
     CaretDown,
-    Minus
+    Minus,
+    GearSix,
+    ChatTeardropText,
+    Student,
+    Briefcase
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import supabase from "../../library/supabaseclient";
@@ -35,7 +37,6 @@ const LANGUAGES = [
 
 const TranslatorPage = () => {
     const { theme } = useAuth();
-    const { temperature } = useChat();
     const isDark = theme === 'dark';
 
     const [sourceLang, setSourceLang] = useState(LANGUAGES[0]);
@@ -45,6 +46,14 @@ const TranslatorPage = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [copied, setCopied] = useState(false);
     const [isSourceFocused, setIsSourceFocused] = useState(false);
+
+    // Settings Popup State
+    const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+    const [settings, setSettings] = useState({
+        tone: 'Naturale',
+        complexity: 'Bilanciato',
+        context: 'Generale'
+    });
 
     // Selection & Focus
     const [selection, setSelection] = useState<{ text: string, x: number, y: number } | null>(null);
@@ -68,9 +77,13 @@ const TranslatorPage = () => {
                     "Authorization": `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    message: `Traduci il seguente testo da ${sourceLang.name} a ${targetLang.name}. Testo: ${sourceText}`,
+                    message: `Traduci il seguente testo da ${sourceLang.name} a ${targetLang.name}. 
+                    Tono richiesto: ${settings.tone}. 
+                    Complessità: ${settings.complexity}. 
+                    Contesto: ${settings.context}.
+                    Testo: ${sourceText}`,
                     history: [],
-                    temperature
+                    temperature: 0.5
                 }),
             });
 
@@ -137,16 +150,16 @@ const TranslatorPage = () => {
     const handleFocus = async (type: 'meaning' | 'usecases' | 'bestpractices') => {
         if (!selection) return;
         setIsFocusLoading(true);
-        setFocusData(null);
+        setFocusData({ type, content: "" });
         setIsFocusMinimized(false);
         try {
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token;
 
             let prompt = "";
-            if (type === 'meaning') prompt = `Analizza il significato di: "${selection.text}"`;
-            if (type === 'usecases') prompt = `Esempi d'uso per: "${selection.text}"`;
-            if (type === 'bestpractices') prompt = `Best practices e cultura per: "${selection.text}"`;
+            if (type === 'meaning') prompt = `Analizza il significato di: "${selection.text}" in un contesto di traduzione ${sourceLang.name} -> ${targetLang.name}.`;
+            if (type === 'usecases') prompt = `Esempi d'uso per: "${selection.text}" sia in ${sourceLang.name} che in ${targetLang.name}.`;
+            if (type === 'bestpractices') prompt = `Suggerimenti di traduzione e sfumature culturali per: "${selection.text}" tra ${sourceLang.name} e ${targetLang.name}.`;
 
             const response = await fetch("http://localhost:3000/api/artifacts/translate", {
                 method: "POST",
@@ -157,14 +170,28 @@ const TranslatorPage = () => {
                 body: JSON.stringify({
                     message: prompt,
                     history: [],
-                    temperature
+                    temperature: 0.5
                 }),
             });
 
-            const data = await response.json();
-            setFocusData({ type, content: data.text });
+            if (!response.ok || !response.body) throw new Error("Errore durante l'analisi");
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                setFocusData(prev => ({
+                    ...prev!,
+                    content: prev!.content + chunk
+                }));
+            }
         } catch (error) {
             console.error(error);
+            setFocusData({ type, content: "Errore durante l'analisi. Riprova." });
         } finally {
             setIsFocusLoading(false);
             setSelection(null);
@@ -174,7 +201,7 @@ const TranslatorPage = () => {
     return (
         <div className={`h-full w-full flex flex-col overflow-hidden transition-colors duration-500 ${isDark ? "bg-[#07070a] text-[#f4f1ea]" : "bg-[#fdfcfb] text-neutral-900"}`}>
             {/* Header */}
-            <header className={`px-8 py-4 border-b flex items-center justify-between ${isDark ? "border-white/5" : "border-neutral-200"}`}>
+            <header className={`px-8 py-4 border-b flex items-center justify-between relative z-[100] ${isDark ? "border-white/5 bg-[#07070a]" : "border-neutral-200 bg-[#fdfcfb]"}`}>
                 <div className="flex items-center gap-3">
                     <div className="p-2 rounded-2xl bg-cyan-500/10 text-cyan-500">
                         <TranslateIcon size={20} weight="duotone" />
@@ -184,7 +211,91 @@ const TranslatorPage = () => {
                         <p className={`text-[10px] font-medium opacity-60 ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>Traduzione avanzata con analisi del contesto</p>
                     </div>
                 </div>
-                <OptionsPopup />
+                
+                <button 
+                    onClick={() => setIsSettingsOpen(!isSettingsOpen)}
+                    className={`p-2.5 rounded-2xl transition-all active:scale-90 ${isDark ? "bg-white/5 hover:bg-white/10 text-neutral-400" : "bg-neutral-100 hover:bg-neutral-200 text-neutral-600"}`}
+                >
+                    <GearSix size={20} weight={isSettingsOpen ? "fill" : "regular"} className={isSettingsOpen ? "text-cyan-500" : ""} />
+                </button>
+
+                {/* New Settings Popup */}
+                <AnimatePresence>
+                    {isSettingsOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, y: -20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -20 }}
+                            className={`absolute top-full right-8 mt-4 w-72 p-6 rounded-3xl border shadow-2xl backdrop-blur-3xl transition-colors duration-500 ${
+                                isDark ? "bg-[#0f0f13]/90 border-white/10 shadow-black/40" : "bg-white/95 border-neutral-200 shadow-neutral-200/30"
+                            }`}
+                        >
+                            <div className="space-y-6">
+                                <div>
+                                    <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-40 mb-3">Tono di Voce</h4>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {['Naturale', 'Formale', 'Creativo', 'Accademico'].map(t => (
+                                            <button 
+                                                key={t}
+                                                onClick={() => setSettings(prev => ({ ...prev, tone: t }))}
+                                                className={`px-3 py-2 rounded-xl text-[11px] font-bold transition-all ${
+                                                    settings.tone === t 
+                                                        ? "bg-cyan-500 text-white" 
+                                                        : (isDark ? "bg-white/5 hover:bg-white/10 text-neutral-400" : "bg-neutral-50 hover:bg-neutral-100 text-neutral-600")
+                                                }`}
+                                            >
+                                                {t}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-40 mb-3">Complessità</h4>
+                                    <div className="flex p-1 rounded-2xl bg-neutral-500/5 border border-white/5">
+                                        {['Semplice', 'Bilanciato', 'Tecnico'].map(c => (
+                                            <button 
+                                                key={c}
+                                                onClick={() => setSettings(prev => ({ ...prev, complexity: c }))}
+                                                className={`flex-1 py-1.5 rounded-xl text-[10px] font-bold transition-all ${
+                                                    settings.complexity === c 
+                                                        ? (isDark ? "bg-white/10 text-white" : "bg-white text-neutral-900 shadow-sm") 
+                                                        : "text-neutral-500 hover:text-neutral-400"
+                                                }`}
+                                            >
+                                                {c}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <h4 className="text-[10px] font-bold uppercase tracking-[0.2em] opacity-40 mb-3">Contesto Preferito</h4>
+                                    <div className="space-y-1.5">
+                                        {[
+                                            { id: 'Generale', icon: <ChatTeardropText size={14} />, label: 'Conversazione' },
+                                            { id: 'Studio', icon: <Student size={14} />, label: 'Accademico' },
+                                            { id: 'Business', icon: <Briefcase size={14} />, label: 'Lavoro' }
+                                        ].map(ctx => (
+                                            <button 
+                                                key={ctx.id}
+                                                onClick={() => setSettings(prev => ({ ...prev, context: ctx.id }))}
+                                                className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-semibold transition-all ${
+                                                    settings.context === ctx.id 
+                                                        ? (isDark ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20" : "bg-cyan-50 text-cyan-600 border border-cyan-100") 
+                                                        : (isDark ? "hover:bg-white/5 text-neutral-400" : "hover:bg-neutral-50 text-neutral-500")
+                                                }`}
+                                            >
+                                                {ctx.icon}
+                                                {ctx.label}
+                                            </button>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </header>
 
             <main className="flex-1 flex flex-col overflow-hidden p-8 max-w-7xl mx-auto w-full">
@@ -380,14 +491,14 @@ const TranslatorPage = () => {
                                     
                                     <div className="relative">
                                         <div className={`text-base leading-relaxed max-h-[400px] overflow-y-auto pr-4 custom-scrollbar ${isDark ? "text-neutral-200" : "text-neutral-800"}`}>
-                                            {isFocusLoading ? (
+                                            {isFocusLoading && !focusData?.content ? (
                                                 <div className="space-y-3">
                                                     <div className="h-4 bg-current opacity-10 rounded w-full animate-pulse" />
                                                     <div className="h-4 bg-current opacity-10 rounded w-5/6 animate-pulse" />
                                                     <div className="h-4 bg-current opacity-10 rounded w-4/6 animate-pulse" />
                                                 </div>
                                             ) : (
-                                                focusData?.content && <MarkdownRender text={focusData.content} />
+                                                focusData?.content && <MarkdownRender text={focusData.content} isStreaming={isFocusLoading} />
                                             )}
                                         </div>
                                     </div>

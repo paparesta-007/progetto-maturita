@@ -1,14 +1,7 @@
 import React, { useState, useRef, useCallback } from "react";
-import { PaperPlaneTilt, StopIcon, LightningIcon, GaugeIcon, BrainIcon } from "@phosphor-icons/react";
+import { PaperPlaneTilt, StopIcon } from "@phosphor-icons/react";
 import { useSchema } from "../../context/SchemaContext";
 import { useAuth } from "../../context/AuthContext";
-import SelectPopup, { type SelectOption } from "../../components/other/SelectPopup";
-
-const REASONING_MODELS: SelectOption<string>[] = [
-    { label: "Fast", value: "fast", icon: <LightningIcon size={16} />, description: "openai/gpt-oss-120b" },
-    { label: "Balanced", value: "balanced", icon: <GaugeIcon size={16} />, description: "google/gemma-4-31b-it" },
-    { label: "Pro", value: "pro", icon: <BrainIcon size={16} />, description: "xiaomi/mimo-v2.5" },
-];
 
 const SchemaTextbar = () => {
     const { theme } = useAuth();
@@ -16,7 +9,6 @@ const SchemaTextbar = () => {
     const { sendMessage, loading } = useSchema();
 
     const [inputValue, setInputValue] = useState("");
-    const [reasoning, setReasoning] = useState<string>("fast");
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
     const handleSendMessage = useCallback(async () => {
@@ -26,8 +18,8 @@ const SchemaTextbar = () => {
         if (textareaRef.current) {
             textareaRef.current.style.height = "auto";
         }
-        await sendMessage(text, reasoning);
-    }, [inputValue, loading, reasoning, sendMessage]);
+        await sendMessage(text, "fast");
+    }, [inputValue, loading, sendMessage]);
 
     const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -81,17 +73,6 @@ const SchemaTextbar = () => {
                 >
                     {loading ? <StopIcon size={20} weight="fill" /> : <PaperPlaneTilt size={20} weight="fill" />}
                 </button>
-            </div>
-
-            {/* STRUMENTI INFERIORI */}
-            <div className="flex items-center justify-end px-2 pb-1">
-                <div className="flex items-center gap-4">
-                    <SelectPopup 
-                        options={REASONING_MODELS} 
-                        value={reasoning} 
-                        onChange={(value) => setReasoning(value)} 
-                    />
-                </div>
             </div>
         </div>
     );

@@ -1,7 +1,5 @@
 import React, { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { useChat } from "../../context/ChatContext";
-import OptionsPopup from "../../components/other/OptionsPopup";
 import { LightningIcon, PaperPlaneRight } from "@phosphor-icons/react";
 import type { SelectOption } from "../../components/other/SelectPopup";
 import { BrainIcon, CheckCircle2, ChevronLeft, ChevronRight, GaugeIcon, RotateCcw, XCircle } from "lucide-react";
@@ -17,17 +15,10 @@ const QuizTextbar = ({
     isDark: boolean
 }) => {
     const [text, setText] = useState("");
-    const [mode, setMode] = useState("standard");
-
-    const REASONING: SelectOption<string>[] = [
-        { label: "Veloce", value: "fast", icon: <LightningIcon size={16} />, description: "Risposte rapide" },
-        { label: "Standard", value: "standard", icon: <GaugeIcon size={16} />, description: "Bilanciato" },
-        { label: "Accurato", value: "accurate", icon: <BrainIcon size={16} />, description: "Più preciso" },
-    ];
 
     const handleSubmit = () => {
         if (!text.trim()) return;
-        onSubmit(text, mode);
+        onSubmit(text, "standard");
         setText("");
     };
 
@@ -59,11 +50,7 @@ const QuizTextbar = ({
                 } custom-scrollbar`}
             />
 
-            <div className={`flex items-center justify-between mt-3 pt-3 border-t ${isDark ? "border-white/5" : "border-neutral-100"}`}>
-                <div className="flex items-center gap-3">
-                    <SelectPopup options={REASONING} value={mode} onChange={setMode} />
-                </div>
-
+            <div className={`flex items-center justify-end mt-3 pt-3 border-t ${isDark ? "border-white/5" : "border-neutral-100"}`}>
                 <button
                     onClick={handleSubmit}
                     disabled={!text.trim()}
@@ -83,7 +70,6 @@ const QuizTextbar = ({
 // --- PAGINA PRINCIPALE: QuizPage ---
 const QuizPage = () => {
     const { theme } = useAuth();
-    const { temperature } = useChat();
     const isDark = theme === 'dark';
 
     const [isLoading, setIsLoading] = useState(false);
@@ -101,7 +87,7 @@ const QuizPage = () => {
         setCurrentQuestionIndex(0);
 
         try {
-            const response = await SendQuizMessage(promptText, selectedMode, temperature);
+            const response = await SendQuizMessage(promptText, selectedMode, 0.5);
             if (response.success) {
                 setQuiz(response.data);
             } else {
@@ -153,14 +139,9 @@ const QuizPage = () => {
             <main className="flex-1 flex flex-col items-center overflow-y-auto p-6 custom-scrollbar relative z-10">
                 <div className="w-full max-w-3xl mt-12">
                     {/* Header */}
-                    <div className="flex items-center justify-between mb-10">
-                        <div className="flex-1 text-center">
-                            <h2 className="text-3xl font-bold mb-3 bg-gradient-to-r from-orange-500 to-orange-300 bg-clip-text text-transparent">Interactive Quiz</h2>
-                            <p className={`text-sm ${isDark ? "opacity-50" : "text-neutral-500"}`}>Sfida la tua mente con quiz generati dall'AI.</p>
-                        </div>
-                        <div className="absolute top-8 right-8">
-                            <OptionsPopup />
-                        </div>
+                    <div className="text-center mb-10">
+                        <h2 className="text-3xl font-bold mb-3 bg-gradient-to-r from-orange-500 to-orange-300 bg-clip-text text-transparent">Interactive Quiz</h2>
+                        <p className={`text-sm ${isDark ? "opacity-50" : "text-neutral-500"}`}>Sfida la tua mente con quiz generati dall'AI.</p>
                     </div>
 
                     {/* Input View */}
