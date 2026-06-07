@@ -9,13 +9,27 @@ import { Check, Copy } from "lucide-react"; // Importa icone se vuoi usarle (opz
 
 const MarkdownRender = ({ text, isStreaming }: { text: string; isStreaming?: boolean }) => {
     const [htmlContent, setHtmlContent] = useState<string>("");
-    const [isLoading, setIsLoading] = useState<boolean>(true);
+    const [isLoading, setIsLoading] = useState<boolean>(!text);
     const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const { theme } = useAuth();
     const containerRef = useRef<HTMLDivElement>(null); 
     const previousTextRef = useRef<string>("");
 
     // --- PIPELINE DI RENDERING ---
+    const renderMarkdownSync = (rawText: string) => {
+        // Versione sincrona e semplificata per streaming veloce
+        try {
+            const tokens = marked.lexer(rawText);
+            const html = marked.parser(tokens);
+            return DOMPurify.sanitize(html, {
+                ADD_TAGS: ['math', 'semantics', 'mrow', 'mn', 'mo', 'mi', 'msup', 'msub', 'mfrac', 'mtext', 'annotation', 'annotation-xml', 'svg', 'path', 'g', 'div', 'span', 'pre', 'code', 'button', 'rect'],
+                ADD_ATTR: ['style', 'class', 'viewBox', 'd', 'fill', 'xmlns', 'width', 'height', 'data-language', 'data-code', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'x', 'y', 'rx', 'ry', 'aria-hidden']
+            });
+        } catch (e) {
+            return rawText;
+        }
+    };
+
     const renderMarkdown = useCallback(async (rawText: string) => {
         const latexMap = new Map<string, string>();
         let latexCounter = 0;
@@ -154,10 +168,17 @@ const MarkdownRender = ({ text, isStreaming }: { text: string; isStreaming?: boo
 
     useEffect(() => {
         let isCancelled = false;
-        const executeRender = async () => {
-            if (!text || text === previousTextRef.current) return;
-            previousTextRef.current = text;
+        
+        if (!text || text === previousTextRef.current) return;
+        previousTextRef.current = text;
 
+        if (isStreaming) {
+            setHtmlContent(renderMarkdownSync(text));
+            setIsLoading(false);
+            return;
+        }
+
+        const executeRender = async () => {
             try {
                 const html = await renderMarkdown(text);
                 if (!isCancelled) {
@@ -170,12 +191,8 @@ const MarkdownRender = ({ text, isStreaming }: { text: string; isStreaming?: boo
         };
 
         if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
-        
-        // Se sta streamando e il testo è corto, renderizziamo subito per reattività.
-        // Se il testo è lungo, usiamo un debounce più aggressivo.
-        const delay = isStreaming ? (text.length > 1000 ? 100 : 40) : 0; 
+        debounceTimerRef.current = setTimeout(executeRender, 0);
 
-        debounceTimerRef.current = setTimeout(executeRender, delay);
         return () => {
             isCancelled = true;
             if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
@@ -233,7 +250,7 @@ const MarkdownRender = ({ text, isStreaming }: { text: string; isStreaming?: boo
         <div
             ref={containerRef} // Colleghiamo il ref qui
             className={`renderChat prose max-w-none ${theme === 'dark' ? 'prose-invert' : ''}`}
-            dangerouslySetInnerHTML={{ __html: htmlContent }}
+            dangerouslySetInnerHTML={{ __html: htmlContent || text }}
         />
     );
 };

@@ -1,11 +1,212 @@
 import express from "express";
 import { OPENROUTER_KEY } from "../config/enviroments.js";
+import { TRANSLATOR_SYSTEM_PROMPT } from "../static/prompt/translatePrompt.js";
+import { FLASHCARD_SYSTEM_PROMPT } from "../static/prompt/flashcardPrompt.js";
+import { FLASHCARD_DEEP_DIVE_PROMPT } from "../static/prompt/flashcardDeepDivePrompt.js";
 
 const router = express.Router();
 
+router.post("/flashcards/generate", async function (req, res) {
+    try {
+        const { text, difficulty } = req.body;
+        if (!text) return res.status(400).json({ error: "Testo mancante" });
+
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${OPENROUTER_KEY}`,
+                "Content-Type": "application/json",
+                "X-OpenRouter-Cache": "true"
+            },
+            body: JSON.stringify({
+                model: "mistralai/mistral-small-3.2-24b-instruct",
+                messages: [
+                    { role: "system", content: FLASHCARD_SYSTEM_PROMPT },
+                    { role: "user", content: `Genera flashcards di livello ${difficulty || 'Medium'} per questo testo:\n\n${text}` }
+                ],
+                response_format: { type: "json_object" },
+                temperature: 0.5
+            })
+        });
+
+        if (!response.ok) throw new Error("Errore API OpenRouter");
+        const data = await response.json();
+        const content = JSON.parse(data.choices[0].message.content);
+        
+        const cards = Array.isArray(content) ? content : (content.flashcards || content.cards || []);
+        // Strip details if present to ensure clean response
+        const cleanCards = cards.map((c: any) => ({
+            front: c.front,
+            back: c.back,
+            hint: c.hint
+        }));
+        return res.status(200).json({ cards: cleanCards });
+    } catch (error: any) {
+        console.error(error);
+        return res.status(500).json({ error: error.message });
+    }
+});
+
+router.post("/flashcards/deep-dive", async function (req, res) {
+    try {
+        const { card, contextText } = req.body;
+        
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${OPENROUTER_KEY}`,
+                "Content-Type": "application/json",
+                "X-OpenRouter-Cache": "true"
+            },
+            body: JSON.stringify({
+                model: "openai/gpt-oss-20b:nitro",
+                messages: [
+                    { role: "system", content: FLASHCARD_DEEP_DIVE_PROMPT },
+                    { role: "user", content: `Fornisci un approfondimento per questa flashcard:\nDomanda: ${card.front}\nRisposta: ${card.back}\n\nContesto originale (se utile): ${contextText || 'N/A'}` }
+                ],
+                temperature: 0.5,
+                stream: true
+            })
+        });
+
+        if (!response.ok || !response.body) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(`Errore API OpenRouter: ${response.status} - ${JSON.stringify(errorData)}`);
+        }
+
+        res.setHeader("Content-Type", "text/plain; charset=utf-8");
+        res.setHeader("Transfer-Encoding", "chunked");
+        res.setHeader("X-Accel-Buffering", "no");
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            let boundary = buffer.lastIndexOf("\n");
+            if (boundary === -1) continue;
+
+            const completeData = buffer.substring(0, boundary);
+            buffer = buffer.substring(boundary + 1);
+
+            const lines = completeData.split("\n");
+            for (const line of lines) {
+                const trimmedLine = line.trim();
+                if (trimmedLine.startsWith("data: ")) {
+                    const dataStr = trimmedLine.slice(6);
+                    if (dataStr === "[DONE]") continue;
+
+                    try {
+                        const parsed = JSON.parse(dataStr);
+                        const textPart = parsed.choices?.[0]?.delta?.content;
+                        if (textPart) {
+                            res.write(textPart);
+                        }
+                    } catch (e) {
+                        // Partial JSON or other error
+                    }
+                }
+            }
+        }
+        res.end();
+
+    } catch (error: any) {
+        console.error(error);
+        if (!res.headersSent) {
+            return res.status(500).json({ error: error.message });
+        }
+        res.end();
+    }
+});
+
+router.post("/translate", async function (req: express.Request, res: express.Response) {
+    try {
+        const { message, history: rawHistory, systemPromptUser } = req.body;
+        const history = Array.isArray(rawHistory) ? rawHistory : [];
+
+        // Prioritize custom system prompt if provided, else use default
+        const finalSystemPrompt = systemPromptUser || TRANSLATOR_SYSTEM_PROMPT;
+
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${OPENROUTER_KEY}`,
+                "Content-Type": "application/json",
+                "X-OpenRouter-Cache": "true"
+            },
+            body: JSON.stringify({
+                model: "mistralai/mistral-small-24b-instruct-2501",
+                messages: [
+                    { role: "system", content: finalSystemPrompt },
+                    ...history,
+                    { role: "user", content: message }
+                ],
+                temperature: 0.5,
+                stream: true
+            })
+        });
+
+        if (!response.ok || !response.body) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(`Errore API OpenRouter: ${response.status} - ${JSON.stringify(errorData)}`);
+        }
+
+        res.setHeader("Content-Type", "text/plain; charset=utf-8");
+        res.setHeader("Transfer-Encoding", "chunked");
+        res.setHeader("X-Accel-Buffering", "no");
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            let boundary = buffer.lastIndexOf("\n");
+            if (boundary === -1) continue;
+
+            const completeData = buffer.substring(0, boundary);
+            buffer = buffer.substring(boundary + 1);
+
+            const lines = completeData.split("\n");
+            for (const line of lines) {
+                const trimmedLine = line.trim();
+                if (trimmedLine.startsWith("data: ")) {
+                    const dataStr = trimmedLine.slice(6);
+                    if (dataStr === "[DONE]") continue;
+
+                    try {
+                        const parsed = JSON.parse(dataStr);
+                        const textPart = parsed.choices?.[0]?.delta?.content;
+                        if (textPart) {
+                            res.write(textPart);
+                        }
+                    } catch (e) {
+                        // Partial JSON or other error
+                    }
+                }
+            }
+        }
+        res.end();
+
+    } catch (error: any) {
+        console.error("Errore traduzione:", error);
+        if (!res.headersSent) {
+            return res.status(500).json({ error: "Errore interno del server", details: error.message });
+        }
+        res.end();
+    }
+});
+
 router.post("/quiz/generate", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
     try {
-        const { topic, mode } = req.body;
+        const { topic, mode, temperature } = req.body;
 
         // 1. Validazione manuale dell'input (Senza Zod)
         if (!topic || typeof topic !== 'string') {
@@ -91,7 +292,7 @@ router.post("/quiz/generate", async function (req: express.Request, res: express
                         }
                     }
                 },
-                temperature: 0.5,
+                temperature: temperature ?? 0.5,
                 provider: {
                     require_parameters: true,
                     allow_fallbacks: false
@@ -218,6 +419,7 @@ ESEMPI DI COMPORTAMENTO:
                     ...messages
                 ],
                 response_format: { type: "json_object" },
+                temperature: 0.5,
                 provider: { allow_fallbacks: false }
             })
         });

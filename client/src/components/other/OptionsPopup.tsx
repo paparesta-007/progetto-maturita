@@ -41,13 +41,12 @@ const slideVariants = {
 };
 
 const OptionsPopup: React.FC = () => {
-    const { model, setModel, isStreamTextEnabled, setIsStreamTextEnabled, isBetterView, setIsBetterView } = useChat();
+    const { model, setModel, isStreamTextEnabled, setIsStreamTextEnabled, isBetterView, setIsBetterView, temperature, setTemperature } = useChat();
     const { theme } = useAuth();
     const isDark = theme === "dark";
 
     const [isOpen, setIsOpen] = useState(false);
     const [view, setView] = useState<View>("main");
-    const [temperature, setTemperature] = useState(1.0);
     const [tempExpanded, setTempExpanded] = useState(false);
     const [safetyEnabled, setSafetyEnabled] = useState(true);
 

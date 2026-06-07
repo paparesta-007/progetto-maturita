@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { useChat } from "../../context/ChatContext";
+import OptionsPopup from "../../components/other/OptionsPopup";
 import { LightningIcon, PaperPlaneRight } from "@phosphor-icons/react";
 import type { SelectOption } from "../../components/other/SelectPopup";
 import { BrainIcon, CheckCircle2, ChevronLeft, ChevronRight, GaugeIcon, RotateCcw, XCircle } from "lucide-react";
@@ -81,6 +83,7 @@ const QuizTextbar = ({
 // --- PAGINA PRINCIPALE: QuizPage ---
 const QuizPage = () => {
     const { theme } = useAuth();
+    const { temperature } = useChat();
     const isDark = theme === 'dark';
 
     const [isLoading, setIsLoading] = useState(false);
@@ -98,7 +101,7 @@ const QuizPage = () => {
         setCurrentQuestionIndex(0);
 
         try {
-            const response = await SendQuizMessage(promptText, selectedMode);
+            const response = await SendQuizMessage(promptText, selectedMode, temperature);
             if (response.success) {
                 setQuiz(response.data);
             } else {
@@ -150,9 +153,14 @@ const QuizPage = () => {
             <main className="flex-1 flex flex-col items-center overflow-y-auto p-6 custom-scrollbar relative z-10">
                 <div className="w-full max-w-3xl mt-12">
                     {/* Header */}
-                    <div className="text-center mb-10">
-                        <h2 className="text-3xl font-bold mb-3 bg-gradient-to-r from-orange-500 to-orange-300 bg-clip-text text-transparent">Interactive Quiz</h2>
-                        <p className={`text-sm ${isDark ? "opacity-50" : "text-neutral-500"}`}>Sfida la tua mente con quiz generati dall'AI.</p>
+                    <div className="flex items-center justify-between mb-10">
+                        <div className="flex-1 text-center">
+                            <h2 className="text-3xl font-bold mb-3 bg-gradient-to-r from-orange-500 to-orange-300 bg-clip-text text-transparent">Interactive Quiz</h2>
+                            <p className={`text-sm ${isDark ? "opacity-50" : "text-neutral-500"}`}>Sfida la tua mente con quiz generati dall'AI.</p>
+                        </div>
+                        <div className="absolute top-8 right-8">
+                            <OptionsPopup />
+                        </div>
                     </div>
 
                     {/* Input View */}

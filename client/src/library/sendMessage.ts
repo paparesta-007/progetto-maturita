@@ -10,6 +10,7 @@ export interface ChatOptions {
     allowedCustomInstructions?: string | boolean;
     isTemporary?: boolean;
     reasoning?: string;
+    temperature?: number;
     attachedFiles?: any[];
     signal?: AbortSignal;
 }
@@ -86,6 +87,7 @@ export const sendNormalMessage = async (
                 tone,
                 allowedCustomInstructions,
                 reasoning,
+                temperature: options.temperature,
                 attachedFiles: options.attachedFiles,
                 isBetterView
             }),
@@ -275,6 +277,7 @@ export const sendStreamedMessage = async (
                 tone,
                 allowedCustomInstructions,
                 reasoning,
+                temperature: options.temperature,
                 attachedFiles: options.attachedFiles,
                 isBetterView
             }),
@@ -522,6 +525,7 @@ export const sendWebSearchMessage = async (
 export const SendQuizMessage = async (
     message: string,
     mode: string,
+    temperature?: number
 ): Promise<QuizResponse> => {
     if (!message.trim()) {
         return { success: false, data: [], error: "Inserisci un argomento prima di generare il quiz." };
@@ -533,7 +537,8 @@ export const SendQuizMessage = async (
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 topic: message,
-                mode
+                mode,
+                temperature
             }),
         });
 

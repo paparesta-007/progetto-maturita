@@ -35,6 +35,9 @@ interface ChatContextType {
     isBetterView: boolean;
     setIsBetterView: React.Dispatch<React.SetStateAction<boolean>>;
 
+    temperature: number;
+    setTemperature: React.Dispatch<React.SetStateAction<number>>;
+
     draftMessage: string;
     setDraftMessage: React.Dispatch<React.SetStateAction<string>>;
     abortRequest: () => void;
@@ -57,6 +60,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     const [currentConversationName, setCurrentConversationName] = useState<string | null>(null);
     const [isTemporaryConversation, setIsTemporaryConversation] = useState(false);
     const [isBetterView, setIsBetterView] = useState(true);
+    const [temperature, setTemperature] = useState(1.0);
     const [draftMessage, setDraftMessage] = useState("");
     const [abortController, setAbortController] = useState<AbortController | null>(null);
     const navigate = useNavigate();
@@ -114,6 +118,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
             allowedCustomInstructions,
             isTemporary: isTemporaryConversation,
             reasoning,
+            temperature,
             attachedFiles: files,
             signal: controller.signal
         };
@@ -137,7 +142,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         } finally {
             setAbortController(null);
         }
-    }, [abortController, isStreamTextEnabled, model, messageHistory, currentConversationId, user, systemPrompt, personalInfo, tone, allowedCustomInstructions, fetchConversations, navigate, isTemporaryConversation, updateConversationPosition, isBetterView]);
+    }, [abortController, isStreamTextEnabled, model, messageHistory, currentConversationId, user, systemPrompt, personalInfo, tone, allowedCustomInstructions, fetchConversations, navigate, isTemporaryConversation, updateConversationPosition, isBetterView, temperature]);
 
     const loadConversation = useCallback(async (conversationId: string) => {
         try {
@@ -269,6 +274,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         updateConversationPosition,
         isBetterView,
         setIsBetterView,
+        temperature,
+        setTemperature,
         draftMessage,
         setDraftMessage,
         abortRequest
@@ -291,6 +298,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         updateConversationPosition,
         isBetterView,
         setIsBetterView,
+        temperature,
+        setTemperature,
         draftMessage,
         setDraftMessage,
         abortRequest

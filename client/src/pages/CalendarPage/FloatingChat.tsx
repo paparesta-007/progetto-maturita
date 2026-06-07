@@ -76,7 +76,8 @@ const FloatingChat = () => {
                     text: userMsg,
                     modelName: currentModelId,
                     messages: historyForServer,
-                    googleToken: session?.provider_token
+                    googleToken: session?.provider_token,
+                    temperature: 0.5
                 })
             });
 

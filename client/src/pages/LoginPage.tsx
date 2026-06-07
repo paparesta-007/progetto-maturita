@@ -199,7 +199,7 @@ const LoginPage = () => {
                             <div className="w-9 h-9 bg-neutral-900 text-white flex items-center justify-center rounded-lg shadow-md shadow-neutral-900/20 transition-transform duration-300 group-hover:scale-105">
                                 <BrainCircuit size={17} />
                             </div>
-                            <span className="text-lg font-bold tracking-tight text-neutral-900">NeuralTrust</span>
+                            <span className="text-lg font-bold tracking-tight text-neutral-900">Smarti AI</span>
                         </Link>
                         <Link
                             to="/"

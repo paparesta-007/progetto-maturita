@@ -25,7 +25,8 @@ function isCodeOrDebugIntent(message: string): boolean {
 
 router.post("/api/completion/chat", requireAuth, async function (req: express.Request, res: express.Response, next: express.NextFunction) {
 	try {
-		const { message, history, modelName, systemPromptUser, personalInfo, tone, allowedCustomInstructions, reasoning, isBetterView } = req.body;
+		const { message, history: rawHistory, modelName, systemPromptUser, personalInfo, tone, allowedCustomInstructions, reasoning, isBetterView, temperature } = req.body;
+		const history = Array.isArray(rawHistory) ? rawHistory : [];
 
 		const selectedModel = modelName ? modelName : "google/gemini-2.0-flash-001";
 		const betterViewRenderMode: BetterViewRenderMode = isBetterView && !isCodeOrDebugIntent(message || "") ? "html" : "markdown";
@@ -73,6 +74,7 @@ router.post("/api/completion/chat", requireAuth, async function (req: express.Re
 				model: selectedModel,
 				messages: messages,
 				stream: false,
+				temperature: temperature ?? 1.0,
 				reasoning: { effort: reasoningEffort },
 				provider: { allow_fallbacks: false }
 			})
@@ -130,7 +132,7 @@ router.post("/api/streamingOutput", requireAuth, async function (req: express.Re
 	try {
 
 		const { message, history, modelName, systemPromptUser, personalInfo,
-			tone, allowedCustomInstructions, reasoning, isBetterView } = req.body;
+			tone, allowedCustomInstructions, reasoning, isBetterView, temperature } = req.body;
 		const selectedModel = modelName ? modelName : "google/gemini-2.0-flash-001";
 		const betterViewRenderMode: BetterViewRenderMode = isBetterView && !isCodeOrDebugIntent(message || "") ? "html" : "markdown";
 
@@ -196,6 +198,7 @@ router.post("/api/streamingOutput", requireAuth, async function (req: express.Re
 				messages: messages,
 				stream: true,
 				stream_options: { include_usage: true },
+				temperature: temperature ?? 1.0,
 				reasoning: { effort: reasoningEffort },
 				provider: { allow_fallbacks: false }
 			})

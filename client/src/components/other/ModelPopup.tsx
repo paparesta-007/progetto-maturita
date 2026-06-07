@@ -18,7 +18,7 @@ const PROVIDER_LOGOS: Record<string, string> = {
 const FALLBACK_LOGO = "https://images.rawpixel.com/image_png_800/cHJpdmF0ZS9sci9pbWFnZXMvd2Vic2l0ZS8yMDIzLTAxL3JtNjA5LXNvbGlkaWNvbi13LTAwNS1wLnBuZw.png";
 
 const ModelPopup = React.forwardRef<HTMLDivElement>((_, modalRef) => {
-    const { model, setModel } = useChat();
+    const { model, setModel, temperature, setTemperature } = useChat();
     const { theme } = useAuth();
     const isDark = theme === "dark";
 
@@ -26,7 +26,6 @@ const ModelPopup = React.forwardRef<HTMLDivElement>((_, modalRef) => {
     const [isOpen, setIsOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState("");
     const [models, setModels] = useState<any[]>([]);
-    const [temperature, setTemperature] = useState(1.0);
     const [safetyEnabled, setSafetyEnabled] = useState(true);
 
     const internalRef = useRef<HTMLDivElement>(null);

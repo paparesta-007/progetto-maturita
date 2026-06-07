@@ -97,7 +97,16 @@ const Sidebar = ({
     setIsMobileOpen?: (val: boolean) => void;
 }) => {
     const { user, theme, setTheme } = useAuth() || { user: { displayName: "User", photoURL: null } };
-    const { conversations, setMessageHistory, fetchConversations, setCurrentConversationId, setCurrentConversationName, areConversationsLoaded } = useChat();
+    const { 
+        conversations, 
+        setMessageHistory, 
+        fetchConversations, 
+        currentConversationId, 
+        setCurrentConversationId, 
+        currentConversationName, 
+        setCurrentConversationName, 
+        areConversationsLoaded 
+    } = useChat();
     const [userDetails, setUserDetails] = useState<{ full_name: string | null, avatar_url?: string } | null>(null);
     const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
     const { documentList, fetchUserDocuments, setDocumentList } = useDocument();
@@ -112,6 +121,7 @@ const Sidebar = ({
     const [isRenamePopupOpen, setIsRenamePopupOpen] = useState(false);
     const [renameConversationId, setRenameConversationId] = useState<string | null>(null);
     const [renameTitle, setRenameTitle] = useState("");
+    const [editingId, setEditingId] = useState<string | null>(null);
 
     const isDocumentsPage = location.pathname.includes('/app/documents');
     const isDark = theme === 'dark';
@@ -152,7 +162,7 @@ const Sidebar = ({
         if (!user?.id) return;
         await deleteConversation(user.id, id);
         fetchConversations();
-        navigate("/app");
+        if (location.pathname.includes(id)) navigate("/app/chat");
     };
 
     const handleDeleteDocument = async (id: string) => {
@@ -163,8 +173,16 @@ const Sidebar = ({
     };
 
     const handleRename = async (id: string, title: string) => {
+        if (!title.trim()) {
+            setEditingId(null);
+            return;
+        }
         await updateConversationTitle(id, title, user?.id || "");
-        fetchConversations();
+        if (id === currentConversationId) {
+            setCurrentConversationName(title);
+        }
+        setEditingId(null);
+        await fetchConversations();
     };
 
     const mainNav = [
@@ -177,27 +195,6 @@ const Sidebar = ({
     return (
         <>
             <SidebarStyles isDark={isDark} />
-            <AnimatePresence>
-                {isRenamePopupOpen && (
-                    <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/20 backdrop-blur-sm">
-                        <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className="bg-white p-8 rounded-3xl w-full max-w-sm shadow-xl border border-[#e5e5e5]">
-                            <h2 className="text-xl font-semibold mb-6 text-center text-[#171717]">Rename Conversation</h2>
-                            <input
-                                type="text"
-                                value={renameTitle}
-                                onChange={(e) => setRenameTitle(e.target.value)}
-                                className="w-full px-4 py-3 rounded-xl mb-8 bg-[#f9f8f6] border border-[#e5e5e5] outline-none focus:border-[#b08968] transition-colors"
-                                placeholder="Enter title..."
-                                autoFocus
-                            />
-                            <div className="flex gap-3">
-                                <button onClick={() => setIsRenamePopupOpen(false)} className="flex-1 px-4 py-3 rounded-xl text-sm font-medium text-[#737373] hover:bg-[#f5f3f0] transition-colors">Cancel</button>
-                                <button onClick={() => { handleRename(renameConversationId!, renameTitle); setIsRenamePopupOpen(false); }} className="flex-1 px-4 py-3 rounded-xl text-sm font-medium bg-[#171717] text-white hover:bg-black transition-colors">Save</button>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
 
             <nav className={`sidebar-cozy h-screen flex flex-col transition-all duration-500 ease-in-out relative ${isMinimized ? 'w-[72px]' : 'w-[280px]'} ${isMobileOpen ? 'fixed inset-y-0 left-0 z-50' : 'hidden md:flex'}`}>
                 
@@ -249,7 +246,7 @@ const Sidebar = ({
                             </div>
                         )}
                         
-                        <ul className="space-y-1">
+                        <ul className="space-y-1" ref={convMenuRef}>
                             {isDocumentsPage ? (
                                 documentList.map(doc => (
                                     <li key={doc.document_id} className="relative group">
@@ -262,25 +259,81 @@ const Sidebar = ({
                             ) : (
                                 conversations.map((conv: any) => (
                                     <li key={conv.id} className="relative group">
-                                        <NavLink to={`/app/chat/${conv.id}`} className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm nav-item-cozy truncate">
-                                            <ClockCounterClockwiseIcon size={16} className="flex-shrink-0 opacity-40" />
-                                            {!isMinimized && <span className="truncate">{conv.title || "Untitled Chat"}</span>}
-                                        </NavLink>
-                                        {!isMinimized && (
-                                            <div className="absolute right-2 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 flex gap-0.5 transition-all">
-                                                <button 
-                                                    onClick={() => { setRenameConversationId(conv.id); setRenameTitle(conv.title); setIsRenamePopupOpen(true); }}
-                                                    className="p-1 rounded-md hover:bg-[#e5e5e5] text-[#a3a3a3] transition-all"
-                                                >
-                                                    <DotsThreeIcon size={16} weight="bold" />
-                                                </button>
-                                                <button 
-                                                    onClick={() => handleDeleteConversation(conv.id)}
-                                                    className="p-1 rounded-md hover:bg-red-50 text-red-400 transition-all"
-                                                >
-                                                    <TrashIcon size={16} />
-                                                </button>
+                                        {editingId === conv.id ? (
+                                            <div className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm bg-[#f0eee6] dark:bg-white/5 border border-[#b08968]/30">
+                                                <ClockCounterClockwiseIcon size={16} className="flex-shrink-0 opacity-40" />
+                                                <input
+                                                    autoFocus
+                                                    className={`bg-transparent border-none outline-none w-full text-sm ${isDark ? 'text-white' : 'text-[#171717]'}`}
+                                                    value={renameTitle}
+                                                    onChange={(e) => setRenameTitle(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') handleRename(conv.id, renameTitle);
+                                                        if (e.key === 'Escape') setEditingId(null);
+                                                    }}
+                                                    onBlur={() => handleRename(conv.id, renameTitle)}
+                                                />
                                             </div>
+                                        ) : (
+                                            <>
+                                                <NavLink to={`/app/chat/${conv.id}`} className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm nav-item-cozy truncate group-hover:pr-10">
+                                                    <ClockCounterClockwiseIcon size={16} className="flex-shrink-0 opacity-40" />
+                                                    {!isMinimized && <span className="truncate">{conv.title || "Untitled Chat"}</span>}
+                                                </NavLink>
+                                                {!isMinimized && (
+                                                    <div className={`absolute right-2 top-1/2 -translate-y-1/2 flex gap-0.5 transition-all z-20 ${convMenuOpen === conv.id ? 'opacity-100 visible' : 'opacity-0 invisible group-hover:opacity-100 group-hover:visible'}`}>
+                                                        <div className="relative">
+                                                            <button 
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    e.stopPropagation();
+                                                                    setConvMenuOpen(convMenuOpen === conv.id ? null : conv.id);
+                                                                }}
+                                                                className={`p-1 rounded-md transition-all ${convMenuOpen === conv.id ? 'bg-[#e5e5e5] text-[#171717]' : 'hover:bg-[#e5e5e5] text-[#a3a3a3]'}`}
+                                                            >
+                                                                <DotsThreeIcon size={18} weight="bold" />
+                                                            </button>
+
+                                                            <AnimatePresence>
+                                                                {convMenuOpen === conv.id && (
+                                                                    <motion.div
+                                                                        initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                                                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                                        exit={{ opacity: 0, scale: 0.95, y: -5 }}
+                                                                        className={`absolute right-0 top-full mt-1 w-36 p-1 rounded-xl border shadow-2xl z-[60] overflow-hidden ${isDark ? 'bg-[#0d0e14] border-white/10' : 'bg-white border-[#e5e5e5]'}`}
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                    >
+                                                                        <button 
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setEditingId(conv.id);
+                                                                                setRenameTitle(conv.title);
+                                                                                setConvMenuOpen(null);
+                                                                            }}
+                                                                            className={`w-full flex items-center gap-2.5 p-2 rounded-lg text-xs transition-all ${
+                                                                                isDark 
+                                                                                    ? 'hover:bg-white/5 text-[#737373] hover:text-white' 
+                                                                                    : 'hover:bg-[#f9f8f6] text-[#737373] hover:text-[#171717]'
+                                                                            }`}
+                                                                        >
+                                                                            <PencilLineIcon size={14} /> Rename
+                                                                        </button>
+                                                                        <button 
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleDeleteConversation(conv.id);
+                                                                            }}
+                                                                            className="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-xs text-red-500 transition-all"
+                                                                        >
+                                                                            <TrashIcon size={14} /> Delete
+                                                                        </button>
+                                                                    </motion.div>
+                                                                )}
+                                                            </AnimatePresence>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </>
                                         )}
                                     </li>
                                 ))
