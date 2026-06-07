@@ -17,6 +17,10 @@
       <entry key="_/home/tommaso/Desktop/progetto-maturita" value="3Bll0XvIMLNJzYUcz2gBMN4MaiU" />
     </persistenceIdMap>
   </component>
+  <component name="EmbeddingIndexingInfo">
+    <option name="cachedIndexableFilesCount" value="156" />
+    <option name="fileBasedEmbeddingIndicesEnabled" value="true" />
+  </component>
   <component name="Git.Settings">
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
@@ -28,6 +32,65 @@
   <component name="McpProjectServerCommands">
     <commands />
     <urls />
+  </component>
+  <component name="NextEditCompletionFeaturesState">
+    <decayedCancelled>
+      <entry key="MS100" value="1.0000226520643152" />
+      <entry key="MS500" value="1.1260555718136895" />
+      <entry key="S2" value="2.074629171708614" />
+      <entry key="S5" value="3.1894845105102156" />
+      <entry key="S10" value="3.916988241029736" />
+      <entry key="S30" value="4.588554389847028" />
+      <entry key="S60" value="4.787120761026994" />
+      <entry key="M2" value="4.891699826027228" />
+      <entry key="M5" value="4.956223900535717" />
+      <entry key="M10" value="4.978035138740963" />
+      <entry key="M15" value="4.985339629639023" />
+      <entry key="M30" value="4.992661234932111" />
+      <entry key="H1" value="4.996328469652962" />
+      <entry key="H2" value="4.998163697517613" />
+      <entry key="H4" value="4.999081714387113" />
+      <entry key="D1" value="4.99984693373134" />
+      <entry key="W1" value="4.999978132933003" />
+    </decayedCancelled>
+    <decayedSelected>
+      <entry key="MS100" value="0.0" />
+      <entry key="MS500" value="0.0" />
+      <entry key="S2" value="0.0" />
+      <entry key="S5" value="0.0" />
+      <entry key="S10" value="0.0" />
+      <entry key="S30" value="0.0" />
+      <entry key="S60" value="0.0" />
+      <entry key="M2" value="0.0" />
+      <entry key="M5" value="0.0" />
+      <entry key="M10" value="0.0" />
+      <entry key="M15" value="0.0" />
+      <entry key="M30" value="0.0" />
+      <entry key="H1" value="0.0" />
+      <entry key="H2" value="0.0" />
+      <entry key="H4" value="0.0" />
+      <entry key="D1" value="0.0" />
+      <entry key="W1" value="0.0" />
+    </decayedSelected>
+    <decayedShown>
+      <entry key="MS100" value="8.801311826384078E-4" />
+      <entry key="MS500" value="0.26895850030176327" />
+      <entry key="S2" value="1.4278176917413479" />
+      <entry key="S5" value="2.709729003854657" />
+      <entry key="S10" value="3.5951004033646528" />
+      <entry key="S30" value="4.454129956239929" />
+      <entry key="S60" value="4.715744889859272" />
+      <entry key="M2" value="4.854902410253921" />
+      <entry key="M5" value="4.9412293705733985" />
+      <entry key="M10" value="4.97049115009472" />
+      <entry key="M15" value="4.980299861030316" />
+      <entry key="M30" value="4.9901361141741365" />
+      <entry key="H1" value="4.995064597334716" />
+      <entry key="H2" value="4.9975314330197875" />
+      <entry key="H4" value="4.998765500009247" />
+      <entry key="D1" value="4.999794219924469" />
+      <entry key="W1" value="4.999970602109673" />
+    </decayedShown>
   </component>
   <component name="ProjectColorInfo">{
   &quot;associatedIndex&quot;: 0,
@@ -41,19 +104,23 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252": "true",
     "RunOnceActivity.git.unshallow": "true",
     "RunOnceActivity.typescript.service.memoryLimit.init": "true",
     "codeWithMe.voiceChat.enabledByDefault": "false",
+    "com.intellij.ml.llm.matterhorn.ej.ui.settings.DefaultModelSelectionForGA.v1": "true",
     "git-widget-placeholder": "ui",
     "javascript.preferred.runtime.type.id": "node",
+    "junie.onboarding.icon.badge.shown": "true",
     "last_opened_file_path": "/home/tommaso/Desktop/progetto-maturita",
     "node.js.detected.package.eslint": "true",
     "node.js.selected.package.eslint": "(autodetect)",
     "node.js.selected.package.tslint": "(autodetect)",
     "nodejs_package_manager_path": "npm",
     "settings.editor.selected.configurable": "preferences.pluginManager",
+    "to.speed.mode.migration.done": "true",
     "ts.external.directory.path": "/home/tommaso/Desktop/progetto-maturita/client/node_modules/typescript/lib",
     "vue.rearranger.settings.migration": "true"
   }
@@ -61,7 +128,7 @@
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
-        <option value="bundled-js-predefined-d6986cc7102b-3bd3a6803838-JavaScript-WS-261.22158.274" />
+        <option value="bundled-js-predefined-d6986cc7102b-31caf2ab9e3c-JavaScript-WS-261.24374.125" />
       </set>
     </attachedChunks>
   </component>
@@ -76,6 +143,7 @@
       <workItem from="1775071927766" duration="65000" />
       <workItem from="1775072025700" duration="259000" />
       <workItem from="1775073228810" duration="279000" />
+      <workItem from="1779519373722" duration="94000" />
     </task>
     <servers />
   </component>
