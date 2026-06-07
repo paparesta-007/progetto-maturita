@@ -525,20 +525,28 @@ export const sendWebSearchMessage = async (
 export const SendQuizMessage = async (
     message: string,
     mode: string,
-    temperature?: number
+    temperature?: number,
+    modelName?: string
 ): Promise<QuizResponse> => {
     if (!message.trim()) {
         return { success: false, data: [], error: "Inserisci un argomento prima di generare il quiz." };
     }
 
     try {
-        const response = await fetch("http://localhost:3000/api/quiz/generate", {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+
+        const response = await fetch("http://localhost:3000/api/artifacts/quiz/generate", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
             body: JSON.stringify({
                 topic: message,
                 mode,
-                temperature
+                temperature,
+                modelName
             }),
         });
 
@@ -560,4 +568,46 @@ export const SendQuizMessage = async (
             error: error?.message || "Errore durante la generazione del quiz."
         };
     }
-}
+};
+
+export const fetchQuizExplanation = async (
+    question: QuizQuestion,
+    selectedOption: string,
+    modelName: string,
+    onChunk: (chunk: string) => void
+) => {
+    try {
+        const { data: { session } } = await supabase.auth.getSession();
+        const token = session?.access_token;
+
+        const response = await fetch("http://localhost:3000/api/artifacts/quiz/explain", {
+            method: "POST",
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                domanda: question.domanda,
+                opzioni: question.opzioni,
+                rispostaCorretta: question.rispostaCorretta,
+                selectedOption,
+                modelName
+            }),
+        });
+
+        if (!response.ok || !response.body) throw new Error("Errore durante la spiegazione");
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            const chunk = decoder.decode(value, { stream: true });
+            onChunk(chunk);
+        }
+    } catch (error) {
+        console.error("Errore fetchQuizExplanation:", error);
+        onChunk("⚠️ Errore nel caricamento della spiegazione.");
+    }
+};

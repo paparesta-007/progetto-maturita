@@ -5,6 +5,9 @@ export interface SchemaNodeData {
     id: string;
     title: string;
     description: string;
+    color?: string; // Soft color for text/border
+    x: number;
+    y: number;
     children: SchemaNodeData[];
 }
 
@@ -32,7 +35,7 @@ export const SchemaProvider = ({ children }: { children: ReactNode }) => {
     };
 
     const [schema, setSchema] = useState<SchemaNodeData[]>([
-        { id: generateId(), title: "", description: "", children: [] }
+        { id: generateId(), title: "Radice", description: "", x: 100, y: 100, children: [] }
     ]);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [loading, setLoading] = useState(false);
@@ -67,7 +70,46 @@ export const SchemaProvider = ({ children }: { children: ReactNode }) => {
             setMessages(prev => [...prev, { role: "assistant", content: data.message || "Schema aggiornato." }]);
 
             if (data.schema && Array.isArray(data.schema)) {
-                setSchema(data.schema);
+                // Layout ad albero avanzato: calcola l'altezza dei sotto-alberi per centrare i genitori
+                const NODE_HEIGHT_SPACING = 200;
+                const LEVEL_SPACING = 350;
+
+                const calculateSubtreeHeight = (nodes: SchemaNodeData[]): number => {
+                    return nodes.reduce((total, node) => {
+                        const childrenHeight = node.children && node.children.length > 0 
+                            ? calculateSubtreeHeight(node.children) 
+                            : NODE_HEIGHT_SPACING;
+                        return total + childrenHeight;
+                    }, 0);
+                };
+
+                const positionNodes = (nodes: SchemaNodeData[], startX: number, startY: number): SchemaNodeData[] => {
+                    let currentY = startY;
+                    
+                    return nodes.map((node) => {
+                        const subtreeHeight = node.children && node.children.length > 0 
+                            ? calculateSubtreeHeight(node.children) 
+                            : NODE_HEIGHT_SPACING;
+                        
+                        // Centra il genitore rispetto alla sua altezza totale del sottoalbero
+                        const nodeY = currentY + (subtreeHeight / 2) - 50; 
+                        const newNode = {
+                            ...node,
+                            x: startX,
+                            y: nodeY,
+                            children: node.children && node.children.length > 0 
+                                ? positionNodes(node.children, startX + LEVEL_SPACING, currentY)
+                                : []
+                        };
+                        
+                        currentY += subtreeHeight;
+                        return newNode;
+                    });
+                };
+
+                // Inizia il posizionamento con un offset per centrare la radice
+                const positionedSchema = positionNodes(data.schema, 100, 100);
+                setSchema(positionedSchema);
             }
 
         } catch (error) {

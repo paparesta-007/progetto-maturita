@@ -206,22 +206,14 @@ router.post("/translate", async function (req: express.Request, res: express.Res
 
 router.post("/quiz/generate", async function (req: express.Request, res: express.Response, next: express.NextFunction) {
     try {
-        const { topic, mode, temperature } = req.body;
+        const { topic, mode, temperature, modelName } = req.body;
 
         // 1. Validazione manuale dell'input (Senza Zod)
         if (!topic || typeof topic !== 'string') {
             return res.status(400).json({ error: "Il campo 'topic' è mancante o non valido." });
         }
 
-        const modeToModelMap: Record<string, string> = {
-            fast: "openai/gpt-oss-120b",
-            standard: "openai/gpt-oss-120b",
-            accurate: "nvidia/nemotron-3-super-120b-a12b:free"
-        };
-
-        const selectedModel = typeof mode === "string" && modeToModelMap[mode]
-            ? modeToModelMap[mode]
-            : "openai/gpt-oss-120b";
+        const selectedModel = modelName || "openai/gpt-oss-120b";
 
         const prompt = `Genera un quiz a scelta multipla con esattamente 10 domande sul seguente argomento o testo: "${topic}".`;
 
@@ -260,8 +252,6 @@ router.post("/quiz/generate", async function (req: express.Request, res: express
                             properties: {
                                 quiz: {
                                     type: "array",
-                                    minItems: 10,
-                                    maxItems: 10,
                                     items: {
                                         type: "object",
                                         properties: {
@@ -354,6 +344,86 @@ router.post("/quiz/generate", async function (req: express.Request, res: express
     } catch (error: any) {
         console.error("Errore generazione quiz:", error);
         return res.status(500).json({ error: "Errore interno del server", details: error.message });
+    }
+});
+
+router.post("/quiz/explain", async function (req: express.Request, res: express.Response) {
+    try {
+        const { domanda, opzioni, rispostaCorretta, selectedOption, modelName } = req.body;
+        const selectedModel = modelName || "mistralai/mistral-small-24b-instruct-2501";
+
+        const prompt = `Spiega brevemente perché la risposta corretta è "${rispostaCorretta}" per la domanda: "${domanda}". 
+        Opzioni: A: ${opzioni.A}, B: ${opzioni.B}, C: ${opzioni.C}, D: ${opzioni.D}.
+        L'utente ha risposto "${selectedOption}". 
+        Fornisci una spiegazione didattica, chiara e concisa in Markdown.`;
+
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${OPENROUTER_KEY}`,
+                "Content-Type": "application/json",
+                "X-OpenRouter-Cache": "true"
+            },
+            body: JSON.stringify({
+                model: selectedModel,
+                messages: [
+                    { role: "system", content: "Sei un tutor esperto. Fornisci spiegazioni chiare e coincise per i quiz." },
+                    { role: "user", content: prompt }
+                ],
+                temperature: 0.5,
+                stream: true
+            })
+        });
+
+        if (!response.ok || !response.body) {
+            const errorData = await response.json().catch(() => ({}));
+            throw new Error(`Errore API OpenRouter: ${response.status} - ${JSON.stringify(errorData)}`);
+        }
+
+        res.setHeader("Content-Type", "text/plain; charset=utf-8");
+        res.setHeader("Transfer-Encoding", "chunked");
+        res.setHeader("X-Accel-Buffering", "no");
+
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            let boundary = buffer.lastIndexOf("\n");
+            if (boundary === -1) continue;
+
+            const completeData = buffer.substring(0, boundary);
+            buffer = buffer.substring(boundary + 1);
+
+            const lines = completeData.split("\n");
+            for (const line of lines) {
+                const trimmedLine = line.trim();
+                if (trimmedLine.startsWith("data: ")) {
+                    const dataStr = trimmedLine.slice(6);
+                    if (dataStr === "[DONE]") continue;
+
+                    try {
+                        const parsed = JSON.parse(dataStr);
+                        const textPart = parsed.choices?.[0]?.delta?.content;
+                        if (textPart) {
+                            res.write(textPart);
+                        }
+                    } catch (e) { }
+                }
+            }
+        }
+        res.end();
+
+    } catch (error: any) {
+        console.error("Errore spiegazione quiz:", error);
+        if (!res.headersSent) {
+            return res.status(500).json({ error: "Errore interno del server", details: error.message });
+        }
+        res.end();
     }
 });
 
