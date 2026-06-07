@@ -330,21 +330,6 @@ const ChatContent = () => {
         return () => window.removeEventListener('keydown', handleKeyDown);
     }, [navigate, setMessageHistory, setCurrentConversationId]);
 
-    // Definisci le classi di larghezza dinamicamente per pulizia
-    // In LivePreview: w-1/3 (o min-w per schermi piccoli). NO max-w-3xl.
-    // Normal Mode: w-full e max-w-3xl centrato.
-    const chatColumnClass = isLivePreview
-        ? `w-1/3 min-w-0 flex flex-col border-r overflow-hidden ${isDark ? 'border-neutral-800' : 'border-neutral-200'}`
-        : `w-full min-w-0 flex flex-col overflow-hidden`;
-
-    const chatContentClass = isLivePreview
-        ? `w-full`
-        : `w-full max-w-3xl mx-auto`;
-
-    const footerInnerClass = isLivePreview
-        ? `w-1/3 min-w-0 px-4` // Allineato a sinistra, larghezza identica alla chat
-        : `w-full px-4`; // Scrollbar resta sul bordo destro del contenitore
-
     return (
         <div className={`${styles.wrapper} flex flex-col min-w-0`}>
             <ChatStyles isDark={isDark} />
@@ -358,19 +343,6 @@ const ChatContent = () => {
                     <div className="absolute top-1/2 right-1/4 h-48 w-48 rounded-full bg-white/[0.02] blur-3xl pointer-events-none" />
                 </>
             )}
-
-            {/* Toggle Switch */}
-            <input type="checkbox" id="live-preview-toggle" className="hidden" checked={isLivePreview} onChange={() => setIsLivePreview(!isLivePreview)} />
-            <label
-                htmlFor="live-preview-toggle"
-                className={`fixed bottom-24 right-8 z-50 flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium cursor-pointer transition-all shadow-lg border ${isLivePreview
-                        ? (isDark ? "bg-emerald-600 border-emerald-500 text-white" : "bg-emerald-500 border-emerald-400 text-white")
-                        : (isDark ? "bg-neutral-800 border-neutral-700 text-neutral-600 hover:text-white" : "bg-white border-neutral-200 text-neutral-600 hover:text-black")
-                    }`}
-            >
-                <span className={isLivePreview ? "animate-pulse" : ""}>●</span>
-                <span>{isLivePreview ? "Live Mode On" : "Code View"}</span>
-            </label>
 
             <h2 className={styles.headerText}>
                 {currentConversationName || (isDark ? "Nuova Chat" : "Chat")}
@@ -410,7 +382,7 @@ const ChatContent = () => {
             <main className={styles.main}>
 
                 {/* 1. CHAT SECTION */}
-                <div className={chatColumnClass}>
+                <div className="w-full min-w-0 flex flex-col overflow-hidden">
                     {/* Container scrollabile per i messaggi */}
                     {/* min-w-0 previene che i figli flex espandano il genitore oltre la larghezza */}
                     <div 
@@ -419,7 +391,7 @@ const ChatContent = () => {
                         onScroll={handleScroll}
                     >
                         {messageHistory.length !== 0 ? (
-                            <div className={`space-y-6 ${chatContentClass}`}>
+                            <div className="space-y-6 w-full max-w-3xl mx-auto">
                                 {messageHistory.map((msg, index) => (
                                     <MessageItem 
                                         key={index} 
@@ -433,34 +405,25 @@ const ChatContent = () => {
                                 <div ref={messagesEndRef} />
                             </div>
                         ) : (
-                            <div className={chatContentClass}>
+                            <div className="w-full max-w-3xl mx-auto">
                                 <PromptStarter />
                             </div>
                         )}
                     </div>
                 </div>
 
-                {isLivePreview && (
-                    <section className={`w-2/3 min-w-0 h-full p-4 overflow-x-hidden overflow-y-auto ${isDark ? "bg-neutral-900" : "bg-[#f5f0eb]"}`}>
-                        <LivePreviewMock />
-                    </section>
-                )}
-
-
             </main>
             {isUsageOpen && (<UsageConversation onClose={() => setIsUsageOpen(false)} />)}
             {/* FOOTER */}
             <footer className={styles.footer}>
                 {/* Il container interno del footer matcha esattamente le classi di larghezza della Chat */}
-                <div className={footerInnerClass}>
+                <div className="w-full px-4">
                     <div className="w-full flex items-center justify-center">
                         <Textbar />
                     </div>
-                    {!isLivePreview && (
-                        <p className={styles.disclaimer}>
-                            IA can make mistakes. Please verify the information provided.
-                        </p>
-                    )}
+                    <p className={styles.disclaimer}>
+                        IA can make mistakes. Please verify the information provided.
+                    </p>
                 </div>
             </footer>
         </div>

@@ -13,6 +13,7 @@ export interface ChatOptions {
     temperature?: number;
     attachedFiles?: any[];
     signal?: AbortSignal;
+    webSearch?: boolean;
 }
 
 export interface QuizQuestion {
@@ -89,7 +90,8 @@ export const sendNormalMessage = async (
                 reasoning,
                 temperature: options.temperature,
                 attachedFiles: options.attachedFiles,
-                isBetterView
+                isBetterView,
+                webSearch: options.webSearch
             }),
         });
 
@@ -279,7 +281,8 @@ export const sendStreamedMessage = async (
                 reasoning,
                 temperature: options.temperature,
                 attachedFiles: options.attachedFiles,
-                isBetterView
+                isBetterView,
+                webSearch: options.webSearch // Aggiunto flag webSearch
             }),
         });
 
@@ -483,40 +486,6 @@ export const sendCanvasMessage = async (
     } catch (error) {
         console.error("Errore sendCanvasMessage:", error);
         setMessageHistory((prev) => [...prev, { role: 'bot', content: "Errore nella funzionalità Canvas.", model: "System" }]);
-    } finally {
-        setLoading(false);
-    }
-};
-
-// ============================================================
-// WEB SEARCH: Mock function — no server request
-// ============================================================
-export const sendWebSearchMessage = async (
-    message: string,
-    setMessageHistory: React.Dispatch<React.SetStateAction<any[]>>,
-    setLoading: React.Dispatch<React.SetStateAction<boolean>>,
-    model: any,
-    _messageHistory: any[]
-) => {
-    if (!message.trim()) return;
-
-    setMessageHistory((prev) => [...prev, { role: 'user', content: message }]);
-    setLoading(true);
-
-    try {
-        // Mock delay
-        await new Promise((resolve) => setTimeout(resolve, 1500));
-
-        const modelLabel = model?.name ?? model?.name_id ?? "Unknown";
-        const mockResponse = `**[Web Search Mock]**\n\nSearching the web for: "${message}"\n\n**Results:**\n1. *Example result 1* — This is a mock search result.\n2. *Example result 2* — Web search integration coming soon.\n3. *Example result 3* — Placeholder data.\n\n> Real web search will be connected to a backend endpoint.`;
-
-        setMessageHistory((prev) => [
-            ...prev,
-            { role: 'bot', content: mockResponse, usage: { total_tokens: 0 }, model: modelLabel },
-        ]);
-    } catch (error) {
-        console.error("Errore sendWebSearchMessage:", error);
-        setMessageHistory((prev) => [...prev, { role: 'bot', content: "Errore nella funzionalità Web Search.", model: "System" }]);
     } finally {
         setLoading(false);
     }

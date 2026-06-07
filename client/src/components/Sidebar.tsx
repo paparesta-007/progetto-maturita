@@ -96,7 +96,7 @@ const Sidebar = ({
     isMobileOpen?: boolean;
     setIsMobileOpen?: (val: boolean) => void;
 }) => {
-    const { user, theme, setTheme } = useAuth() || { user: { displayName: "User", photoURL: null } };
+    const { user, session, theme, setTheme } = useAuth() || { user: { displayName: "User", photoURL: null }, session: null };
     const { 
         conversations, 
         setMessageHistory, 
@@ -177,7 +177,7 @@ const Sidebar = ({
             setEditingId(null);
             return;
         }
-        await updateConversationTitle(id, title, user?.id || "");
+        await updateConversationTitle(id, title, user?.id || "", session?.access_token || "");
         if (id === currentConversationId) {
             setCurrentConversationName(title);
         }

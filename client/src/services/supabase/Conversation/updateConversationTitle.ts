@@ -1,8 +1,11 @@
-const updateConversationTitle = async (conversationId: string, newTitle: string,user_id: string) => {
+const updateConversationTitle = async (conversationId: string, newTitle: string, user_id: string, token: string) => {
     try {
         const response = await fetch("http://localhost:3000/api/conversations/update-title", {
             method: "PATCH",
-            headers: { "Content-Type": "application/json" },
+            headers: { 
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
+            },
             body: JSON.stringify({ conversation_id: conversationId, new_title: newTitle, user_id: user_id }),
         });
 

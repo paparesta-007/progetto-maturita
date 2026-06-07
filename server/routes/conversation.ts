@@ -148,7 +148,7 @@ router.delete("/delete", requireAuth, async (req: express.Request, res: express.
 });
 
 // Aggiorna il titolo di una conversazione
-router.patch("/update-title", async (req: express.Request, res: express.Response, next: express.NextFunction) => {
+router.patch("/update-title", requireAuth, async (req: express.Request, res: express.Response, next: express.NextFunction) => {
     try {
         const { user_id, conversation_id, new_title } = req.body;
         if (!user_id || !conversation_id || !new_title) throw new Error("user_id, conversation_id e new_title richiesti");

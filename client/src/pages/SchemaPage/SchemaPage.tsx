@@ -3,7 +3,7 @@ import { useSchema, type SchemaNodeData } from '../../context/SchemaContext';
 import { useAuth } from '../../context/AuthContext';
 import SchemaTextbar from './Textbar';
 import { PlusIcon, TrashIcon, DownloadSimple, FileCode, FilePdf, Palette, MagnifyingGlassPlus, MagnifyingGlassMinus,ArrowsOutCardinal } from '@phosphor-icons/react';
-import html2canvas from 'html2canvas';
+import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
 
 const generateId = () => {
@@ -13,14 +13,14 @@ const generateId = () => {
 
 const SOFT_COLORS = [
     { name: 'Default', value: '' },
-    { name: 'Blue', value: '#60a5fa' },
-    { name: 'Green', value: '#4ade80' },
-    { name: 'Purple', value: '#c084fc' },
-    { name: 'Pink', value: '#f472b6' },
-    { name: 'Orange', value: '#fb923c' },
-    { name: 'Red', value: '#f87171' },
-    { name: 'Teal', value: '#2dd4bf' },
-    { name: 'Yellow', value: '#facc15' },
+    { name: 'Blue', value: 'rgb(96, 165, 250)' },
+    { name: 'Green', value: 'rgb(74, 222, 128)' },
+    { name: 'Purple', value: 'rgb(192, 132, 252)' },
+    { name: 'Pink', value: 'rgb(244, 114, 182)' },
+    { name: 'Orange', value: 'rgb(251, 146, 60)' },
+    { name: 'Red', value: 'rgb(248, 113, 113)' },
+    { name: 'Teal', value: 'rgb(45, 212, 191)' },
+    { name: 'Yellow', value: 'rgb(250, 204, 21)' },
 ];
 
 // --- 1. The Recursive Node Component ---
@@ -40,6 +40,22 @@ const SchemaNode = ({
     isRoot?: boolean
 }) => {
     const [showColorPicker, setShowColorPicker] = useState(false);
+    const pickerRef = useRef<HTMLDivElement>(null);
+
+    // Close picker when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
+                setShowColorPicker(false);
+            }
+        };
+        if (showColorPicker) {
+            document.addEventListener('mousedown', handleClickOutside);
+        }
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, [showColorPicker]);
 
     return (
         <li>
@@ -85,16 +101,19 @@ const SchemaNode = ({
                         onClick={() => onAddChild(node.id)}
                         title="Aggiungi nodo figlio"
                         className={`p-1.5 rounded-full shadow-md transition-all active:scale-95 ${
-                            isDark ? 'text-white bg-neutral-800 hover:bg-neutral-700' : 'text-neutral-900 bg-white border border-neutral-200 hover:bg-neutral-50'
+                            isDark ? 'text-white bg-[rgb(38,38,38)] hover:bg-[rgb(64,64,64)]' : 'text-neutral-900 bg-white border border-neutral-200 hover:bg-neutral-50'
                         }`}
                     >
                         <PlusIcon size={14} weight="bold" />
                     </button>
                     <button 
-                        onClick={() => setShowColorPicker(!showColorPicker)}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            setShowColorPicker(!showColorPicker);
+                        }}
                         title="Cambia colore"
                         className={`p-1.5 rounded-full shadow-md transition-all active:scale-95 ${
-                            isDark ? 'text-white bg-neutral-800 hover:bg-neutral-700' : 'text-neutral-900 bg-white border border-neutral-200 hover:bg-neutral-50'
+                            isDark ? 'text-white bg-[rgb(38,38,38)] hover:bg-[rgb(64,64,64)]' : 'text-neutral-900 bg-white border border-neutral-200 hover:bg-neutral-50'
                         }`}
                     >
                         <Palette size={14} weight="bold" />
@@ -104,7 +123,7 @@ const SchemaNode = ({
                             onClick={() => onDelete(node.id)} 
                             title="Elimina nodo"
                             className={`p-1.5 rounded-full shadow-md text-red-500 transition-all active:scale-95 ${
-                                isDark ? 'bg-neutral-800 hover:bg-neutral-700' : 'bg-white border border-neutral-200 hover:bg-neutral-50'
+                                isDark ? 'bg-[rgb(38,38,38)] hover:bg-[rgb(64,64,64)]' : 'bg-white border border-neutral-200 hover:bg-neutral-50'
                             }`}
                         >
                             <TrashIcon size={14} weight="bold" />
@@ -114,7 +133,10 @@ const SchemaNode = ({
 
                 {/* Color Picker Popup */}
                 {showColorPicker && (
-                    <div className={`absolute top-full left-1/2 -translate-x-1/2 mt-2 p-2 rounded-xl border shadow-xl flex gap-1 z-20 ${isDark ? 'bg-neutral-900 border-white/10' : 'bg-white border-neutral-200'}`}>
+                    <div 
+                        ref={pickerRef}
+                        className={`absolute top-full left-1/2 -translate-x-1/2 mt-2 p-2 rounded-xl border shadow-xl flex gap-1 z-20 ${isDark ? 'bg-[rgb(23,23,23)] border-[rgb(255,255,255,0.1)]' : 'bg-white border-neutral-200'}`}
+                    >
                         {SOFT_COLORS.map((c) => (
                             <button
                                 key={c.name}
@@ -210,11 +232,13 @@ const SchemaBuilder = () => {
 
     // Zoom Logic
     const handleWheel = (e: React.WheelEvent) => {
-        if (e.ctrlKey || e.metaKey) {
-            e.preventDefault();
-            const delta = e.deltaY > 0 ? -0.1 : 0.1;
-            setZoom((prev) => Math.min(Math.max(prev + delta, 0.2), 3));
-        }
+        // Use wheel for zoom without requiring Ctrl/Meta to avoid browser conflict
+        // Prevent default scrolling only if we are zooming
+        const delta = e.deltaY > 0 ? -0.1 : 0.1;
+        setZoom((prev) => {
+            const newZoom = Math.min(Math.max(prev + delta, 0.2), 3);
+            return newZoom;
+        });
     };
 
     // Pan Logic (Right Click)
@@ -270,32 +294,41 @@ const SchemaBuilder = () => {
     const exportAsPDF = async () => {
         if (!orgTreeRef.current) return;
         
-        // Temporarily reset zoom/pan for capture
         const oldZoom = zoom;
         const oldPan = pan;
-        setZoom(1);
-        setPan({ x: 0, y: 0 });
 
-        // Wait for state to apply
-        setTimeout(async () => {
-            const canvas = await html2canvas(orgTreeRef.current!, {
+        try {
+            // Reset for capture
+            setZoom(1);
+            setPan({ x: 0, y: 0 });
+
+            // Wait for render
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            const element = orgTreeRef.current;
+            const dataUrl = await toPng(element, {
                 backgroundColor: isDark ? '#07070a' : '#f9fafb',
-                scale: 2,
-                logging: false,
-                useCORS: true
+                quality: 1,
+                pixelRatio: 2,
+                skipFonts: true // Faster and often avoids issues
             });
-            const imgData = canvas.toDataURL('image/png');
-            const pdf = new jsPDF('l', 'mm', 'a4');
-            const imgProps = pdf.getImageProperties(imgData);
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-            pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+
+            const pdf = new jsPDF({
+                orientation: 'landscape',
+                unit: 'px',
+                format: [element.scrollWidth, element.scrollHeight]
+            });
+
+            pdf.addImage(dataUrl, 'PNG', 0, 0, element.scrollWidth, element.scrollHeight);
             pdf.save('schema.pdf');
 
-            // Restore zoom/pan
+        } catch (error) {
+            console.error('Errore durante esportazione PDF:', error);
+            alert('Errore durante l\'esportazione del PDF. Riprova.');
+        } finally {
             setZoom(oldZoom);
             setPan(oldPan);
-        }, 100);
+        }
     };
 
     return (
@@ -306,7 +339,7 @@ const SchemaBuilder = () => {
                     
                     <div className="flex items-center gap-2">
                          {/* Controls */}
-                         <div className={`flex items-center gap-1 p-1 rounded-xl border ${isDark ? 'bg-neutral-900/50 border-white/10' : 'bg-neutral-100 border-neutral-200'}`}>
+                         <div className={`flex items-center gap-1 p-1 rounded-xl border ${isDark ? 'bg-rgb(23,23,23) border-[rgb(255,255,255,0.1)]' : 'bg-neutral-100 border-neutral-200'}`}>
                             <button onClick={() => setZoom(prev => Math.max(prev - 0.1, 0.2))} className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors" title="Zoom Out"><MagnifyingGlassMinus size={18}/></button>
                             <span className="text-xs font-mono w-10 text-center">{Math.round(zoom * 100)}%</span>
                             <button onClick={() => setZoom(prev => Math.min(prev + 0.1, 3))} className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors" title="Zoom In"><MagnifyingGlassPlus size={18}/></button>
@@ -425,8 +458,8 @@ const SchemaBuilder = () => {
                     onWheel={handleWheel}
                     onMouseDown={handleMouseDown}
                     onContextMenu={(e) => e.preventDefault()}
-                    className={`relative w-full flex-1 h-full overflow-hidden rounded-2xl border cursor-grab active:cursor-grabbing ${isDark ? 'bg-[#07070a] border-white/[0.08]' : 'bg-neutral-50 border-neutral-200'}`} style={{
-                     backgroundImage: `radial-gradient(${isDark ? '#ffffff1a' : '#0000001a'} 1px, transparent 0)`,
+                    className={`relative w-full flex-1 h-full overflow-hidden rounded-2xl border cursor-grab active:cursor-grabbing ${isDark ? 'bg-[#07070a] border-[rgb(255,255,255,0.1)]' : 'bg-[#f9fafb] border-neutral-200'}`} style={{
+                     backgroundImage: `radial-gradient(${isDark ? '#ffffff1a' : '#0000001a'} 1px, rgba(0,0,0,0) 0)`,
                      backgroundSize: '30px 30px'
                 }}>
                     {schema.length === 0 ? (
@@ -459,7 +492,7 @@ const SchemaBuilder = () => {
 
                     {/* Hint */}
                     <div className="absolute bottom-4 left-4 text-[10px] opacity-40 uppercase tracking-widest font-bold">
-                        Ctrl+Wheel per Zoom • Tasto Destro per Pan
+                        Rotellina per Zoom • Tasto Destro per Pan
                     </div>
                 </div>
             </div>

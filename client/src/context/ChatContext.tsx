@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback, use
 import getAllConversation from "../services/supabase/Conversation/getAllConversation";
 import { useAuth } from "./AuthContext";
 import getMessages from "../services/supabase/Conversation/getMessages";
-import { sendNormalMessage, sendStreamedMessage, sendCanvasMessage, sendWebSearchMessage, type ChatOptions, type RenderMode } from "../library/sendMessage";
+import { sendNormalMessage, sendStreamedMessage, sendCanvasMessage, type ChatOptions, type RenderMode } from "../library/sendMessage";
 import { useNavigate } from "react-router-dom";
 interface ChatContextType {
     sendMessage: (message: string, functionality: string, reasoning: string, files?: any[]) => Promise<void>;
@@ -120,14 +120,13 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
             reasoning,
             temperature,
             attachedFiles: files,
-            signal: controller.signal
+            signal: controller.signal,
+            webSearch: functionality === "web_search"
         };
 
         try {
             const res = await (functionality === "canvas" 
                 ? sendCanvasMessage(message, setMessageHistory, setLoading, model, messageHistory)
-                : functionality === "web_search"
-                ? sendWebSearchMessage(message, setMessageHistory, setLoading, model, messageHistory)
                 : isStreamTextEnabled
                 ? sendStreamedMessage(message, setMessageHistory, setLoading, model, messageHistory, currentConversationId, user?.id, setCurrentConversationId, fetchConversations, navigate, chatOptions,isBetterView)
                 : sendNormalMessage(message, setMessageHistory, setLoading, model, messageHistory, currentConversationId, user?.id, setCurrentConversationId, fetchConversations, navigate, chatOptions,isBetterView));
