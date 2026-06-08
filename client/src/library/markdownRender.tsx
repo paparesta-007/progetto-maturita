@@ -19,7 +19,21 @@ const MarkdownRender = ({ text, isStreaming }: { text: string; isStreaming?: boo
     const renderMarkdownSync = (rawText: string) => {
         // Versione sincrona e semplificata per streaming veloce
         try {
-            const tokens = marked.lexer(rawText);
+            let processedText = rawText;
+            
+            // Protezione e rendering LaTeX inline e block (veloce)
+            processedText = processedText.replace(/\$\$([\s\S]+?)\$\$/g, (_match, formula) => {
+                try {
+                    return katex.renderToString(formula, { displayMode: true, throwOnError: false });
+                } catch { return _match; }
+            });
+            processedText = processedText.replace(/\$([^$\n]+?)\$/g, (_match, formula) => {
+                try {
+                    return katex.renderToString(formula, { displayMode: false, throwOnError: false });
+                } catch { return _match; }
+            });
+
+            const tokens = marked.lexer(processedText);
             const html = marked.parser(tokens);
             return DOMPurify.sanitize(html, {
                 ADD_TAGS: ['math', 'semantics', 'mrow', 'mn', 'mo', 'mi', 'msup', 'msub', 'mfrac', 'mtext', 'annotation', 'annotation-xml', 'svg', 'path', 'g', 'div', 'span', 'pre', 'code', 'button', 'rect'],
@@ -249,9 +263,13 @@ const MarkdownRender = ({ text, isStreaming }: { text: string; isStreaming?: boo
     return (
         <div
             ref={containerRef} // Colleghiamo il ref qui
-            className={`renderChat prose max-w-none ${theme === 'dark' ? 'prose-invert' : ''}`}
-            dangerouslySetInnerHTML={{ __html: htmlContent || text }}
-        />
+            className={`renderChat prose max-w-none ${theme === 'dark' ? 'prose-invert' : ''} ${isStreaming ? 'streaming-cursor' : ''}`}
+        >
+            <div dangerouslySetInnerHTML={{ __html: htmlContent || text }} />
+            {isStreaming && (
+                <span className="inline-block w-2 h-4 ml-1 bg-blue-500/60 animate-pulse rounded-sm align-middle" />
+            )}
+        </div>
     );
 };
 

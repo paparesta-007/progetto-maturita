@@ -341,7 +341,7 @@ const DocumentPage = () => {
                                                     >
                                                         {msg.content === "Elaborazione in corso..." || msg.content === "Avvio della richiesta..." 
                                                             ? <p className="text-neutral-500 italic text-sm">{msg.content}</p> 
-                                                            : <MarkdownRender text={msg.content} />
+                                                            : <MarkdownRender text={msg.content} isStreaming={(msg as any).isStreaming} />
                                                         }
                                                     </MemoizedBotMessage>
                                                 );
@@ -356,7 +356,7 @@ const DocumentPage = () => {
                             <div className={styles.emptyStateContainer}>
                                 {!loadingDocument && currentDocument && (
                                     <>
-                                        <PromptStarter />
+                                        <PromptStarter showSuggestions={false} />
                                         <p className={styles.emptyStateText}>
                                             Inizia a chattare sul tuo documento!
                                         </p>
