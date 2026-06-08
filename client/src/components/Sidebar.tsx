@@ -250,10 +250,85 @@ const Sidebar = ({
                             {isDocumentsPage ? (
                                 documentList.map(doc => (
                                     <li key={doc.document_id} className="relative group">
-                                        <NavLink to={`/app/documents/${doc.document_id}`} className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm nav-item-cozy truncate">
-                                            <File size={16} className="flex-shrink-0 opacity-40" />
-                                            {!isMinimized && <span className="truncate">{doc.title}</span>}
-                                        </NavLink>
+                                        {editingId === doc.document_id ? (
+                                            <div className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm bg-[#f0eee6] dark:bg-white/5 border border-[#b08968]/30">
+                                                <File size={16} className="flex-shrink-0 opacity-40" />
+                                                <input
+                                                    autoFocus
+                                                    className={`bg-transparent border-none outline-none w-full text-sm ${isDark ? 'text-white' : 'text-[#171717]'}`}
+                                                    value={renameTitle}
+                                                    onChange={(e) => setRenameTitle(e.target.value)}
+                                                    onKeyDown={(e) => {
+                                                        if (e.key === 'Enter') {
+                                                            // Handle document rename if service exists, for now just close
+                                                            setEditingId(null);
+                                                        }
+                                                        if (e.key === 'Escape') setEditingId(null);
+                                                    }}
+                                                    onBlur={() => setEditingId(null)}
+                                                />
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <NavLink to={`/app/documents/${doc.document_id}`} className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm nav-item-cozy truncate group-hover:pr-10">
+                                                    <File size={16} className="flex-shrink-0 opacity-40" />
+                                                    {!isMinimized && <span className="truncate">{doc.title}</span>}
+                                                </NavLink>
+                                                {!isMinimized && (
+                                                    <div className={`absolute right-2 top-1/2 -translate-y-1/2 flex gap-0.5 transition-all z-20 ${docMenuOpen === doc.document_id ? 'opacity-100 visible' : 'opacity-0 invisible group-hover:opacity-100 group-hover:visible'}`}>
+                                                        <div className="relative">
+                                                            <button 
+                                                                onClick={(e) => {
+                                                                    e.preventDefault();
+                                                                    e.stopPropagation();
+                                                                    setDocMenuOpen(docMenuOpen === doc.document_id ? null : doc.document_id);
+                                                                }}
+                                                                className={`p-1 rounded-md transition-all ${docMenuOpen === doc.document_id ? 'bg-[#e5e5e5] text-[#171717]' : 'hover:bg-[#e5e5e5] text-[#a3a3a3]'}`}
+                                                            >
+                                                                <DotsThreeIcon size={18} weight="bold" />
+                                                            </button>
+
+                                                            <AnimatePresence>
+                                                                {docMenuOpen === doc.document_id && (
+                                                                    <motion.div
+                                                                        initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                                                                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                                        exit={{ opacity: 0, scale: 0.95, y: -5 }}
+                                                                        className={`absolute right-0 top-full mt-1 w-36 p-1 rounded-xl border shadow-2xl z-[60] overflow-hidden ${isDark ? 'bg-[#0d0e14] border-white/10' : 'bg-white border-[#e5e5e5]'}`}
+                                                                        onClick={(e) => e.stopPropagation()}
+                                                                    >
+                                                                        <button 
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                setEditingId(doc.document_id);
+                                                                                setRenameTitle(doc.title);
+                                                                                setDocMenuOpen(null);
+                                                                            }}
+                                                                            className={`w-full flex items-center gap-2.5 p-2 rounded-lg text-xs transition-all ${
+                                                                                isDark 
+                                                                                    ? 'hover:bg-white/5 text-[#737373] hover:text-white' 
+                                                                                    : 'hover:bg-[#f9f8f6] text-[#737373] hover:text-[#171717]'
+                                                                            }`}
+                                                                        >
+                                                                            <PencilLineIcon size={14} /> Rename
+                                                                        </button>
+                                                                        <button 
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleDeleteDocument(doc.document_id);
+                                                                            }}
+                                                                            className="w-full flex items-center gap-2.5 p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 text-xs text-red-500 transition-all"
+                                                                        >
+                                                                            <TrashIcon size={14} /> Delete
+                                                                        </button>
+                                                                    </motion.div>
+                                                                )}
+                                                            </AnimatePresence>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </>
+                                        )}
                                     </li>
                                 ))
                             ) : (
