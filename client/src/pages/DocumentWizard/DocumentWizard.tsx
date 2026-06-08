@@ -21,7 +21,7 @@ import Tooltip from "../../components/other/Tooltip";
 import { useNavigate } from "react-router-dom";
 import supabase from "../../library/supabaseclient";
 
-const DocumentWizard = () => {
+const DocumentWizard = ({ onBackToLibrary }: { onBackToLibrary?: () => void }) => {
     // --- Context & State ---
     const { currentStep, setCurrentStep,fetchUserDocuments } = useDocument();
     const { user, theme } = useAuth();
@@ -551,12 +551,18 @@ const DocumentWizard = () => {
                 {/* Footer Navigation */}
                 <div className={`p-4 border-t flex items-center justify-between ${isDark ? "bg-neutral-900 border-neutral-800" : "bg-white border-neutral-100"}`}>
                     <button
-                        onClick={handleBack}
-                        disabled={currentStep === 1 || loading}
-                        className={`${style.buttonSecondary} ${(currentStep === 1 || loading) ? 'opacity-0 pointer-events-none' : ''}`}
+                        onClick={() => {
+                            if (currentStep === 1 && onBackToLibrary) {
+                                onBackToLibrary();
+                            } else {
+                                handleBack();
+                            }
+                        }}
+                        disabled={loading}
+                        className={`${style.buttonSecondary}`}
                     >
                         <CaretLeft size={16} weight="bold" />
-                        Back
+                        {currentStep === 1 ? "Exit" : "Back"}
                     </button>
 
                     <button

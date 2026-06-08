@@ -43,7 +43,7 @@ router.post("/ingest", requireAuth, upload.single('file'), async (req: express.R
 
         if (!req.file) throw new Error("Nessun file caricato");
 
-        const { user_id, category, title } = req.body;
+        const { user_id, category, title, description } = req.body;
         if (!user_id) throw new Error("User ID mancante");
 
         sendLog(`👤 [2/6] Utente: ${user_id}, File: ${req.file.originalname}`);
@@ -108,7 +108,9 @@ router.post("/ingest", requireAuth, upload.single('file'), async (req: express.R
                 source: req.file?.originalname,
                 title: title,
                 category: category,
-                document_id: docId
+                description: description,
+                document_id: docId,
+                created_at: date
             },
             document_id: docId,
             created_at: date

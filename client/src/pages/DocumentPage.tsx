@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import DocumentWizard from "./DocumentWizard/DocumentWizard";
+import DocumentLibrary from "./DocumentWizard/DocumentLibrary";
 import { useDocument } from "../context/DocumentContext";
 import { useParams } from "react-router-dom";
 import getCurrentDocument from "../services/supabase/documents/getCurrentDocument";
@@ -74,6 +75,8 @@ const DocumentPage = () => {
     
     // Memoizza stili
     const styles = useMemo(() => getStyles(isDark), [isDark]);
+
+    const [showWizard, setShowWizard] = useState(false);
 
     // Scroll to bottom con debouncing
     const scrollToBottom = useCallback((force = false) => {
@@ -264,8 +267,11 @@ const DocumentPage = () => {
         };
     }, []);
 
-    if (currentStep < 4 && !documentId) {
-        return <DocumentWizard />;
+    if (!documentId) {
+        if (showWizard) {
+            return <DocumentWizard onBackToLibrary={() => setShowWizard(false)} />;
+        }
+        return <DocumentLibrary onNewDocument={() => setShowWizard(true)} />;
     }
 
     return (
