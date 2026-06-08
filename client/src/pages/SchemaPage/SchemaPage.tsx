@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useSchema, type SchemaNodeData } from '../../context/SchemaContext';
 import { useAuth } from '../../context/AuthContext';
 import SchemaTextbar from './Textbar';
-import { PlusIcon, TrashIcon, DownloadSimple, FileCode, FilePdf, Palette, MagnifyingGlassPlus, MagnifyingGlassMinus,ArrowsOutCardinal } from '@phosphor-icons/react';
+import { PlusIcon, TrashIcon, DownloadSimple, FileCode, FilePdf, Palette, MagnifyingGlassPlus, MagnifyingGlassMinus,ArrowsOutCardinal, Rows, Columns } from '@phosphor-icons/react';
 import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
 
@@ -30,14 +30,14 @@ const SchemaNode = ({
     onAddChild, 
     onDelete,
     isDark,
-    isRoot = false
+    orientation
 }: { 
     node: SchemaNodeData, 
     onUpdate: (id: string, field: string, value: any) => void,
     onAddChild: (id: string) => void,
     onDelete: (id: string) => void,
     isDark: boolean,
-    isRoot?: boolean
+    orientation: 'vertical' | 'horizontal'
 }) => {
     const [showColorPicker, setShowColorPicker] = useState(false);
     const pickerRef = useRef<HTMLDivElement>(null);
@@ -58,7 +58,7 @@ const SchemaNode = ({
     }, [showColorPicker]);
 
     return (
-        <li>
+        <li className={orientation === 'horizontal' ? 'flex items-center' : ''}>
             {/* The Node Card */}
             <div className={`group/node relative inline-block text-left w-56 p-3 rounded-2xl border transition-all duration-300 hover:shadow-lg ${
                 isDark 
@@ -118,17 +118,15 @@ const SchemaNode = ({
                     >
                         <Palette size={14} weight="bold" />
                     </button>
-                    {!isRoot && (
-                        <button 
-                            onClick={() => onDelete(node.id)} 
-                            title="Elimina nodo"
-                            className={`p-1.5 rounded-full shadow-md text-red-500 transition-all active:scale-95 ${
-                                isDark ? 'bg-[rgb(38,38,38)] hover:bg-[rgb(64,64,64)]' : 'bg-white border border-neutral-200 hover:bg-neutral-50'
-                            }`}
-                        >
-                            <TrashIcon size={14} weight="bold" />
-                        </button>
-                    )}
+                    <button 
+                        onClick={() => onDelete(node.id)} 
+                        title="Elimina nodo"
+                        className={`p-1.5 rounded-full shadow-md text-red-500 transition-all active:scale-95 ${
+                            isDark ? 'bg-[rgb(38,38,38)] hover:bg-[rgb(64,64,64)]' : 'bg-white border border-neutral-200 hover:bg-neutral-50'
+                        }`}
+                    >
+                        <TrashIcon size={14} weight="bold" />
+                    </button>
                 </div>
 
                 {/* Color Picker Popup */}
@@ -155,7 +153,7 @@ const SchemaNode = ({
 
             {/* Children container with connecting lines */}
             {node.children && node.children.length > 0 && (
-                <ul>
+                <ul className={orientation === 'horizontal' ? 'horizontal' : ''}>
                     {node.children.map((child) => (
                         <SchemaNode
                             key={child.id}
@@ -164,7 +162,7 @@ const SchemaNode = ({
                             onAddChild={onAddChild}
                             onDelete={onDelete}
                             isDark={isDark}
-                            isRoot={false}
+                            orientation={orientation}
                         />
                     ))}
                 </ul>
@@ -175,7 +173,7 @@ const SchemaNode = ({
 
 // --- 2. The Main Parent Component ---
 const SchemaBuilder = () => {
-    const { schema, setSchema } = useSchema();
+    const { schema, setSchema, orientation, setOrientation } = useSchema();
     const { theme } = useAuth();
     const isDark = theme === 'dark';
     const containerRef = useRef<HTMLDivElement>(null);
@@ -338,6 +336,26 @@ const SchemaBuilder = () => {
                     <h2 className="text-2xl font-bold tracking-tight">Schema Builder</h2>
                     
                     <div className="flex items-center gap-2">
+                         {/* Orientation Toggle */}
+                         <div className={`flex items-center gap-1 p-1 rounded-xl border ${isDark ? 'bg-[rgb(23,23,23)] border-[rgb(255,255,255,0.1)]' : 'bg-neutral-100 border-neutral-200'}`}>
+                            <button 
+                                onClick={() => setOrientation('vertical')} 
+                                className={`p-1.5 rounded-lg transition-all ${orientation === 'vertical' ? (isDark ? 'bg-white text-black' : 'bg-black text-white') : 'hover:bg-black/5 dark:hover:bg-white/5 opacity-50'}`} 
+                                title="Vertical Layout"
+                            >
+                                <Rows size={18}/>
+                            </button>
+                            <button 
+                                onClick={() => setOrientation('horizontal')} 
+                                className={`p-1.5 rounded-lg transition-all ${orientation === 'horizontal' ? (isDark ? 'bg-white text-black' : 'bg-black text-white') : 'hover:bg-black/5 dark:hover:bg-white/5 opacity-50'}`} 
+                                title="Horizontal Layout"
+                            >
+                                <Columns size={18}/>
+                            </button>
+                        </div>
+
+                        <div className="w-px h-6 bg-white/10 mx-1"/>
+
                          {/* Controls */}
                          <div className={`flex items-center gap-1 p-1 rounded-xl border ${isDark ? 'bg-rgb(23,23,23) border-[rgb(255,255,255,0.1)]' : 'bg-neutral-100 border-neutral-200'}`}>
                             <button onClick={() => setZoom(prev => Math.max(prev - 0.1, 0.2))} className="p-1.5 rounded-lg hover:bg-black/5 dark:hover:bg-white/5 transition-colors" title="Zoom Out"><MagnifyingGlassMinus size={18}/></button>
@@ -398,13 +416,17 @@ const SchemaBuilder = () => {
                         display: flex;
                         justify-content: center;
                         padding-left: 0;
+                        transition: all 0.3s ease;
                     }
                     .org-tree li {
                         text-align: center;
                         list-style-type: none;
                         position: relative;
                         padding: 2rem 0.5rem 0 0.5rem;
+                        transition: all 0.3s ease;
                     }
+
+                    /* Vertical lines */
                     .org-tree li::before, .org-tree li::after {
                         content: '';
                         position: absolute;
@@ -451,6 +473,72 @@ const SchemaBuilder = () => {
                     .org-tree > ul::before {
                         display: none;
                     }
+
+                    /* Horizontal Layout */
+                    .org-tree.horizontal-root {
+                        align-items: center;
+                        justify-content: flex-start;
+                    }
+                    .org-tree.horizontal-root ul {
+                        flex-direction: column;
+                        padding-top: 0;
+                        padding-left: 2rem;
+                        align-items: flex-start;
+                    }
+                    .org-tree.horizontal-root > ul {
+                        padding-left: 0;
+                    }
+                    .org-tree.horizontal-root li {
+                        padding: 1rem 0 1rem 2rem;
+                        text-align: left;
+                        display: flex;
+                        align-items: center;
+                    }
+                    .org-tree.horizontal-root li::before, .org-tree.horizontal-root li::after {
+                        content: '';
+                        position: absolute;
+                        left: 0;
+                        right: auto;
+                        width: 2rem;
+                        height: 50%;
+                        border-top: none;
+                    }
+                    .org-tree.horizontal-root li::before {
+                        top: 0;
+                        border-left: 2px solid var(--line-color);
+                        border-bottom: 2px solid var(--line-color);
+                    }
+                    .org-tree.horizontal-root li::after {
+                        top: 50%;
+                        border-left: 2px solid var(--line-color);
+                    }
+                    .org-tree.horizontal-root li:first-child::before {
+                        border-left: none;
+                        border-radius: 0.5rem 0 0 0;
+                    }
+                    .org-tree.horizontal-root li:last-child::before {
+                        border-radius: 0 0 0 0.5rem;
+                    }
+                    .org-tree.horizontal-root li:last-child::after {
+                        display: none;
+                    }
+                    .org-tree.horizontal-root li:only-child::before {
+                        border-bottom: 2px solid var(--line-color);
+                        border-left: none;
+                        border-radius: 0;
+                    }
+                    .org-tree.horizontal-root li:only-child::after {
+                        display: none;
+                    }
+                    .org-tree.horizontal-root ul::before {
+                        top: 50%;
+                        left: 0;
+                        width: 2rem;
+                        height: 0;
+                        border-left: none;
+                        border-top: 2px solid var(--line-color);
+                        transform: translateY(-50%);
+                    }
                 `}</style>
                 
                 <div 
@@ -469,12 +557,12 @@ const SchemaBuilder = () => {
                     ) : (
                         <div 
                             ref={orgTreeRef}
-                            className="org-tree min-w-max"
+                            className={`org-tree min-w-max ${orientation === 'horizontal' ? 'horizontal-root' : ''}`}
                             style={{ 
                                 transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
                             }}
                         >
-                            <ul>
+                            <ul className={orientation === 'horizontal' ? 'horizontal' : ''}>
                                 {schema.map((node) => (
                                     <SchemaNode
                                         key={node.id}
@@ -483,7 +571,7 @@ const SchemaBuilder = () => {
                                         onAddChild={handleAddChild}
                                         onDelete={handleDelete}
                                         isDark={isDark}
-                                        isRoot={true}
+                                        orientation={orientation}
                                     />
                                 ))}
                             </ul>

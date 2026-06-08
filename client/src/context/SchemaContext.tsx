@@ -21,6 +21,8 @@ interface SchemaContextProps {
     setSchema: React.Dispatch<React.SetStateAction<SchemaNodeData[]>>;
     messages: ChatMessage[];
     loading: boolean;
+    orientation: 'vertical' | 'horizontal';
+    setOrientation: (o: 'vertical' | 'horizontal') => void;
     sendMessage: (text: string, model: string) => Promise<void>;
 }
 
@@ -39,6 +41,7 @@ export const SchemaProvider = ({ children }: { children: ReactNode }) => {
     ]);
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [loading, setLoading] = useState(false);
+    const [orientation, setOrientation] = useState<'vertical' | 'horizontal'>('vertical');
 
     const sendMessage = async (text: string, model: string) => {
         if (!text.trim()) return;
@@ -121,7 +124,7 @@ export const SchemaProvider = ({ children }: { children: ReactNode }) => {
     };
 
     return (
-        <SchemaContext.Provider value={{ schema, setSchema, messages, loading, sendMessage }}>
+        <SchemaContext.Provider value={{ schema, setSchema, messages, loading, orientation, setOrientation, sendMessage }}>
             {children}
         </SchemaContext.Provider>
     );

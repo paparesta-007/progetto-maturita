@@ -1,7 +1,9 @@
 import React, { useState, useRef, useCallback } from "react";
-import { PaperPlaneTilt, StopIcon } from "@phosphor-icons/react";
+import { LightningIcon, PaperPlaneTilt, StopIcon, Sparkle } from "@phosphor-icons/react";
+import { BrainIcon, GaugeIcon } from "lucide-react";
 import { useSchema } from "../../context/SchemaContext";
 import { useAuth } from "../../context/AuthContext";
+import SelectPopup, { type SelectOption } from "../../components/other/SelectPopup";
 
 const SchemaTextbar = () => {
     const { theme } = useAuth();
@@ -9,7 +11,15 @@ const SchemaTextbar = () => {
     const { sendMessage, loading } = useSchema();
 
     const [inputValue, setInputValue] = useState("");
+    const [selectedModel, setSelectedModel] = useState("openai/gpt-oss-120b");
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+    const MODELS: SelectOption<string>[] = [
+        { label: "DeepSeek v4 Flash", value: "deepseek/deepseek-v4-flash", icon: <LightningIcon size={16} />, description: "Ultra veloce" },
+        { label: "GPT-5 Nano", value: "openai/gpt-5-nano", icon: <BrainIcon size={16} />, description: "Intelligenza pura" },
+        { label: "Gemini 3.1 Flash Lite", value: "google/gemini-3.1-flash-lite", icon: <GaugeIcon size={16} />, description: "Versatile" },
+        { label: "GPT OSS 120B", value: "openai/gpt-oss-120b", icon: <Sparkle size={16} />, description: "Potente & Libero" },
+    ];
 
     const handleSendMessage = useCallback(async () => {
         if (!inputValue.trim() || loading) return;
@@ -18,8 +28,8 @@ const SchemaTextbar = () => {
         if (textareaRef.current) {
             textareaRef.current.style.height = "auto";
         }
-        await sendMessage(text, "fast");
-    }, [inputValue, loading, sendMessage]);
+        await sendMessage(text, selectedModel);
+    }, [inputValue, loading, sendMessage, selectedModel]);
 
     const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -40,7 +50,7 @@ const SchemaTextbar = () => {
         el.style.height = Math.min(el.scrollHeight, maxHeight) + "px";
     }, []);
 
-    const containerStyle = `w-full rounded-[1.5rem] p-3 flex flex-col gap-2 transition-all duration-300 border ${
+    const containerStyle = `w-full rounded-[1.5rem] p-3 flex flex-col gap-2 transition-all duration-300 border relative ${
         isDark ? "bg-[#18181b] border-white/20 shadow-2xl" : "bg-white border-neutral-300 shadow-md"
     }`;
 
@@ -54,6 +64,11 @@ const SchemaTextbar = () => {
 
     return (
         <div className={containerStyle}>
+            {/* Toolbar Top */}
+            <div className="flex items-center justify-between pb-2 border-b border-white/5">
+                <SelectPopup options={MODELS} value={selectedModel} onChange={setSelectedModel} />
+            </div>
+
             {/* INPUT E INVIO */}
             <div className="flex items-center gap-2">
                 <textarea

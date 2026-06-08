@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useDocument, type DocumentStep } from "../../context/DocumentContext";
 import { useAuth } from "../../context/AuthContext";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,21 +21,30 @@ import Tooltip from "../../components/other/Tooltip";
 import { useNavigate } from "react-router-dom";
 import supabase from "../../library/supabaseclient";
 
-const DocumentWizard = () => {
+const DocumentWizard = ({ onBackToLibrary }: { onBackToLibrary?: () => void }) => {
     // --- Context & State ---
     const { currentStep, setCurrentStep,fetchUserDocuments } = useDocument();
     const { user, theme } = useAuth();
     const [loading, setLoading] = useState(false);
+    const [ingestionLogs, setIngestionLogs] = useState<{ type: string; content: string }[]>([]);
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const logEndRef = useRef<HTMLDivElement>(null);
     const navigate = useNavigate();
     // Local state
     const [formData, setFormData] = useState({
         title: "",
-        embeddingModel: "google-vertex-embedding-gecko-001",
-        category: "Finance",
+        embeddingModel: "openai/text-embedding-3-small",
+        category: "General",
         description: "",
-        file: null as File | null // Changed to store actual File object
+        file: null as File | null 
     });
+
+    // Auto-scroll logs
+    useEffect(() => {
+        if (logEndRef.current) {
+            logEndRef.current.scrollIntoView({ behavior: "smooth" });
+        }
+    }, [ingestionLogs]);
 
     // --- Helpers ---
     const formatFileSize = (bytes: number) => {
@@ -124,57 +133,101 @@ const DocumentWizard = () => {
     };
 
     const handleSubmit = async() => {
-        
         setLoading(true);
+        setIngestionLogs([]);
         if(!formData.file ) {
             console.error("No file to submit");
             setLoading(false);
             return;
         }
+        
         const formDataToSubmit = new FormData();
         formDataToSubmit.append("file", formData.file as Blob);
         formDataToSubmit.append("title", formData.title);
         formDataToSubmit.append("category", formData.category);
         formDataToSubmit.append('user_id', user?.id || "");
-
-        //Optional fields
         formDataToSubmit.append("embeddingModel", formData.embeddingModel);
         formDataToSubmit.append("description", formData.description);
 
-        const { data: { session } } = await supabase.auth.getSession();
-        const token = session?.access_token;
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
 
-        const response=await fetch("http://localhost:3000/api/docs/ingest",{
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${token}`
-            },
-            body: formDataToSubmit
-        })
-        const data = await response.json();
-        if(data.success){
-            console.log("Document ingested successfully:", data.message);
-            // Salva PDF su supabase
-            if (formData.file && formData.file.name.toLowerCase().endsWith('.pdf') && data.documentId && user?.id) {
-                const storagePath = `${user.id}/${data.documentId}.pdf`;
-                const { error: uploadError } = await supabase.storage
-                    .from('pdfs')
-                    .upload(storagePath, formData.file, {
-                        upsert: true
-                    });
-                if (uploadError) {
-                    console.error("Errore salvataggio PDF su Supabase:", uploadError);
-                    console.warn("Il documento testuale e stato ingerito, ma il PDF non e stato caricato nello storage. La preview PDF non sara disponibile.");
-                } else {
-                    console.log("PDF salvato correttamente in Supabase storage");
+            const response = await fetch("http://localhost:3000/api/docs/ingest", {
+                method: "POST",
+                headers: {
+                    "Authorization": `Bearer ${token}`
+                },
+                body: formDataToSubmit
+            });
+
+            if (!response.body) throw new Error("No response body");
+            
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let resultData: any = null;
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split("\n").filter(line => line.trim() !== "");
+
+                for (const line of lines) {
+                    try {
+                        const parsed = JSON.parse(line);
+                        if (parsed.type === "log") {
+                            setIngestionLogs(prev => [...prev, parsed]);
+                        } else if (parsed.type === "result") {
+                            resultData = parsed;
+                        } else if (parsed.type === "error") {
+                            throw new Error(parsed.error);
+                        }
+                    } catch (e) {
+                        console.error("Error parsing NDJSON line:", e);
+                    }
                 }
             }
-        } else {
-            console.error("Error ingesting document:", data.error);
+
+            if (resultData && resultData.success) {
+                console.log("Document ingested successfully:", resultData.message);
+                // Salva PDF su supabase
+                if (formData.file && formData.file.name.toLowerCase().endsWith('.pdf') && resultData.documentId && user?.id) {
+                    const storagePath = `${user.id}/${resultData.documentId}.pdf`;
+                    const { error: uploadError } = await supabase.storage
+                        .from('pdfs')
+                        .upload(storagePath, formData.file, {
+                            upsert: true
+                        });
+                    if (uploadError) {
+                        console.error("Errore salvataggio PDF su Supabase:", uploadError);
+                    }
+                }
+                
+                fetchUserDocuments(user?.id || "", true); 
+                // Aspettiamo un secondo per far vedere il successo
+                setTimeout(() => {
+                    // Reset wizard
+                    setFormData({
+                        title: "",
+                        embeddingModel: "openai/text-embedding-3-small",
+                        category: "General",
+                        description: "",
+                        file: null
+                    });
+                    if (fileInputRef.current) fileInputRef.current.value = "";
+                    setCurrentStep(1);
+                    setIngestionLogs([]);
+                    navigate("/app/documents" + "/" + resultData.documentId);
+                }, 1000);
+            }
+        } catch (error: any) {
+            console.error("Error ingesting document:", error);
+            setIngestionLogs(prev => [...prev, { type: "error", content: error.message }]);
+        } finally {
+            setLoading(false);
         }
-        setLoading(false);
-        fetchUserDocuments(user?.id || "", true); 
-        navigate("/app/documents"+"/"+data.documentId);
     }
 
     const handleBack = () => {
@@ -250,15 +303,51 @@ const DocumentWizard = () => {
                 <div className="p-8 min-h-[350px] flex flex-col">
                     <AnimatePresence mode="wait">
 
-                        {/* STEP 1: Details & Upload */}
-                        {currentStep === 1 && (
-                            <motion.div
-                                key="step1"
+                        {loading ? (
+                             <motion.div
+                                key="loading"
                                 variants={contentVariants}
                                 initial="hidden" animate="visible" exit="exit"
                                 transition={{ duration: 0.2 }}
-                                className="flex flex-col gap-6 flex-1"
+                                className="flex flex-col gap-4 flex-1 h-full"
                             >
+                                <div className="flex items-center gap-3 mb-2">
+                                    <div className="relative">
+                                        <div className="w-8 h-8 rounded-full border-2 border-neutral-200 border-t-blue-500 animate-spin" />
+                                        <Sparkles size={14} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-blue-500" />
+                                    </div>
+                                    <div>
+                                        <h4 className={`text-sm font-semibold ${style.textPrimary}`}>Processing Document...</h4>
+                                        <p className={`text-[10px] ${style.textSecondary}`}>Wait while we analyze and index your file.</p>
+                                    </div>
+                                </div>
+
+                                <div className={`flex-1 overflow-y-auto p-4 space-y-2 font-mono text-[10px] rounded-lg border max-h-[250px] ${isDark ? "bg-neutral-950 border-neutral-800 text-neutral-400" : "bg-neutral-50 border-neutral-200 text-neutral-600"}`}>
+                                    {ingestionLogs.length === 0 && (
+                                        <div className="flex items-center gap-2 opacity-50 italic">
+                                            <span>Initializing ingestion pipeline...</span>
+                                        </div>
+                                    )}
+                                    {ingestionLogs.map((log, i) => (
+                                        <div key={i} className="flex gap-2 animate-in fade-in slide-in-from-left-1">
+                                            <span className="opacity-30 shrink-0">[{new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}]</span>
+                                            <span className={log.type === "error" ? "text-red-500" : ""}>{log.content}</span>
+                                        </div>
+                                    ))}
+                                    <div ref={logEndRef} />
+                                </div>
+                            </motion.div>
+                        ) : (
+                            <>
+                                {/* STEP 1: Details & Upload */}
+                                {currentStep === 1 && (
+                                    <motion.div
+                                        key="step1"
+                                        variants={contentVariants}
+                                        initial="hidden" animate="visible" exit="exit"
+                                        transition={{ duration: 0.2 }}
+                                        className="flex flex-col gap-6 flex-1"
+                                    >
                                 {/* File Upload Area */}
                                 <div>
                                     <label className={`${style.label} mb-2 block`}>Source File</label>
@@ -329,7 +418,7 @@ const DocumentWizard = () => {
                                     <div className="flex items-center gap-2">
                                         <label className={`${style.label} flex items-center gap-2`}>Domain Category </label>
                                         <Tooltip content={"Helps the system understand the context of your document."} position="right">
-                                            <span className="text-neutral-600<l border border-neutral-600 rounded-full w-5 h-5 flex items-center justify-center text-xs">?</span>
+                                            <span className="text-neutral-600 border border-neutral-600 rounded-full w-5 h-5 flex items-center justify-center text-xs">?</span>
                                         </Tooltip>
 
                                     </div>
@@ -454,32 +543,40 @@ const DocumentWizard = () => {
                                 </div>
                             </motion.div>
                         )}
+                        </>
+                    )}
                     </AnimatePresence>
                 </div>
 
                 {/* Footer Navigation */}
                 <div className={`p-4 border-t flex items-center justify-between ${isDark ? "bg-neutral-900 border-neutral-800" : "bg-white border-neutral-100"}`}>
                     <button
-                        onClick={handleBack}
-                        disabled={currentStep === 1}
-                        className={`${style.buttonSecondary} ${currentStep === 1 ? 'opacity-0 pointer-events-none' : ''}`}
+                        onClick={() => {
+                            if (currentStep === 1 && onBackToLibrary) {
+                                onBackToLibrary();
+                            } else {
+                                handleBack();
+                            }
+                        }}
+                        disabled={loading}
+                        className={`${style.buttonSecondary}`}
                     >
                         <CaretLeft size={16} weight="bold" />
-                        Back
+                        {currentStep === 1 ? "Exit" : "Back"}
                     </button>
 
                     <button
                         onClick={handleNext}
-                        disabled={currentStep === 1 && !formData.file}
-                        className={`${style.buttonPrimary} ${(currentStep === 1 && !formData.file) ? 'opacity-50 cursor-not-allowed' : ''}`}
+                        disabled={(currentStep === 1 && !formData.file) || loading}
+                        className={`${style.buttonPrimary} ${(currentStep === 1 && !formData.file) || loading ? 'opacity-50 cursor-not-allowed' : ''}`}
                     >
                         {currentStep === 3 ? (
                             <>
                                 {!loading &&<Sparkles size={16} />}
-                                {loading && <span className="loader">
-                                
-                                </span>}
-                                <span>Create</span>
+                                {loading && (
+                                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                                )}
+                                <span>{loading ? "Processing..." : "Create"}</span>
                             </>
                         ) : (
                             <>

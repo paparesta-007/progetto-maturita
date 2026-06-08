@@ -1,103 +1,187 @@
 "use strict";
 
+let currentTicket = null;
+let quill = null;
+
 document.addEventListener("DOMContentLoaded", function () {
-    const playground = document.getElementById('playground');
+    const mainContent = document.getElementById('mainContent');
+    const btnLogs = document.getElementById('btnLogs');
+    const btnSupport = document.getElementById('btnSupport');
+    const replyModal = document.getElementById('replyModal');
+    const sendReplyBtn = document.getElementById('sendReplyBtn');
+    const btnText = document.getElementById('btnText');
+    const statusSelect = document.getElementById('statusSelect');
 
-    document.getElementById('generateText').addEventListener('click', async () => {
-        playground.textContent = "Caricamento...";
-        try {
-            const res = await fetch('/api/gemini/generate?prompt=' + encodeURIComponent(document.getElementById('promptInput').value));
-            const data = await res.json();
-            playground.textContent = data.text || JSON.stringify(data, null, 2);
-            const usage = data.usage;
-            const totalTime = data.totaltime;
-            showAdvancedUsage(usage, totalTime);
-        } catch (err) {
-            playground.textContent = "Errore: " + err.message;
+    // Initialize Quill
+    quill = new Quill('#editor', {
+        theme: 'snow',
+        placeholder: 'Compose your reply...',
+        modules: {
+            toolbar: [
+                ['bold', 'italic', 'underline'],
+                [{ 'list': 'ordered'}, { 'list': 'bullet' }],
+                ['link', 'clean']
+            ]
         }
     });
 
-    document.getElementById('generateQuiz').addEventListener('click', async () => {
-        playground.textContent = "Caricamento...";
-        try {
-            const res = await fetch('/api/gemini/structured-output?prompt=' + encodeURIComponent(document.getElementById('promptInput').value));
-            const data = await res.json();
-            playground.textContent = JSON.stringify(data, null, 2);
-            const usage = data.usage;
-            const totalTime = data.totaltime;
-            showAdvancedUsage(usage, totalTime);
-        } catch (err) {
-            playground.textContent = "Errore: " + err.message;
-        }
-    });
-
-
-    document.getElementById('generateStream').addEventListener('click', async () => {
-        document.getElementById('generateStream').disabled = true;
-        playground.textContent = "";
-        try {
-            
-            const res = await fetch('/api/gemini/stream?prompt=' + encodeURIComponent(document.getElementById('promptInput').value));
-            const reader = res.body.getReader();
-            const decoder = new TextDecoder();
-            let buffer = "";
-
-            // async function animateWords(text) {
-            //     const words = text.split(/(\s+)/);
-            //     for (const word of words) {
-            //         playground.textContent += word;
-            //         await new Promise(r => setTimeout(r, 20));
-            //     }
-            // }
-            async function animateLetters(text) {
-                for (const letter of text) {
-                    playground.textContent += letter;
-                    await new Promise(r => setTimeout(r, 1));
-                }
-            }
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-                buffer += decoder.decode(value);
-
-                // split by newlines (NDJSON)
-                let lines = buffer.split('\n');
-                buffer = lines.pop(); // incomplete line left for next chunk
-
-                for (const line of lines) {
-                    if (!line.trim()) continue;
-                    const obj = JSON.parse(line);
-
-                    // Animate/display text chunks
-                    if ('text' in obj && !('usage' in obj)) {
-                        await animateLetters(obj.text);
-                    }
-
-                    // Show usage and stats at end
-                    if ('usage' in obj || 'totalUsage' in obj) {
-                        // obj.usage, obj.totalUsage, obj.steps, obj.finishReason, etc.
-                        // Show usage/totals to user
-                        console.log('Usage stats:', obj.time, obj.totalUsage);
-                        showAdvancedUsage(obj.totalUsage, obj.time);
-                    }
-                }
-            }
-            document.getElementById('generateStream').disabled = false;
-        } catch (error) {
-            playground.textContent = "Errore: " + error.message;
-            document.getElementById('generateStream').disabled = false;
-        }
-    });
-    document.getElementById("viewLogs").addEventListener("click", async () => {
+    // Navigation
+    btnLogs.addEventListener('click', () => {
         window.location.href = "/logs";
-    })
-    function showAdvancedUsage(usage, totalTime) {
-        if (usage && totalTime) {
-            console.log("Usage data:", usage);
-            document.getElementById('totalTokens').textContent = usage.totalTokens;
-            document.getElementById('inputTokens').textContent = usage.inputTokens;
-            document.getElementById('outputTokens').textContent = usage.outputTokens;
-            document.getElementById('totalTime').textContent = totalTime;
+    });
+
+    btnSupport.addEventListener('click', () => {
+        loadSupportTickets();
+        btnSupport.classList.add('active');
+        btnLogs.classList.remove('active');
+    });
+
+    // Initial Load
+    loadSupportTickets();
+
+    async function loadSupportTickets() {
+        mainContent.innerHTML = '<div class="empty-state"><div class="loading-spinner" style="border-top-color: var(--primary)"></div><br>Loading tickets...</div>';
+        
+        try {
+            const res = await fetch('/api/support/admin/tickets');
+            const data = await res.json();
+
+            if (data.success && data.tickets) {
+                renderTickets(data.tickets);
+            } else {
+                mainContent.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><br>Error loading tickets: ${data.error}</div>`;
+            }
+        } catch (err) {
+            mainContent.innerHTML = `<div class="empty-state"><i class="fas fa-exclamation-circle"></i><br>Network error: ${err.message}</div>`;
         }
     }
-})
+
+    function renderTickets(tickets) {
+        if (tickets.length === 0) {
+            mainContent.innerHTML = '<div class="empty-state"><i class="fas fa-inbox"></i><br>No support tickets found</div>';
+            return;
+        }
+
+        const list = document.createElement('div');
+        list.className = 'ticket-list';
+
+        // Header for the list
+        const header = document.createElement('div');
+        header.className = 'ticket-card';
+        header.style.background = 'transparent';
+        header.style.border = 'none';
+        header.style.cursor = 'default';
+        header.style.fontWeight = '800';
+        header.style.fontSize = '0.7rem';
+        header.style.color = 'var(--text-muted)';
+        header.style.textTransform = 'uppercase';
+        header.style.letterSpacing = '1px';
+        header.innerHTML = `
+            <div>ID Reference</div>
+            <div>Subject & Customer</div>
+            <div>Category</div>
+            <div>Current Status</div>
+            <div style="text-align:center">Action</div>
+        `;
+        list.appendChild(header);
+
+        tickets.forEach(ticket => {
+            const card = document.createElement('div');
+            card.className = 'ticket-card';
+            
+            const typeTag = ticket.problem_type === 'technical' ? 'tag-tech' : 
+                           ticket.problem_type === 'billing' ? 'tag-billing' : 'tag-tech';
+            
+            const statusTag = ticket.status === 'resolved' ? 'tag-resolved' : 
+                             ticket.status === 'in-progress' ? 'tag-progress' : 'tag-open';
+            
+            card.innerHTML = `
+                <div class="ticket-id">#${ticket.id.substring(0, 8)}</div>
+                <div>
+                    <div class="ticket-subject">${ticket.subject}</div>
+                    <div class="ticket-email">${ticket.email} • ${new Date(ticket.created_at).toLocaleDateString()}</div>
+                </div>
+                <div><span class="tag ${typeTag}">${ticket.problem_type || 'General'}</span></div>
+                <div><span class="tag ${statusTag}">${ticket.status || 'Open'}</span></div>
+                <div class="link-cell">
+                    ${ticket.admin_reply ? 
+                        `<a href="#" class="btn-view" onclick="event.stopPropagation(); showReply(${JSON.stringify(ticket.admin_reply)})">View Reply</a>` : 
+                        `<span style="color:#eee">No reply</span>`}
+                </div>
+            `;
+
+            card.addEventListener('click', () => openReplyModal(ticket));
+            list.appendChild(card);
+        });
+
+        mainContent.innerHTML = '';
+        mainContent.appendChild(list);
+    }
+
+    window.showReply = (reply) => {
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = reply;
+        alert('Last Reply Content:\n' + tempDiv.innerText);
+    };
+
+    function openReplyModal(ticket) {
+        currentTicket = ticket;
+        document.getElementById('modalTitle').innerText = `REPLYING TO: ${ticket.email.toUpperCase()}`;
+        document.getElementById('originalSubject').innerText = ticket.subject;
+        document.getElementById('originalMsg').innerText = ticket.message;
+        
+        // Set Quill content
+        quill.root.innerHTML = ticket.admin_reply || '';
+        
+        // Set current status in select
+        statusSelect.value = ticket.status || 'open';
+        
+        replyModal.style.display = 'flex';
+        quill.focus();
+    }
+
+    window.closeModal = () => {
+        replyModal.style.display = 'none';
+        currentTicket = null;
+    };
+
+    sendReplyBtn.addEventListener('click', async () => {
+        const replyHtml = quill.root.innerHTML;
+        const replyText = quill.getText().trim();
+        const selectedStatus = statusSelect.value;
+
+        if (!replyText || !currentTicket) return;
+
+        sendReplyBtn.disabled = true;
+        btnText.innerText = 'Sending...';
+
+        try {
+            const res = await fetch('/api/support/admin/reply', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    ticketId: currentTicket.id,
+                    reply: replyHtml,
+                    email: currentTicket.email,
+                    subject: currentTicket.subject,
+                    status: selectedStatus,
+                    originalMessage: currentTicket.message
+                })
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                closeModal();
+                loadSupportTickets(); // Refresh list
+            } else {
+                alert('Error: ' + data.error);
+            }
+        } catch (err) {
+            alert('Network error: ' + err.message);
+        } finally {
+            sendReplyBtn.disabled = false;
+            btnText.innerText = 'Send Email';
+        }
+    });
+});

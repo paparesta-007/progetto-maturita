@@ -4,7 +4,7 @@ import { useCalendar } from "../../context/CalendarContext";
 import { useAuth } from "../../context/AuthContext";
 import SelectPopup from "../../components/other/SelectPopup";
 import { useChat } from "../../context/ChatContext";
-import { PaperPlaneTilt, CaretDown, Minus, PencilSimple, MagicWand, Sparkle, Calendar, Clock, Notebook } from "@phosphor-icons/react";
+import { PaperPlaneTilt, CaretDown, Minus, PencilSimple, MagicWand, Sparkle, Calendar, Clock, Notebook, Bell, BellSlash } from "@phosphor-icons/react";
 import MarkdownRender from "../../library/markdownRender";
 
 type ReasoningStep = { type: string; content: string };
@@ -15,19 +15,42 @@ type ChatMessage = {
 };
 
 const FloatingChat = () => {
-    const { setIsFloatingChat, fetchEvents, chatPosition, setChatPosition } = useCalendar();
+    const { setIsFloatingChat, fetchEvents, chatPosition, setChatPosition, sidebarWidth, setSidebarWidth } = useCalendar();
     const [isExiting, setIsExiting] = useState(false);
     const [inputValue, setInputValue] = useState("");
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [isLoading, setIsLoading] = useState(false);
+    const [sendNotifications, setSendNotifications] = useState(true);
     const { theme, session } = useAuth();
     const { model, setModel } = useChat();
     const isDark = theme === 'dark';
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const isResizing = useRef(false);
 
     useEffect(() => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, isLoading]);
+
+    // Resizable sidebar logic
+    useEffect(() => {
+        const handleMouseMove = (e: MouseEvent) => {
+            if (!isResizing.current) return;
+            const newWidth = window.innerWidth - e.clientX;
+            if (newWidth > 300 && newWidth < 800) {
+                setSidebarWidth(newWidth);
+            }
+        };
+        const handleMouseUp = () => {
+            isResizing.current = false;
+            document.body.style.cursor = 'default';
+        };
+        window.addEventListener('mousemove', handleMouseMove);
+        window.addEventListener('mouseup', handleMouseUp);
+        return () => {
+            window.removeEventListener('mousemove', handleMouseMove);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [setSidebarWidth]);
 
     const handleClose = () => {
         setIsExiting(true);
@@ -54,15 +77,16 @@ const FloatingChat = () => {
         }
     };
 
-    async function handleSend() {
-        if (!inputValue.trim() || isLoading) return;
+    async function handleSend(overrideValue?: string) {
+        const textToSend = overrideValue || inputValue;
+        if (!textToSend.trim() || isLoading) return;
 
-        const userMsg = inputValue.trim();
+        const userMsg = textToSend.trim();
         const historyForServer = messages.map(m => ({ role: m.role, content: m.content }));
 
         const newMessages: ChatMessage[] = [...messages, { role: 'user', content: userMsg }];
-        setMessages(newMessages);
-        setInputValue("");
+        setMessages([...newMessages, { role: 'assistant', content: "" }]); // Placeholder for assistant
+        if (!overrideValue) setInputValue("");
         setIsLoading(true);
 
         try {
@@ -77,58 +101,92 @@ const FloatingChat = () => {
                     modelName: currentModelId,
                     messages: historyForServer,
                     googleToken: session?.provider_token,
-                    temperature: 0.5
+                    temperature: 0.5,
+                    sendNotifications,
+                    stream: true
                 })
             });
 
             if (!response.ok) throw new Error("Errore durante la chiamata al calendario");
 
-            const data = await response.json();
+            if (!response.body) throw new Error("No response body");
 
-            if (data.success && data.message) {
-                setMessages(prev => [...prev, {
-                    role: 'assistant',
-                    content: data.message,
-                    reasoning: data.reasoning || []
-                }]);
-                try { await fetchEvents(); } catch (e) { console.warn('fetchEvents failed', e); }
-            } else {
-                setMessages(prev => [...prev, {
-                    role: 'assistant',
-                    content: data.error || "Non sono riuscito a elaborare questa richiesta."
-                }]);
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let accumulatedText = "";
+            let accumulatedReasoning: ReasoningStep[] = [];
+            let buffer = "";
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                buffer += decoder.decode(value, { stream: true });
+                const lines = buffer.split("\n");
+                buffer = lines.pop() || ""; // Keep the last partial line in buffer
+
+                for (const line of lines) {
+                    if (!line.trim()) continue;
+                    try {
+                        const data = JSON.parse(line);
+                        if (data.type === "text") {
+                            accumulatedText += data.content;
+                        } else if (data.type === "reasoning") {
+                            accumulatedReasoning.push({ type: data.reasoningType || 'info', content: data.content });
+                        }
+
+                        setMessages(prev => {
+                            const next = [...prev];
+                            const last = next[next.length - 1];
+                            if (last && last.role === 'assistant') {
+                                last.content = accumulatedText;
+                                last.reasoning = [...accumulatedReasoning];
+                            }
+                            return next;
+                        });
+                    } catch (e) {
+                        console.error("Failed to parse JSON line:", line, e);
+                    }
+                }
             }
+
+            try { await fetchEvents(); } catch (e) { console.warn('fetchEvents failed', e); }
+
         } catch (error) {
             console.error("Errore invio chat calendario:", error);
-            setMessages(prev => [...prev, {
-                role: 'assistant',
-                content: "Spiacente, si è verificato un errore durante la comunicazione con l'assistente."
-            }]);
+            setMessages(prev => {
+                const next = [...prev];
+                const last = next[next.length - 1];
+                if (last && last.role === 'assistant') {
+                    last.content = "Spiacente, si è verificato un errore durante la comunicazione con l'assistente.";
+                }
+                return next;
+            });
         } finally {
             setIsLoading(false);
         }
     }
 
     const styles = useMemo(() => ({
-        container: `w-[380px] h-[520px] flex flex-col p-5 rounded-[1.5rem] z-50 border transition-all font-['Manrope'] overflow-hidden
+        container: `flex flex-col p-5 z-50 border transition-all font-['Manrope'] overflow-hidden
             ${isDark 
                 ? 'bg-[#0a0a0c] border-white/10 text-[#f4f1ea] shadow-2xl backdrop-blur-xl' 
                 : 'bg-white border-neutral-200 text-neutral-900 shadow-xl'}`,
         header: `flex justify-between items-center mb-5 shrink-0 relative z-10`,
         headerTitle: `flex items-center gap-2 text-xs font-bold tracking-tight ${isDark ? 'text-white/90' : 'text-neutral-800'}`,
         messagesArea: `flex-1 overflow-y-auto mb-4 space-y-4 custom-scrollbar pr-1 px-1 relative z-10`,
-        inputWrapper: `relative rounded-2xl p-3 flex flex-col gap-2 transition-all  shrink-0 border relative z-10
+        inputWrapper: `relative rounded-2xl p-2.5 flex flex-col gap-1 transition-all shrink-0 border relative z-10
             ${isDark 
                 ? 'bg-white/5 border-white/10 shadow-sm' 
                 : 'bg-neutral-50 border-neutral-200 shadow-sm'}`,
-        textarea: `w-full bg-transparent resize-none outline-none text-sm h-12 placeholder-white/20 
+        textarea: `w-full bg-transparent resize-none outline-none text-sm h-8 placeholder-white/20 
             ${isDark ? 'text-white' : 'text-neutral-900 placeholder-neutral-400'}`,
         sendBtn: `p-2 rounded-xl transition-all active:scale-95 flex items-center justify-center
             ${isDark ? 'bg-[#f97316] text-black hover:bg-[#fb923c]' : 'bg-neutral-900 text-white hover:bg-neutral-800'}`,
-        assistantBubble: `max-w-[95%] p-4 rounded-2xl text-[14px] leading-relaxed relative
-            ${isDark ? 'bg-white/5 border border-white/5 text-[#f4f1ea]/80' : 'bg-neutral-100 text-neutral-800'}`,
+        assistantBubble: `max-w-full text-[14px] leading-relaxed relative
+            ${isDark ? 'text-[#f4f1ea]/80' : 'text-neutral-800'}`,
         userBubble: `max-w-[90%] p-3.5 rounded-2xl text-[14px] font-medium
-            ${isDark ? 'bg-[#f97316] text-black' : 'bg-neutral-900 text-white'}`
+            ${isDark ? 'bg-[#f97316] text-black prose-invert' : 'bg-[#f0ebe4] text-[#2c2825]'}`
     }), [isDark]);
 
     return (
@@ -137,14 +195,29 @@ const FloatingChat = () => {
                 .custom-scrollbar::-webkit-scrollbar { width: 3px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 10px; }
+                .floating-chat-markdown .renderChat { font-size: 14px; line-height: 1.6; }
+                .floating-chat-markdown .renderChat p { margin-bottom: 0.5rem; }
+                .floating-chat-markdown .renderChat p:last-child { margin-bottom: 0; }
             `}</style>
 
             <motion.div
                 initial={chatPosition === 'sidebar-right' ? { opacity: 0, x: 200 } : { opacity: 0, y: 20 }}
                 animate={isExiting ? (chatPosition === 'sidebar-right' ? { opacity: 0, x: 200 } : { opacity: 0, y: 20 }) : (chatPosition === 'sidebar-right' ? { opacity: 1, x: 0 } : { opacity: 1, y: 0 })}
                 transition={{ duration: 0.18, ease: "linear" }}
-                className={`${styles.container} ${chatPosition === 'sidebar-right' ? 'fixed top-0 right-0 h-full rounded-l-2xl w-[380px]' : 'fixed bottom-6 right-6'}`}
+                style={chatPosition === 'sidebar-right' ? { width: `${sidebarWidth}px` } : { width: '380px', height: '520px' }}
+                className={`${styles.container} ${chatPosition === 'sidebar-right' ? 'fixed top-0 right-0 h-full rounded-l-2xl' : 'fixed bottom-6 right-6 rounded-[1.5rem]'}`}
             >
+                {/* Resize handle */}
+                {chatPosition === 'sidebar-right' && (
+                    <div 
+                        onMouseDown={() => {
+                            isResizing.current = true;
+                            document.body.style.cursor = 'ew-resize';
+                        }}
+                        className="absolute left-0 top-0 w-1.5 h-full cursor-ew-resize hover:bg-orange-500/20 transition-colors z-50"
+                    />
+                )}
+
                 {/* Header */}
                 <div className={styles.header}>
                     <div className="flex items-center gap-2">
@@ -194,9 +267,9 @@ const FloatingChat = () => {
                             <p className={`text-[11px] mb-6 opacity-40 ${isDark ? 'text-white' : 'text-neutral-500'}`}>Optimize your schedule with AI</p>
                             
                             <div className="grid grid-cols-1 gap-1.5 w-full">
-                                <ActionItem icon={<Clock size={14} />} text="Upcoming events" isDark={isDark} />
-                                <ActionItem icon={<Sparkle size={14} />} text="Find free slot" isDark={isDark} />
-                                <ActionItem icon={<Notebook size={14} />} text="Improve routine" isDark={isDark} />
+                                <ActionItem icon={<Clock size={14} />} text="Upcoming events" isDark={isDark} onClick={() => setInputValue("Mostrami i prossimi eventi")} />
+                                <ActionItem icon={<Sparkle size={14} />} text="Find free slot" isDark={isDark} onClick={() => setInputValue("Trova uno spazio libero per domani")} />
+                                <ActionItem icon={<Notebook size={14} />} text="Improve routine" isDark={isDark} onClick={() => setInputValue("Come posso migliorare la mia routine?")} />
                             </div>
                         </div>
                     ) : (
@@ -206,23 +279,11 @@ const FloatingChat = () => {
                                     {m.role === 'assistant' && m.reasoning && m.reasoning.length > 0 && (
                                         <ReasoningBlock reasoning={m.reasoning} isDark={isDark} />
                                     )}
-                                    <div className={m.role === 'user' ? styles.userBubble : styles.assistantBubble}>
-                                        <MarkdownRender text={m.content} />
+                                    <div className={`${m.role === 'user' ? styles.userBubble : styles.assistantBubble} floating-chat-markdown w-full`}>
+                                        <MarkdownRender text={m.content} isStreaming={isLoading && i === messages.length - 1 && m.role === 'assistant'} />
                                     </div>
                                 </div>
                             ))}
-                            {isLoading && (
-                                <div className="flex justify-start">
-                                    <div className={`${styles.assistantBubble} flex items-center gap-3 opacity-60`}>
-                                        <div className="flex gap-1">
-                                            <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce" style={{ animationDelay: '0ms' }} />
-                                            <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce" style={{ animationDelay: '150ms' }} />
-                                            <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce" style={{ animationDelay: '300ms' }} />
-                                        </div>
-                                        <span className="text-[10px] font-bold uppercase tracking-widest opacity-50">Thinking...</span>
-                                    </div>
-                                </div>
-                            )}
                             <div ref={messagesEndRef} />
                         </>
                     )}
@@ -248,6 +309,17 @@ const FloatingChat = () => {
                                 onChange={handleModelChange}
                                 placeholder={typeof model === 'object' && model !== null ? model.name : "Model"}
                             />
+                            <button
+                                onClick={() => setSendNotifications(!sendNotifications)}
+                                title={sendNotifications ? "Notifiche attive" : "Notifiche disattivate"}
+                                className={`p-2 rounded-xl transition-all border ${
+                                    sendNotifications 
+                                        ? (isDark ? 'bg-orange-500/10 border-orange-500/20 text-[#f97316]' : 'bg-[#f0ebe4] border-[#e2ddd5] text-[#2c2825]')
+                                        : (isDark ? 'bg-white/5 border-white/10 text-white/30' : 'bg-neutral-100 border-neutral-200 text-neutral-400')
+                                }`}
+                            >
+                                {sendNotifications ? <Bell size={16} weight="fill" /> : <BellSlash size={16} weight="bold" />}
+                            </button>
                         </div>
                         <button
                             className={`${styles.sendBtn} ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
@@ -329,8 +401,10 @@ const StepIcon = ({ type, isDark }: { type: string; isDark: boolean }) => {
     }
 };
 
-const ActionItem = ({ icon, text, isDark }: { icon: React.ReactNode, text: string, isDark: boolean }) => (
-    <div className={`flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-all border
+const ActionItem = ({ icon, text, isDark, onClick }: { icon: React.ReactNode, text: string, isDark: boolean, onClick?: () => void }) => (
+    <div 
+        onClick={onClick}
+        className={`flex items-center gap-3 p-3 rounded-2xl cursor-pointer transition-all border
         ${isDark 
             ? 'bg-white/5 border-white/5 hover:bg-white/10 hover:border-white/10 text-white/70' 
             : 'bg-white border-neutral-200 hover:bg-neutral-50 text-neutral-600'}`}>

@@ -95,11 +95,32 @@ export const sendEmbeddingMessage = async (
                                 msg.id === botMessageId
                                     ? { 
                                         ...msg, 
-                                        content: msg.isComplete ? msg.content : "Elaborazione in corso...", 
+                                        content: msg.isStreaming || msg.isComplete ? msg.content : "Elaborazione in corso...", 
                                         logs: [...(msg.logs || []), data.content] 
                                       } 
                                     : msg
                             )
+                        );
+                    } else if (data.type === "chunk") {
+                        // Aggiornamento in tempo reale dei token
+                        setMessageHistory((prev) => 
+                            prev.map(msg => {
+                                if (msg.id === botMessageId) {
+                                    let currentContent = msg.isStreaming ? msg.content : "";
+                                    let newContent = currentContent + data.content;
+                                    
+                                    // Pulizia preliminare del tag FONTI se appare durante lo streaming
+                                    // (Il tag completo viene rimosso nel tipo "result", ma puliamo qui per pulizia visiva)
+                                    const cleanedContent = newContent.replace(/\[\[FONTI:\s*.*$/, "");
+
+                                    return {
+                                        ...msg,
+                                        content: cleanedContent,
+                                        isStreaming: true
+                                    };
+                                }
+                                return msg;
+                            })
                         );
                     } else if (data.type === "result") {
                         // 3. Formattazione finale della risposta con le fonti (se presenti)
@@ -114,6 +135,7 @@ export const sendEmbeddingMessage = async (
                                         content: botContent, 
                                         sources: data.sources || [], // Fonti strutturate con pagina e contenuto
                                         suggestedQuestions: data.suggested_questions || [],
+                                        isStreaming: false,
                                         isComplete: true
                                       } 
                                     : msg

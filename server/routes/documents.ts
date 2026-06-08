@@ -30,15 +30,23 @@ const openrouterEmbeddings = createOpenAI({
  * Gestisce l'ingestione di un file PDF: estrazione testo, chunking, embedding e salvataggio su Supabase.
  */
 router.post("/ingest", requireAuth, upload.single('file'), async (req: express.Request, res: express.Response) => {
+    res.setHeader("Content-Type", "application/x-ndjson");
+    res.setHeader("Transfer-Encoding", "chunked");
+
+    const sendLog = (msg: string) => {
+        console.log(msg);
+        res.write(JSON.stringify({ type: "log", content: msg }) + "\n");
+    };
+
     try {
-        console.log("📂 [1/6] Ricevuta richiesta ingestione...");
+        sendLog("📂 [1/6] Ricevuta richiesta ingestione...");
 
         if (!req.file) throw new Error("Nessun file caricato");
 
-        const { user_id, category, title } = req.body;
+        const { user_id, category, title, description } = req.body;
         if (!user_id) throw new Error("User ID mancante");
 
-        console.log(`👤 [2/6] Utente: ${user_id}, File: ${req.file.originalname}`);
+        sendLog(`👤 [2/6] Utente: ${user_id}, File: ${req.file.originalname}`);
         let text = "";
         let parser = null;
         try {
@@ -58,10 +66,10 @@ router.post("/ingest", requireAuth, upload.single('file'), async (req: express.R
             }
         }
 
-        console.log(`📄 [3/6] Testo estratto: ${text.length} caratteri`);
+        sendLog(`📄 [3/6] Testo estratto: ${text.length} caratteri`);
 
         text = normalizeText(text);
-        console.log(`🧹 [3/6] Testo normalizzato: ${text.length} caratteri`);
+        sendLog(`🧹 [3/6] Testo normalizzato e pulito`);
 
         const chunks = splitTextIntoChunks(text, 1500, 300, {
             respectSentences: true,
@@ -74,10 +82,10 @@ router.post("/ingest", requireAuth, upload.single('file'), async (req: express.R
             console.warn("⚠️  Detected gaps in chunks:", validation.gaps);
         }
 
-        console.log(`🧩 [4/6] Generati ${chunks.length} chunks con validazione: ${validation.isValid ? '✅' : '❌'}`);
+        sendLog(`🧩 [4/6] Generati ${chunks.length} frammenti di testo`);
         if (chunks.length === 0) throw new Error("Nessun testo estraibile dal PDF");
 
-        console.log("🤖 [5/6] Richiesta embedding a OpenRouter...");
+        sendLog("🤖 [5/6] Richiesta embedding a OpenRouter (modello small)...");
 
         const filename = req.file?.originalname || 'sconosciuto';
         const { embeddings } = await embedMany({
@@ -88,7 +96,7 @@ router.post("/ingest", requireAuth, upload.single('file'), async (req: express.R
             }),
         });
 
-        console.log(`✨ [5/6] Ricevuti ${embeddings.length} vettori da OpenRouter`);
+        sendLog(`✨ [5/6] Ricevuti ${embeddings.length} vettori con successo`);
         const docId = crypto.randomUUID();
         
         const documentsToInsert = chunks.map((chunkData) => ({
@@ -100,12 +108,15 @@ router.post("/ingest", requireAuth, upload.single('file'), async (req: express.R
                 source: req.file?.originalname,
                 title: title,
                 category: category,
-                document_id: docId
+                description: description,
+                document_id: docId,
+                created_at: date
             },
             document_id: docId,
             created_at: date
         }));
 
+        sendLog("💾 [6/6] Salvataggio dei vettori nel database...");
         logSupabaseAction("insert_documents_chunks", user_id);
         const { error } = await supabase
             .from('documents')
@@ -116,21 +127,25 @@ router.post("/ingest", requireAuth, upload.single('file'), async (req: express.R
             throw new Error(`Errore DB: ${error.message}`);
         }
 
-        console.log("✅ [6/6] Salvataggio completato con successo!");
+        sendLog("✅ [6/6] Ingestione completata con successo!");
 
-        res.status(200).json({
+        res.write(JSON.stringify({
+            type: "result",
             success: true,
             message: `Processati ${chunks.length} frammenti`,
             filename: req.file.originalname,
             documentId: docId
-        });
+        }) + "\n");
+        res.end();
 
     } catch (error: any) {
         console.error("❌ ERRORE CRITICO NELLA ROTTA INGEST:", error);
-        res.status(500).json({
+        res.write(JSON.stringify({
+            type: "error",
             success: false,
             error: error.message || "Errore sconosciuto durante l'ingestione"
-        });
+        }) + "\n");
+        res.end();
     }
 });
 
@@ -227,7 +242,9 @@ router.post("/ask-pdf", requireAuth, async (req: express.Request, res: express.R
         2.  **Formattazione Markdown**: Usa titolazioni (###), elenchi puntati e grassetti per rendere la risposta professionale e facile da leggere.
         3.  **Formule Matematiche**: Ogni formula, simbolo matematico o equazione DEVE essere scritta in LaTeX utilizzando il delimitatore "$$" per i blocchi (es. $$E = mc^2$$) o "$" per le formule in linea (es. $x = 2$).
         4.  **Lingua**: Rispondi sempre nella lingua della domanda dell'utente (predefinito: Italiano).
-        5.  **Attribuzione**: Alla fine della tua risposta, DEVI aggiungere una riga speciale con questo formato esatto: [[FONTI: 1, 2]] elencando i numeri delle fonti che hai usato. Se non hai usato fonti, scrivi [[FONTI: nessuna]].
+        5.  **Attribuzione Rigorosa**: Alla fine della tua risposta, DEVI aggiungere una riga speciale con questo formato esatto: [[FONTI: 1, 2]] elencando i numeri delle fonti che hai EFFETTIVAMENTE utilizzato per generare la risposta. 
+        6.  **Niente Allucinazioni di Fonti**: NON citare fonti che non contengono informazioni utili alla risposta. Se non usi alcuna fonte, scrivi [[FONTI: nessuna]].
+        7.  **In-text Citations**: Quando possibile, usa i numeri delle fonti nel testo, ad esempio: "Secondo il documento [1], la variabile x è..."
         `;
 
         const selectedModel = model || "google/gemini-2.5-flash-lite";
@@ -253,7 +270,7 @@ router.post("/ask-pdf", requireAuth, async (req: express.Request, res: express.R
                 "Content-Type": "application/json",
                 "HTTP-Referer": "http://localhost:3000/ask-pdf",
                 "X-Title": "NomeTuaApp",
-                "X-OpenRouter-Cache": "true" // Abilita caching della risposta
+                "X-OpenRouter-Cache": "true" 
             },
             body: JSON.stringify({
                 model: selectedModel,
@@ -264,17 +281,16 @@ router.post("/ask-pdf", requireAuth, async (req: express.Request, res: express.R
                             {
                                 type: "text",
                                 text: staticSystemPrompt,
-                                cache_control: { type: "ephemeral" } // Caching solo sulle istruzioni statiche
                             },
                             {
                                 type: "text",
-                                text: `\n\n### CONTESTO:\n${contextText}` // Contesto dinamico (non cacha per non fare miss continuo)
+                                text: `\n\n### CONTESTO:\n${contextText}` 
                             }
                         ] 
                     },
                     { role: 'user', content: userContent }
                 ],
-                stream: false,
+                stream: true,
                 reasoning: { effort: reasoningEffort },
                 provider: { allow_fallbacks: false }
             })
@@ -286,48 +302,92 @@ router.post("/ask-pdf", requireAuth, async (req: express.Request, res: express.R
             throw new Error(`OpenRouter API Error: ${response.status} - ${errorText}`);
         }
 
-        const data = await response.json();
-        const text = data.choices[0]?.message?.content || "";
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        let fullAnswer = "";
+
+        if (reader) {
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value);
+                const lines = chunk.split("\n").filter(line => line.trim() !== "");
+
+                for (const line of lines) {
+                    if (line.startsWith("data: ")) {
+                        const dataStr = line.slice(6);
+                        if (dataStr === "[DONE]") break;
+
+                        try {
+                            const parsed = JSON.parse(dataStr);
+                            const content = parsed.choices[0]?.delta?.content || "";
+                            if (content) {
+                                fullAnswer += content;
+                                res.write(JSON.stringify({ type: "chunk", content }) + "\n");
+                            }
+                        } catch (e) {
+                            // Ignora errori di parsing su chunk parziali
+                        }
+                    }
+                }
+            }
+        }
 
         now = Date.now();
-        sendLog(`✅ [Fase 6/8] Risposta principale ricevuta da OpenRouter. (+${now - stepTime}ms)`);
+        sendLog(`✅ [Fase 6/8] Streaming completato. (+${now - stepTime}ms)`);
         stepTime = now;
 
         sendLog("🧹 [Fase 8/8] Invio della risposta finale con fonti filtrate al client...");
         
-        // Estraiamo le fonti usate dal testo della risposta
-        const sourcesMatch = text.match(/\[\[FONTI:\s*(.+?)\]\]/);
+        // Mappiamo i chunk in oggetti fonte strutturati
+        const allRetrievedSources = chunks.map((c: any, index: number) => ({
+            id: index + 1,
+            content: c.content,
+            page: c.metadata?.page || 1,
+            source: c.metadata?.source || "Documento"
+        }));
+
+        // Estraiamo le fonti usate dal testo della risposta in modo più robusto
+        const sourcesMatch = fullAnswer.match(/\[\[FONTI:\s*(.+?)\]\]/);
         let usedIndices: number[] = [];
-        let cleanedAnswer = text;
+        let cleanedAnswer = fullAnswer;
 
         if (sourcesMatch) {
             const sourcesStr = sourcesMatch[1];
             if (sourcesStr.toLowerCase() !== "nessuna") {
-                usedIndices = sourcesStr.split(',').map((s: string) => parseInt(s.trim())).filter((n: number) => !isNaN(n));
+                // Estraiamo numeri (anche separati da spazi o virgole)
+                usedIndices = sourcesStr.match(/\d+/g)?.map(Number) || [];
             }
-            // Rimuoviamo il tag delle fonti dalla risposta visibile all'utente
-            cleanedAnswer = text.replace(/\[\[FONTI:\s*(.+?)\]\]/, "").trim();
+            cleanedAnswer = fullAnswer.replace(/\[\[FONTI:\s*(.+?)\]\]/, "").trim();
         }
 
-        // Mappiamo i chunk in oggetti fonte strutturati, filtrando se abbiamo gli indici
-        const detailedSources = chunks
-            .map((c: any, index: number) => ({
-                id: index + 1,
-                content: c.content,
-                page: c.metadata?.page || 1,
-                source: c.metadata?.source || "Documento"
-            }))
-            .filter((source: any) => {
-                if (usedIndices.length > 0) {
-                    return usedIndices.includes(source.id);
+        // Controllo incrociato "meccanico": cerchiamo riferimenti espliciti [1], [Fonte #1], ecc. nel testo
+        allRetrievedSources.forEach(s => {
+            if (!usedIndices.includes(s.id)) {
+                const patterns = [
+                    new RegExp(`\\[${s.id}\\]`, 'g'),
+                    new RegExp(`\\[FONTE #${s.id}\\]`, 'gi'),
+                    new RegExp(`fonte ${s.id}`, 'gi')
+                ];
+                if (patterns.some(p => p.test(fullAnswer))) {
+                    usedIndices.push(s.id);
                 }
-                return true; // Se non riusciamo a parse-are gli indici, mostriamo tutto (fallback)
-            });
+            }
+        });
+
+        // Filtriamo le fonti: se l'LLM ha citato qualcosa, mostriamo solo quelle. 
+        // Se non ha citato nulla (nessun tag, nessun [n]), mostriamo le top 3 per pertinenza come fallback
+        let finalSources = allRetrievedSources.filter(s => usedIndices.includes(s.id));
+        
+        if (finalSources.length === 0 && !fullAnswer.includes("[[FONTI: nessuna]]")) {
+            finalSources = allRetrievedSources.slice(0, 3);
+        }
 
         res.write(JSON.stringify({
             type: "result",
             answer: cleanedAnswer,
-            sources: detailedSources,
+            sources: finalSources,
         }) + "\n");
 
         now = Date.now();

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState, useCallback, useMemo } from "react";
 import DocumentWizard from "./DocumentWizard/DocumentWizard";
+import DocumentLibrary from "./DocumentWizard/DocumentLibrary";
 import { useDocument } from "../context/DocumentContext";
 import { useParams } from "react-router-dom";
 import getCurrentDocument from "../services/supabase/documents/getCurrentDocument";
@@ -18,6 +19,7 @@ import { Document, Page, pdfjs } from 'react-pdf';
 // Import react-pdf styles
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import 'react-pdf/dist/Page/TextLayer.css';
+import { RotateCcw } from "lucide-react";
 
 // Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
@@ -32,7 +34,7 @@ const getStyles = (isDark: boolean) => ({
     errorContainer: `p-4 rounded-lg ${isDark ? "bg-red-900/20 border border-red-700/50" : "bg-red-50 border border-red-200"}`,
     errorText: `${isDark ? "text-red-400" : "text-red-700"}`,
     retryButton: `ml-2 px-3 py-1 rounded ${isDark ? "bg-red-700 hover:bg-red-600" : "bg-red-600 hover:bg-red-700"} text-white text-sm transition-colors`,
-    emptyStateContainer: `flex-1 overflow-y-auto flex flex-col items-center justify-center`,
+    emptyStateContainer: `flex-1 mt-20 overflow-y-auto flex flex-col items-center justify-center`,
     emptyStateText: `text-center text-lg ${isDark ? "text-neutral-500" : "text-neutral-600"}`,
 });
 
@@ -73,6 +75,8 @@ const DocumentPage = () => {
     
     // Memoizza stili
     const styles = useMemo(() => getStyles(isDark), [isDark]);
+
+    const [showWizard, setShowWizard] = useState(false);
 
     // Scroll to bottom con debouncing
     const scrollToBottom = useCallback((force = false) => {
@@ -263,8 +267,11 @@ const DocumentPage = () => {
         };
     }, []);
 
-    if (currentStep < 4 && !documentId) {
-        return <DocumentWizard />;
+    if (!documentId) {
+        if (showWizard) {
+            return <DocumentWizard onBackToLibrary={() => setShowWizard(false)} />;
+        }
+        return <DocumentLibrary onNewDocument={() => setShowWizard(true)} />;
     }
 
     return (
@@ -273,15 +280,31 @@ const DocumentPage = () => {
                 <h2 className={`text-md font-medium ${isDark ? "text-neutral-300" : "text-neutral-700"}`}>
                     {loadingDocument ? "Caricamento documento..." : currentDocument ? `Documento: ${currentDocument[0].metadata.title}` : "Nuovo Documento"}
                 </h2>
-                {currentDocument && (
-                    <button 
-                        onClick={() => setShowPreview(!showPreview)} 
-                        className={`px-3 py-1.5 text-xs rounded-md flex items-center gap-2 transition-colors ${isDark ? "bg-neutral-800 hover:bg-neutral-700 text-neutral-300" : "bg-neutral-200 hover:bg-neutral-300 text-neutral-700"}`}
-                    >
-                        <FilePdf size={16} />
-                        {showPreview ? "Chiudi Preview" : "Mostra Preview"}
-                    </button>
-                )}
+                <div className="flex items-center gap-2">
+                    {messageHistory.length > 0 && (
+                        <button 
+                            onClick={() => {
+                                if (window.confirm("Sei sicuro di voler pulire la cronologia dei messaggi per questo documento?")) {
+                                    setMessageHistory([]);
+                                }
+                            }}
+                            className={`px-3 py-1.5 text-xs rounded-md flex items-center gap-2 transition-colors ${isDark ? "bg-red-900/20 hover:bg-red-900/40 text-red-400 border border-red-500/20" : "bg-red-50 hover:bg-red-100 text-red-600 border border-red-200"}`}
+                            title="Pulisci cronologia"
+                        >
+                            <RotateCcw size={14} />
+                            Pulisci Chat
+                        </button>
+                    )}
+                    {currentDocument && (
+                        <button 
+                            onClick={() => setShowPreview(!showPreview)} 
+                            className={`px-3 py-1.5 text-xs rounded-md flex items-center gap-2 transition-colors ${isDark ? "bg-neutral-800 hover:bg-neutral-700 text-neutral-300" : "bg-neutral-200 hover:bg-neutral-300 text-neutral-700"}`}
+                        >
+                            <FilePdf size={16} />
+                            {showPreview ? "Chiudi Preview" : "Mostra Preview"}
+                        </button>
+                    )}
+                </div>
             </div>
 
             {/* Error banner con retry */}
@@ -341,7 +364,7 @@ const DocumentPage = () => {
                                                     >
                                                         {msg.content === "Elaborazione in corso..." || msg.content === "Avvio della richiesta..." 
                                                             ? <p className="text-neutral-500 italic text-sm">{msg.content}</p> 
-                                                            : <MarkdownRender text={msg.content} />
+                                                            : <MarkdownRender text={msg.content} isStreaming={(msg as any).isStreaming} />
                                                         }
                                                     </MemoizedBotMessage>
                                                 );
@@ -356,10 +379,8 @@ const DocumentPage = () => {
                             <div className={styles.emptyStateContainer}>
                                 {!loadingDocument && currentDocument && (
                                     <>
-                                        <PromptStarter />
-                                        <p className={styles.emptyStateText}>
-                                            Inizia a chattare sul tuo documento!
-                                        </p>
+                                        <PromptStarter showSuggestions={false} />
+                                      
                                     </>
                                 )}
                                 {!loadingDocument && !currentDocument && !documentError && (

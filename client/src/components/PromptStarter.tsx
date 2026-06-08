@@ -241,7 +241,7 @@ const SuggestionCard = React.memo(({ item, isDark, onClick }: { item: any, isDar
 });
 SuggestionCard.displayName = "SuggestionCard";
 
-const PromptStarter = () => {
+const PromptStarter = ({ showSuggestions = true }: { showSuggestions?: boolean }) => {
     const { theme, user } = useAuth();
     const isDark = theme === 'dark';
     const { isTemporaryConversation, setDraftMessage } = useChat();
@@ -270,7 +270,7 @@ const PromptStarter = () => {
                             {greeting}, {(user as any)?.full_name?.split(' ')[0] || user?.email?.split('@')[0] || 'Utente'}!
                         </h1>
                         <p className={styles.subtitle}>
-                            Come posso aiutarti oggi? Scegli un suggerimento o scrivi sotto.
+                            Come posso aiutarti oggi? {showSuggestions ? "Scegli un suggerimento o scrivi sotto." : "Scrivi sotto per iniziare."}
                         </p>
                     </>
                 ) : (
@@ -285,7 +285,7 @@ const PromptStarter = () => {
                 )}
             </header>
 
-            {!isTemporaryConversation && (
+            {!isTemporaryConversation && showSuggestions && (
                 <div className={styles.grid}>
                     {randomSuggestions.map((item, index) => (
                         <SuggestionCard 
