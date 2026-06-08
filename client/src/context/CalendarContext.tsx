@@ -13,6 +13,8 @@ export interface CalendarContextType {
     fetchEvents: () => Promise<void>;
     currentWeekStart: Date;
     setCurrentWeekStart: (d: Date) => void;
+    sidebarWidth: number;
+    setSidebarWidth: (w: number) => void;
 }
 
 const CalendarContext = createContext<CalendarContextType | undefined>(undefined);
@@ -34,6 +36,7 @@ export const CalendarProvider = ({ children }: { children: React.ReactNode }) =>
     const [chatAutoMinimizedDone, setChatAutoMinimizedDone] = useState(false);
     const [events, setEvents] = useState<any[]>([]);
     const [currentWeekStart, setCurrentWeekStart] = useState<Date>(() => getStartOfWeek(new Date()));
+    const [sidebarWidth, setSidebarWidth] = useState(380);
 
     const fetchEvents = useCallback(async () => {
         const providerToken = session?.provider_token;
@@ -66,7 +69,9 @@ export const CalendarProvider = ({ children }: { children: React.ReactNode }) =>
         events,
         fetchEvents,
         currentWeekStart,
-        setCurrentWeekStart
+        setCurrentWeekStart,
+        sidebarWidth,
+        setSidebarWidth
     };
 
     return (

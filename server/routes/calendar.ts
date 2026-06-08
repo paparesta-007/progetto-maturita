@@ -70,8 +70,10 @@ const TOOLS = [
 ];
 
 // --- ESECUZIONE TOOLS ---
-async function executeTool(name: string, args: any, token: string) {
+async function executeTool(name: string, args: any, token: string, options?: { sendNotifications?: boolean }) {
     const tz = "Europe/Rome";
+    const sendNotifications = options?.sendNotifications !== false; // Default true
+
     switch (name) {
         case "list_events":
             const url = `https://www.googleapis.com/calendar/v3/calendars/primary/events?singleEvents=true&orderBy=startTime&timeMin=${encodeURIComponent(args.timeMin)}&timeMax=${encodeURIComponent(args.timeMax)}`;
@@ -91,12 +93,22 @@ async function executeTool(name: string, args: any, token: string) {
             // Forza titolo e descrizione se il modello è pigro
             const summary = args.summary || "Nuovo Impegno";
             const description = args.description || summary;
-            const bodyC = {
+            const bodyC: any = {
                 summary, description,
                 start: { dateTime: args.start, timeZone: tz },
                 end: { dateTime: args.end, timeZone: tz }
             };
-            const resC = await fetch("https://www.googleapis.com/calendar/v3/calendars/primary/events", {
+
+            // Gestione notifiche/reminders
+            if (!sendNotifications) {
+                bodyC.reminders = { useDefault: false, overrides: [] };
+            }
+
+            const queryParams = new URLSearchParams({
+                sendUpdates: sendNotifications ? "all" : "none"
+            });
+
+            const resC = await fetch(`https://www.googleapis.com/calendar/v3/calendars/primary/events?${queryParams}`, {
                 method: "POST",
                 headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
                 body: JSON.stringify(bodyC)
@@ -119,11 +131,22 @@ async function executeTool(name: string, args: any, token: string) {
 // --- ENDPOINT AGENTE ---
 router.post("/api/calendar/action", requireAuth, async (req: express.Request, res: express.Response) => {
     try {
-        const { text, modelName, messages: history = [], temperature } = req.body;
+        const { text, modelName, messages: history = [], temperature, sendNotifications, stream = false } = req.body;
         const googleToken = req.body.googleToken || req.headers['x-google-token'] || "";
         const selectedModel = modelName || "deepseek/deepseek-chat";
 
-        console.log(`[CalendarAPI] Avvio Agente: ${selectedModel}`);
+        console.log(`[CalendarAPI] Avvio Agente: ${selectedModel} | Notifications: ${sendNotifications !== false} | Stream: ${stream}`);
+
+        if (stream) {
+            res.setHeader('Content-Type', 'application/json');
+            res.setHeader('Transfer-Encoding', 'chunked');
+        }
+
+        const sendChunk = (data: any) => {
+            if (stream) {
+                res.write(JSON.stringify(data) + "\n");
+            }
+        };
 
         const rawMessages: any[] = [
             { role: "system", content: "Sei un Agente Calendar.\nREGOLE: 1. Chiama i tool per ogni azione. 2. Forza titolo e descrizione per ogni evento." },
@@ -136,7 +159,6 @@ router.post("/api/calendar/action", requireAuth, async (req: express.Request, re
 
         const reasoning: any[] = [];
         let finalResponse = "";
-        let respondedEarly = false;
 
         for (let i = 0; i < 6; i++) {
             console.log(`[CalendarAPI] Step ${i+1}...`);
@@ -165,20 +187,28 @@ router.post("/api/calendar/action", requireAuth, async (req: express.Request, re
             const msg = choice.message;
 
             if (msg.content) {
+                const chunk = { type: "text", content: msg.content };
+                sendChunk(chunk);
                 reasoning.push({ type: "text", content: msg.content });
                 finalResponse = msg.content;
             }
 
             if (msg.tool_calls) {
-                cachedMessages.push(msg); // L'assistente deve stare in history prima dei tool results
+                cachedMessages.push(msg);
                 for (const toolCall of msg.tool_calls) {
                     const name = toolCall.function.name;
                     const args = JSON.parse(toolCall.function.arguments);
                     console.log(`[CalendarAPI] Eseguo tool: ${name}`);
-                    reasoning.push({ type: "tool_call", content: `🛠️ ${name}: ${JSON.stringify(args)}` });
+                    
+                    const rStep = { type: "tool_call", content: `🛠️ ${name}: ${JSON.stringify(args)}` };
+                    reasoning.push(rStep);
+                    sendChunk({ type: "reasoning", reasoningType: "tool_call", content: rStep.content });
 
-                    const result = await executeTool(name, args, googleToken);
-                    reasoning.push({ type: "tool_result", content: `📦 ${name}: ${JSON.stringify(result).substring(0, 100)}` });
+                    const result = await executeTool(name, args, googleToken, { sendNotifications });
+                    
+                    const rResult = { type: "tool_result", content: `📦 ${name}: ${JSON.stringify(result).substring(0, 100)}` };
+                    reasoning.push(rResult);
+                    sendChunk({ type: "reasoning", reasoningType: "tool_result", content: rResult.content });
 
                     cachedMessages.push({
                         role: "tool",
@@ -186,82 +216,27 @@ router.post("/api/calendar/action", requireAuth, async (req: express.Request, re
                         name: name,
                         content: JSON.stringify(result)
                     });
-
-                    // If the agent performed a delete_event successfully, return a fast confirmation
-                    // to the client and continue the remaining reasoning in background.
-                    if (name === "delete_event" && result && (result.status === "success" || result.ok) && !respondedEarly) {
-                        respondedEarly = true;
-                        (async () => {
-                            try {
-                                for (let j = i + 1; j < 6; j++) {
-                                    console.log(`[CalendarAPI][bg] Step ${j + 1}...`);
-                                    const apiResBG = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                                        method: "POST",
-                                        headers: {
-                                            "Authorization": `Bearer ${OPENROUTER_KEY}`,
-                                            "Content-Type": "application/json",
-                                            "HTTP-Referer": "http://localhost:3000",
-                                            "X-Title": "Smart Calendar Assistant",
-                                            "X-OpenRouter-Cache": "true"
-                                        },
-                                        body: JSON.stringify({
-                                            model: selectedModel,
-                                            messages: cachedMessages,
-                                            tools: TOOLS,
-                                            tool_choice: "auto",
-                                            temperature: temperature ?? 0.5,
-                                            provider: { allow_fallbacks: false }
-                                        })
-                                    });
-
-                                    if (!apiResBG.ok) {
-                                        console.error("[CalendarAPI][bg] OpenRouter Error:", await apiResBG.text());
-                                        break;
-                                    }
-
-                                    const dataBG = await apiResBG.json();
-                                    const choiceBG = dataBG.choices[0];
-                                    const msgBG = choiceBG.message;
-                                    if (msgBG.content) {
-                                        reasoning.push({ type: "text", content: msgBG.content });
-                                        finalResponse = msgBG.content;
-                                    }
-
-                                    if (msgBG.tool_calls) {
-                                        cachedMessages.push(msgBG);
-                                        for (const toolCallBG of msgBG.tool_calls) {
-                                            const nameBG = toolCallBG.function.name;
-                                            const argsBG = JSON.parse(toolCallBG.function.arguments);
-                                            console.log(`[CalendarAPI][bg] Eseguo tool: ${nameBG}`);
-                                            reasoning.push({ type: "tool_call", content: `🛠️ ${nameBG}: ${JSON.stringify(argsBG)}` });
-                                            const resultBG = await executeTool(nameBG, argsBG, googleToken);
-                                            reasoning.push({ type: "tool_result", content: `📦 ${nameBG}: ${JSON.stringify(resultBG).substring(0, 100)}` });
-                                            cachedMessages.push({ role: "tool", tool_call_id: toolCallBG.id, name: nameBG, content: JSON.stringify(resultBG) });
-                                        }
-                                        continue;
-                                    }
-                                    break;
-                                }
-                                console.log("[CalendarAPI][bg] Background reasoning finished.");
-                            } catch (bgErr) {
-                                console.error("[CalendarAPI][bg] Crash:", bgErr);
-                            }
-                        })();
-
-                        // Send fast confirmation to client and stop synchronous processing
-                        return res.json({ success: true, message: "Evento eliminato", reasoning });
-                    }
                 }
-                continue; // Altro giro per far elaborare i risultati all'IA
+                continue;
             }
-            break; // Se non ci sono tool_calls, abbiamo finito
+            break;
+        }
+
+        if (stream) {
+            res.end();
+            return;
         }
 
         return res.json({ success: true, message: finalResponse, reasoning });
 
     } catch (error: any) {
         console.error("[CalendarAPI] Crash:", error);
-        return res.status(500).json({ success: false, error: error.message });
+        if (!res.headersSent) {
+            return res.status(500).json({ success: false, error: error.message });
+        } else {
+            res.write(JSON.stringify({ type: "error", content: error.message }) + "\n");
+            res.end();
+        }
     }
 });
 

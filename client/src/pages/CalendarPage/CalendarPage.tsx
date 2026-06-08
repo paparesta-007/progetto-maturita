@@ -67,7 +67,7 @@ const CalendarStyles = React.memo(({ isDark }: { isDark: boolean }) => {
 CalendarStyles.displayName = "CalendarStyles";
 
 // --- Sub-component for the single Event Card (Memoized) ---
-const EventCard = React.memo(({ event, isDark, onClick }: { event: any, isDark: boolean, onClick: (ev: any) => void }) => {
+const EventCard = React.memo(({ event, isDark, onClick, isSelected }: { event: any, isDark: boolean, onClick: (ev: any) => void, isSelected?: boolean }) => {
     const topPx = event.startMinuteOffset * ROW_HEIGHT;
     const heightPx = event.durationHours * ROW_HEIGHT - 2;
 
@@ -79,8 +79,12 @@ const EventCard = React.memo(({ event, isDark, onClick }: { event: any, isDark: 
             }}
             style={{ top: `${topPx}px`, height: `${heightPx}px` }}
             className={`absolute inset-x-1 p-2 text-[10px] leading-tight rounded-xl overflow-hidden z-10 border transition-all cursor-pointer ${isDark
-                ? "bg-orange-500/10 border-orange-500/30 text-orange-200 hover:bg-orange-500/20 glass-soft shadow-lg shadow-orange-500/5"
-                : "bg-blue-500 border-blue-600 text-white hover:bg-blue-600"
+                ? (isSelected 
+                    ? "bg-orange-500/30 border-orange-500 text-orange-100 glass shadow-lg shadow-orange-500/20 scale-[1.02] z-20" 
+                    : "bg-orange-500/10 border-orange-500/30 text-orange-200 hover:bg-orange-500/20 glass-soft shadow-lg shadow-orange-500/5")
+                : (isSelected
+                    ? "bg-[#e8e2d8] border-[#d6cfc4] text-[#2c2825] shadow-md scale-[1.02] z-20"
+                    : "bg-[#f0ebe4] border-[#e2ddd5] text-[#2c2825] hover:bg-[#e8e2d8]")
                 }`}
         >
             <span className="font-bold block truncate">{event.summary}</span>
@@ -95,12 +99,13 @@ const EventCard = React.memo(({ event, isDark, onClick }: { event: any, isDark: 
 EventCard.displayName = "EventCard";
 
 // --- Sub-component for the hour cell (Memoized) ---
-const CalendarCell = React.memo(({ hour, day, isDark, events, onClick }: {
+const CalendarCell = React.memo(({ hour, day, isDark, events, onClick, selectedEventId }: {
     hour: number,
     day: Date,
     isDark: boolean,
     events: any[],
-    onClick: (ev: any) => void
+    onClick: (ev: any) => void,
+    selectedEventId?: string
 }) => {
     return (
         <div className={`border-r border-b relative h-10 group transition-colors ${isDark ? "border-white/[0.04] hover:bg-white/[0.02]" : "border-neutral-100 hover:bg-neutral-50"}`}>
@@ -110,6 +115,7 @@ const CalendarCell = React.memo(({ hour, day, isDark, events, onClick }: {
                     event={event}
                     isDark={isDark}
                     onClick={onClick}
+                    isSelected={selectedEventId === event.id}
                 />
             ))}
         </div>
@@ -118,12 +124,13 @@ const CalendarCell = React.memo(({ hour, day, isDark, events, onClick }: {
 CalendarCell.displayName = "CalendarCell";
 
 // --- Sub-component for the hour row (Memoized) ---
-const CalendarRow = React.memo(({ hour, weekDays, isDark, groupedEvents, onClick }: {
+const CalendarRow = React.memo(({ hour, weekDays, isDark, groupedEvents, onClick, selectedEventId }: {
     hour: number,
     weekDays: Date[],
     isDark: boolean,
     groupedEvents: Record<string, any[]>,
-    onClick: (ev: any) => void
+    onClick: (ev: any) => void,
+    selectedEventId?: string
 }) => {
     return (
         <div className="contents">
@@ -141,6 +148,7 @@ const CalendarRow = React.memo(({ hour, weekDays, isDark, groupedEvents, onClick
                         isDark={isDark}
                         events={dayEvents}
                         onClick={onClick}
+                        selectedEventId={selectedEventId}
                     />
                 );
             })}

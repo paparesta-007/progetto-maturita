@@ -338,7 +338,15 @@ router.post("/ask-pdf", requireAuth, async (req: express.Request, res: express.R
 
         sendLog("🧹 [Fase 8/8] Invio della risposta finale con fonti filtrate al client...");
         
-        // Estraiamo le fonti usate dal testo della risposta
+        // Mappiamo i chunk in oggetti fonte strutturati
+        const allRetrievedSources = chunks.map((c: any, index: number) => ({
+            id: index + 1,
+            content: c.content,
+            page: c.metadata?.page || 1,
+            source: c.metadata?.source || "Documento"
+        }));
+
+        // Estraiamo le fonti usate dal testo della risposta in modo più robusto
         const sourcesMatch = fullAnswer.match(/\[\[FONTI:\s*(.+?)\]\]/);
         let usedIndices: number[] = [];
         let cleanedAnswer = fullAnswer;
@@ -346,47 +354,38 @@ router.post("/ask-pdf", requireAuth, async (req: express.Request, res: express.R
         if (sourcesMatch) {
             const sourcesStr = sourcesMatch[1];
             if (sourcesStr.toLowerCase() !== "nessuna") {
-                usedIndices = sourcesStr.split(',').map((s: string) => parseInt(s.trim())).filter((n: number) => !isNaN(n));
+                // Estraiamo numeri (anche separati da spazi o virgole)
+                usedIndices = sourcesStr.match(/\d+/g)?.map(Number) || [];
             }
-            // Rimuoviamo il tag delle fonti dalla risposta visibile all'utente
             cleanedAnswer = fullAnswer.replace(/\[\[FONTI:\s*(.+?)\]\]/, "").trim();
         }
 
-        // Mappiamo i chunk in oggetti fonte strutturati, filtrando se abbiamo gli indici
-        const detailedSources = chunks
-            .map((c: any, index: number) => ({
-                id: index + 1,
-                content: c.content,
-                page: c.metadata?.page || 1,
-                source: c.metadata?.source || "Documento"
-            }))
-            .filter((source: any) => {
-                if (usedIndices.length > 0) {
-                    return usedIndices.includes(source.id);
+        // Controllo incrociato "meccanico": cerchiamo riferimenti espliciti [1], [Fonte #1], ecc. nel testo
+        allRetrievedSources.forEach(s => {
+            if (!usedIndices.includes(s.id)) {
+                const patterns = [
+                    new RegExp(`\\[${s.id}\\]`, 'g'),
+                    new RegExp(`\\[FONTE #${s.id}\\]`, 'gi'),
+                    new RegExp(`fonte ${s.id}`, 'gi')
+                ];
+                if (patterns.some(p => p.test(fullAnswer))) {
+                    usedIndices.push(s.id);
                 }
-                return false; // Cambiato da true a false per essere più rigorosi se non troviamo indici ma avevamo il tag
-            });
+            }
+        });
 
-        // Se non abbiamo trovato indici ma abbiamo chunk, e non c'era il tag [[FONTI: nessuna]]
-        // proviamo a vedere se il modello ha usato i numeri delle fonti nel testo [1], [2]
-        if (detailedSources.length === 0 && usedIndices.length === 0 && !fullAnswer.includes("[[FONTI: nessuna]]")) {
-            chunks.forEach((c: any, index: number) => {
-                const sourceNum = index + 1;
-                if (fullAnswer.includes(`[FONTE #${sourceNum}]`) || fullAnswer.includes(`[${sourceNum}]`)) {
-                    detailedSources.push({
-                        id: sourceNum,
-                        content: c.content,
-                        page: c.metadata?.page || 1,
-                        source: c.metadata?.source || "Documento"
-                    });
-                }
-            });
+        // Filtriamo le fonti: se l'LLM ha citato qualcosa, mostriamo solo quelle. 
+        // Se non ha citato nulla (nessun tag, nessun [n]), mostriamo le top 3 per pertinenza come fallback
+        let finalSources = allRetrievedSources.filter(s => usedIndices.includes(s.id));
+        
+        if (finalSources.length === 0 && !fullAnswer.includes("[[FONTI: nessuna]]")) {
+            finalSources = allRetrievedSources.slice(0, 3);
         }
 
         res.write(JSON.stringify({
             type: "result",
             answer: cleanedAnswer,
-            sources: detailedSources,
+            sources: finalSources,
         }) + "\n");
 
         now = Date.now();
