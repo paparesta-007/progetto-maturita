@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import { useSchema, type SchemaNodeData } from '../../context/SchemaContext';
 import { useAuth } from '../../context/AuthContext';
 import SchemaTextbar from './Textbar';
-import { PlusIcon, TrashIcon, DownloadSimple, FileCode, FilePdf, Palette, MagnifyingGlassPlus, MagnifyingGlassMinus,ArrowsOutCardinal, Rows, Columns } from '@phosphor-icons/react';
+import { PlusIcon, TrashIcon, DownloadSimple, FileCode, FilePdf, Palette, MagnifyingGlassPlus, MagnifyingGlassMinus,ArrowsOutCardinal, Rows, Columns, Eraser } from '@phosphor-icons/react';
 import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
 
@@ -12,15 +12,15 @@ const generateId = () => {
 };
 
 const SOFT_COLORS = [
-    { name: 'Default', value: '' },
-    { name: 'Blue', value: 'rgb(96, 165, 250)' },
-    { name: 'Green', value: 'rgb(74, 222, 128)' },
-    { name: 'Purple', value: 'rgb(192, 132, 252)' },
-    { name: 'Pink', value: 'rgb(244, 114, 182)' },
-    { name: 'Orange', value: 'rgb(251, 146, 60)' },
-    { name: 'Red', value: 'rgb(248, 113, 113)' },
-    { name: 'Teal', value: 'rgb(45, 212, 191)' },
-    { name: 'Yellow', value: 'rgb(250, 204, 21)' },
+    { name: 'Default', text: '', bg: '' },
+    { name: 'Blue', text: 'rgb(37, 99, 235)', bg: 'rgba(37, 99, 235, 0.1)' },
+    { name: 'Green', text: 'rgb(22, 163, 74)', bg: 'rgba(22, 163, 74, 0.1)' },
+    { name: 'Purple', text: 'rgb(147, 51, 234)', bg: 'rgba(147, 51, 234, 0.1)' },
+    { name: 'Pink', text: 'rgb(219, 39, 119)', bg: 'rgba(219, 39, 119, 0.1)' },
+    { name: 'Orange', text: 'rgb(234, 88, 12)', bg: 'rgba(234, 88, 12, 0.1)' },
+    { name: 'Red', text: 'rgb(220, 38, 38)', bg: 'rgba(220, 38, 38, 0.1)' },
+    { name: 'Teal', text: 'rgb(13, 148, 136)', bg: 'rgba(13, 148, 136, 0.1)' },
+    { name: 'Yellow', text: 'rgb(202, 138, 4)', bg: 'rgba(202, 138, 4, 0.1)' },
 ];
 
 // --- 1. The Recursive Node Component ---
@@ -65,7 +65,10 @@ const SchemaNode = ({
                     ? 'bg-[#0f0f13] border-white/10 hover:border-white/20' 
                     : 'bg-white border-neutral-200 shadow-sm hover:border-orange-300 hover:shadow-orange-500/10'
             }`}
-            style={{ borderColor: node.color ? `${node.color}44` : undefined }}
+            style={{ 
+                borderColor: node.color ? `${node.color}66` : undefined,
+                backgroundColor: node.bgColor || undefined
+            }}
             >
                 <div className="flex flex-col flex-grow items-center">
                     <input
@@ -111,7 +114,7 @@ const SchemaNode = ({
                             e.stopPropagation();
                             setShowColorPicker(!showColorPicker);
                         }}
-                        title="Cambia colore"
+                        title="Cambia colori"
                         className={`p-1.5 rounded-full shadow-md transition-all active:scale-95 ${
                             isDark ? 'text-white bg-[rgb(38,38,38)] hover:bg-[rgb(64,64,64)]' : 'text-neutral-900 bg-white border border-neutral-200 hover:bg-neutral-50'
                         }`}
@@ -133,20 +136,41 @@ const SchemaNode = ({
                 {showColorPicker && (
                     <div 
                         ref={pickerRef}
-                        className={`absolute top-full left-1/2 -translate-x-1/2 mt-2 p-2 rounded-xl border shadow-xl flex gap-1 z-20 ${isDark ? 'bg-[rgb(23,23,23)] border-[rgb(255,255,255,0.1)]' : 'bg-white border-neutral-200'}`}
+                        className={`absolute top-full left-1/2 -translate-x-1/2 mt-2 p-3 rounded-2xl border shadow-2xl flex flex-col gap-3 z-20 w-max ${isDark ? 'bg-[rgb(23,23,23)] border-[rgb(255,255,255,0.1)]' : 'bg-white border-neutral-200'}`}
                     >
-                        {SOFT_COLORS.map((c) => (
-                            <button
-                                key={c.name}
-                                onClick={() => {
-                                    onUpdate(node.id, 'color', c.value);
-                                    setShowColorPicker(false);
-                                }}
-                                className="w-5 h-5 rounded-full border border-black/10 transition-transform hover:scale-125"
-                                style={{ backgroundColor: c.value || (isDark ? '#fff' : '#000') }}
-                                title={c.name}
-                            />
-                        ))}
+                        {/* Text Color Row */}
+                        <div className="flex flex-col gap-1.5">
+                            <span className="text-[9px] uppercase font-bold tracking-widest opacity-50 px-1">Colore Testo</span>
+                            <div className="flex gap-1">
+                                {SOFT_COLORS.map((c) => (
+                                    <button
+                                        key={`text-${c.name}`}
+                                        onClick={() => onUpdate(node.id, 'color', c.text)}
+                                        className={`w-6 h-6 rounded-full border border-black/10 transition-transform hover:scale-125 flex items-center justify-center ${node.color === c.text ? 'ring-2 ring-orange-500 ring-offset-2 ring-offset-transparent' : ''}`}
+                                        style={{ backgroundColor: c.text || (isDark ? '#fff' : '#000') }}
+                                        title={`Testo ${c.name}`}
+                                    />
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Background Color Row */}
+                        <div className="flex flex-col gap-1.5">
+                            <span className="text-[9px] uppercase font-bold tracking-widest opacity-50 px-1">Colore Sfondo</span>
+                            <div className="flex gap-1">
+                                {SOFT_COLORS.map((c) => (
+                                    <button
+                                        key={`bg-${c.name}`}
+                                        onClick={() => onUpdate(node.id, 'bgColor', c.bg)}
+                                        className={`w-6 h-6 rounded-full border border-black/10 transition-transform hover:scale-125 flex items-center justify-center ${node.bgColor === c.bg ? 'ring-2 ring-orange-500 ring-offset-2 ring-offset-transparent' : ''}`}
+                                        style={{ backgroundColor: c.bg || (isDark ? 'transparent' : 'transparent'), border: c.bg ? 'none' : undefined }}
+                                        title={`Sfondo ${c.name}`}
+                                    >
+                                        {!c.bg && <div className="w-px h-full bg-red-500 rotate-45" />}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                 )}
             </div>
@@ -385,6 +409,18 @@ const SchemaBuilder = () => {
                             >
                                 <FilePdf size={16} /> PDF
                             </button>
+                            <button 
+                                onClick={() => {
+                                    if(window.confirm("Sei sicuro di voler svuotare l'intero schema?")) {
+                                        setSchema([]);
+                                    }
+                                }}
+                                className={`flex items-center gap-2 text-xs px-3 py-2 rounded-xl font-bold transition-all ${
+                                    isDark ? 'bg-red-500/10 text-red-500 hover:bg-red-500/20 border border-red-500/10' : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-200'
+                                }`}
+                            >
+                                <TrashIcon size={16} /> Pulisci Schema
+                            </button>
                         </div>
 
                         <div className="w-px h-6 bg-white/10 mx-1"/>
@@ -591,7 +627,7 @@ const SchemaBuilder = () => {
 
 // --- 3. Page Layout ---
 const SchemaPage = () => {
-    const { messages, loading } = useSchema();
+    const { messages, loading, clearMessages } = useSchema();
     const { theme } = useAuth();
     const isDark = theme === 'dark';
     const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -638,12 +674,25 @@ const SchemaPage = () => {
                             <p className={`text-[11px] font-medium ${isDark ? 'text-neutral-400' : 'text-neutral-500'}`}>Crea e Modifica con l'AI</p>
                         </div>
                     </div>
-                    <button 
-                        onClick={() => setIsChatOpen(false)}
-                        className={`p-2 rounded-xl transition-colors ${isDark ? 'hover:bg-white/10 text-neutral-400' : 'hover:bg-neutral-200 text-neutral-500'}`}
-                    >
-                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
-                    </button>
+                    <div className="flex items-center gap-1">
+                        <button 
+                            onClick={() => {
+                                if(window.confirm("Vuoi svuotare la cronologia della chat? Lo schema rimarrà invariato.")) {
+                                    clearMessages();
+                                }
+                            }}
+                            title="Svuota cronologia chat"
+                            className={`p-2 rounded-xl transition-colors ${isDark ? 'hover:bg-white/10 text-neutral-400' : 'hover:bg-neutral-200 text-neutral-500'}`}
+                        >
+                            <Eraser size={20} />
+                        </button>
+                        <button 
+                            onClick={() => setIsChatOpen(false)}
+                            className={`p-2 rounded-xl transition-colors ${isDark ? 'hover:bg-white/10 text-neutral-400' : 'hover:bg-neutral-200 text-neutral-500'}`}
+                        >
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                        </button>
+                    </div>
                 </div>
 
                 {/* Messages */}

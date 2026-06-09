@@ -40,6 +40,17 @@ const FlashcardPage = () => {
     const [isDeepDiveLoading, setIsDeepDiveLoading] = useState(false);
     const [showDetails, setShowDetails] = useState(false);
     const [showHint, setShowHint] = useState(false);
+    const detailsContainerRef = useRef<HTMLDivElement>(null);
+
+    // --- AUTO SCROLL LOGIC ---
+    useEffect(() => {
+        if (isDeepDiveLoading && detailsContainerRef.current) {
+            detailsContainerRef.current.scrollTo({
+                top: detailsContainerRef.current.scrollHeight,
+                behavior: 'auto'
+            });
+        }
+    }, [cards, isDeepDiveLoading]);
 
     const handleGenerate = async () => {
         if (!inputText.trim()) return;
@@ -445,7 +456,7 @@ const FlashcardPage = () => {
                                 </button>
                             </div>
                             
-                            <div className="flex-1 overflow-y-auto p-12 custom-scrollbar">
+                            <div className="flex-1 overflow-y-auto p-12 custom-scrollbar" ref={detailsContainerRef}>
                                 <div className="max-w-none">
                                     {cards[currentIndex]?.details ? (
                                         <MarkdownRender 

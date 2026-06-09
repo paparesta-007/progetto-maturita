@@ -7,11 +7,12 @@ import { getHighlighter } from "../library/shikiHighlighter";
 import { useAuth } from "../context/AuthContext";
 import { Check, Copy } from "lucide-react"; // Importa icone se vuoi usarle (opzionale)
 
-const MarkdownRender = ({ text, isStreaming }: { text: string; isStreaming?: boolean }) => {
+const MarkdownRender = ({ text, isStreaming, themeOverride }: { text: string; isStreaming?: boolean; themeOverride?: 'light' | 'dark' }) => {
     const [htmlContent, setHtmlContent] = useState<string>("");
     const [isLoading, setIsLoading] = useState<boolean>(!text);
     const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-    const { theme } = useAuth();
+    const { theme: authTheme } = useAuth();
+    const theme = themeOverride || authTheme;
     const containerRef = useRef<HTMLDivElement>(null); 
     const previousTextRef = useRef<string>("");
 

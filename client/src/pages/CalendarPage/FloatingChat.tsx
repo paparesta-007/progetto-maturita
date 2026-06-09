@@ -277,7 +277,10 @@ const FloatingChat = () => {
                             {messages.map((m, i) => (
                                 <div key={i} className={`flex flex-col gap-2 ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
                                     {m.role === 'assistant' && m.reasoning && m.reasoning.length > 0 && (
-                                        <ReasoningBlock reasoning={m.reasoning} isDark={isDark} />
+                                        <>
+                                            <FriendlyReasoning reasoning={m.reasoning} isDark={isDark} />
+                                            <ReasoningBlock reasoning={m.reasoning} isDark={isDark} />
+                                        </>
                                     )}
                                     <div className={`${m.role === 'user' ? styles.userBubble : styles.assistantBubble} floating-chat-markdown w-full`}>
                                         <MarkdownRender text={m.content} isStreaming={isLoading && i === messages.length - 1 && m.role === 'assistant'} />
@@ -332,6 +335,51 @@ const FloatingChat = () => {
                 </div>
             </motion.div>
         </>
+    );
+};
+
+// --- Componente per mostrare i ragionamenti dell'agente in modo amichevole ---
+const FriendlyReasoning = ({ reasoning, isDark }: { reasoning: ReasoningStep[]; isDark: boolean }) => {
+    const getFriendlyMessage = (step: ReasoningStep) => {
+        const content = step.content;
+        if (step.type === 'tool_call') {
+            if (content.includes('list_events')) return "Sto consultando il tuo calendario...";
+            if (content.includes('create_event')) return "Aggiungo l'impegno ai tuoi eventi...";
+            if (content.includes('delete_event')) return "Sto rimuovendo l'evento...";
+        }
+        if (step.type === 'tool_result') {
+            if (content.includes('list_events')) return "Ho trovato le informazioni che cercavi.";
+            if (content.includes('create_event')) return "Perfetto, evento creato con successo!";
+            if (content.includes('delete_event')) return "Fatto, l'evento è stato rimosso.";
+        }
+        return null;
+    };
+
+    return (
+        <div className="flex flex-col gap-1.5 mb-1 px-1 w-full">
+            {reasoning.map((step, idx) => {
+                const msg = getFriendlyMessage(step);
+                if (!msg) return null;
+
+                const isAction = step.content.includes('create_event') || step.content.includes('delete_event');
+                const isResult = step.type === 'tool_result';
+                
+                return (
+                    <motion.div
+                        key={idx}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className={`flex items-center gap-2.5 text-[12px] leading-tight py-1 px-2 rounded-lg transition-colors
+                            ${isResult && isAction 
+                                ? (isDark ? 'text-orange-400 bg-orange-500/5 font-bold' : 'text-orange-600 bg-orange-50 font-bold') 
+                                : (isDark ? 'text-white/50' : 'text-neutral-500')}`}
+                    >
+                        <div className={`w-1.5 h-1.5 rounded-full ${isResult ? (isAction ? 'bg-orange-500' : 'bg-emerald-500') : 'bg-blue-500 animate-pulse'}`} />
+                        {msg}
+                    </motion.div>
+                );
+            })}
+        </div>
     );
 };
 

@@ -143,6 +143,64 @@ const ReasoningTimeline = ({ reasoning, isDark, isStreaming }: { reasoning: stri
     );
 };
 
+/* ─── Friendly Bot Logs Component ─── */
+const FriendlyBotLogs = ({ logs, isDark, isComplete }: { logs: string[], isDark: boolean, isComplete?: boolean }) => {
+    const getFriendlyMessage = (log: string) => {
+        const l = log.toLowerCase();
+        if (l.includes("fase 1") || l.includes("ricevuta richiesta")) return "Ricezione della richiesta...";
+        if (l.includes("fase 2") || l.includes("generazione dell'embedding")) return "Analisi semantica in corso...";
+        if (l.includes("fase 3") || l.includes("ricerca dei chunk")) return "Ricerca nei tuoi documenti...";
+        if (l.includes("fase 5") || l.includes("chiamata a openrouter")) return "Generazione della risposta...";
+        if (l.includes("successo") || l.includes("completata con successo")) return "Processo completato!";
+        
+        // Tool specific
+        if (l.includes("list_events")) return "Consultazione calendario...";
+        if (l.includes("create_event")) return "Creazione dell'evento...";
+        if (l.includes("delete_event")) return "Rimozione dell'evento...";
+        
+        return null;
+    };
+
+    const messages = Array.from(new Set(logs.map(getFriendlyMessage).filter(Boolean)));
+    if (messages.length === 0) return null;
+
+    // Mostriamo solo l'ultimo o gli ultimi due per non ingombrare
+    const displayedMessages = messages.slice(-2);
+
+    return (
+        <div className="flex flex-col gap-2 mb-3 px-1">
+            {displayedMessages.map((msg, idx) => {
+                const isLast = idx === displayedMessages.length - 1;
+                const isSuccess = msg.includes("completato") || msg.includes("successo");
+                
+                return (
+                    <motion.div
+                        key={idx}
+                        initial={{ opacity: 0, x: -10 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        className={`flex items-center gap-2.5 text-xs font-medium py-1.5 px-3 rounded-xl transition-all
+                            ${isSuccess 
+                                ? (isDark ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-emerald-50 text-emerald-600 border border-emerald-100')
+                                : (isDark ? 'text-white/60 bg-white/5 border border-white/5' : 'text-neutral-500 bg-neutral-50 border border-neutral-100')
+                            } ${!isLast ? 'opacity-50 scale-95' : 'shadow-sm'}`}
+                    >
+                        {isSuccess ? (
+                            <CheckIcon size={14} weight="bold" />
+                        ) : (
+                            <div className="flex gap-0.5">
+                                <span className="w-1 h-1 rounded-full bg-current animate-bounce [animation-delay:-0.3s]" />
+                                <span className="w-1 h-1 rounded-full bg-current animate-bounce [animation-delay:-0.15s]" />
+                                <span className="w-1 h-1 rounded-full bg-current animate-bounce" />
+                            </div>
+                        )}
+                        <span>{msg}</span>
+                    </motion.div>
+                );
+            })}
+        </div>
+    );
+};
+
 /* ─── Premium Bot Message Styles ─── */
 const BotMessageStyles = () => (
     <style>{`
@@ -355,7 +413,10 @@ const BotMessage = React.memo(({
                                 <ReasoningTimeline reasoning={reasoning} isDark={isDark} isStreaming={!isComplete} />
                             )}
                             {logs && logs.length > 0 && (
-                                <BotLogsTimeline logs={logs} isDark={isDark} isComplete={isComplete} />
+                                <>
+                                    <FriendlyBotLogs logs={logs} isDark={isDark} isComplete={isComplete} />
+                                    <BotLogsTimeline logs={logs} isDark={isDark} isComplete={isComplete} />
+                                </>
                             )}
 
                             {children}
