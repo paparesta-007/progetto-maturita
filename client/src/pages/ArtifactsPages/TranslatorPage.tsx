@@ -15,7 +15,8 @@ import {
     GearSix,
     ChatTeardropText,
     Student,
-    Briefcase
+    Briefcase,
+    PaperPlaneTilt
 } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import supabase from "../../library/supabaseclient";
@@ -23,6 +24,7 @@ import MarkdownRender from "../../library/markdownRender";
 import { marked } from "marked";
 
 const LANGUAGES = [
+    { code: 'auto', name: 'Rileva lingua', flag: '🔍' },
     { code: 'it', name: 'Italiano', flag: '🇮🇹' },
     { code: 'en', name: 'English', flag: '🇬🇧' },
     { code: 'es', name: 'Español', flag: '🇪🇸' },
@@ -40,7 +42,7 @@ const TranslatorPage = () => {
     const isDark = theme === 'dark';
 
     const [sourceLang, setSourceLang] = useState(LANGUAGES[0]);
-    const [targetLang, setTargetLang] = useState(LANGUAGES[1]);
+    const [targetLang, setTargetLang] = useState(LANGUAGES[2]);
     const [sourceText, setSourceText] = useState("");
     const [translatedText, setTranslatedText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
@@ -60,7 +62,30 @@ const TranslatorPage = () => {
     const [focusData, setFocusData] = useState<{ type: string, content: string } | null>(null);
     const [isFocusLoading, setIsFocusLoading] = useState(false);
     const [isFocusMinimized, setIsFocusMinimized] = useState(false);
+    const [focusMessages, setFocusMessages] = useState<any[]>([]);
+    const [focusInput, setFocusInput] = useState("");
+    
     const outputRef = useRef<HTMLDivElement>(null);
+    const focusScrollRef = useRef<HTMLDivElement>(null);
+
+    // --- AUTO SCROLL LOGIC ---
+    useEffect(() => {
+        if (isLoading && outputRef.current) {
+            outputRef.current.scrollTo({
+                top: outputRef.current.scrollHeight,
+                behavior: 'auto'
+            });
+        }
+    }, [translatedText, isLoading]);
+
+    useEffect(() => {
+        if (isFocusLoading && focusScrollRef.current) {
+            focusScrollRef.current.scrollTo({
+                top: focusScrollRef.current.scrollHeight,
+                behavior: 'smooth'
+            });
+        }
+    }, [focusData?.content, focusMessages, isFocusLoading]);
 
     const handleTranslate = async () => {
         if (!sourceText.trim()) return;
@@ -70,6 +95,8 @@ const TranslatorPage = () => {
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token;
 
+            const fromLangStr = sourceLang.code === 'auto' ? "rilevando automaticamente la lingua di partenza" : `da ${sourceLang.name}`;
+
             const response = await fetch("http://localhost:3000/api/artifacts/translate", {
                 method: "POST",
                 headers: { 
@@ -77,7 +104,7 @@ const TranslatorPage = () => {
                     "Authorization": `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    message: `Traduci il seguente testo da ${sourceLang.name} a ${targetLang.name}. 
+                    message: `Traduci il seguente testo ${fromLangStr} a ${targetLang.name}. 
                     Tono richiesto: ${settings.tone}. 
                     Complessità: ${settings.complexity}. 
                     Contesto: ${settings.context}.
@@ -198,12 +225,69 @@ const TranslatorPage = () => {
         }
     };
 
+    const handleFocusChat = async () => {
+        if (!focusInput.trim() || !focusData) return;
+        
+        const userMsg = { role: 'user', content: focusInput };
+        setFocusMessages(prev => [...prev, userMsg]);
+        setFocusInput("");
+        setIsFocusLoading(true);
+
+        try {
+            const { data: { session } } = await supabase.auth.getSession();
+            const token = session?.access_token;
+
+            const response = await fetch("http://localhost:3000/api/artifacts/translate", {
+                method: "POST",
+                headers: { 
+                    "Content-Type": "application/json",
+                    "Authorization": `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    message: focusInput,
+                    history: [
+                        { role: 'system', content: `Stai analizzando un testo specifico: "${selection?.text || focusData.content}". Rispondi in modo conciso e utile.` },
+                        ...focusMessages,
+                        { role: 'user', content: focusInput }
+                    ],
+                    temperature: 0.7
+                }),
+            });
+
+            if (!response.ok || !response.body) throw new Error("Errore durante la chat");
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let assistantContent = "";
+            
+            setFocusMessages(prev => [...prev, { role: 'assistant', content: "" }]);
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                assistantContent += chunk;
+                setFocusMessages(prev => {
+                    const newMsgs = [...prev];
+                    newMsgs[newMsgs.length - 1] = { role: 'assistant', content: assistantContent };
+                    return newMsgs;
+                });
+            }
+        } catch (error) {
+            console.error(error);
+            setFocusMessages(prev => [...prev, { role: 'assistant', content: "Errore durante la comunicazione. Riprova." }]);
+        } finally {
+            setIsFocusLoading(false);
+        }
+    };
+
     return (
         <div className={`h-full w-full flex flex-col overflow-hidden transition-colors duration-500 ${isDark ? "bg-[#07070a] text-[#f4f1ea]" : "bg-[#fdfcfb] text-neutral-900"}`}>
             {/* Header */}
             <header className={`px-8 py-4 border-b flex items-center justify-between relative z-[100] ${isDark ? "border-white/5 bg-[#07070a]" : "border-neutral-200 bg-[#fdfcfb]"}`}>
                 <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-2xl bg-cyan-500/10 text-cyan-500">
+                    <div className={`p-2 rounded-2xl ${isDark ? "bg-[#e8e2d8]/10 text-[#e8e2d8]" : "bg-[#2c2825]/10 text-[#2c2825]"}`}>
                         <TranslateIcon size={20} weight="duotone" />
                     </div>
                     <div>
@@ -216,7 +300,7 @@ const TranslatorPage = () => {
                     onClick={() => setIsSettingsOpen(!isSettingsOpen)}
                     className={`p-2.5 rounded-2xl transition-all active:scale-90 ${isDark ? "bg-white/5 hover:bg-white/10 text-neutral-400" : "bg-neutral-100 hover:bg-neutral-200 text-neutral-600"}`}
                 >
-                    <GearSix size={20} weight={isSettingsOpen ? "fill" : "regular"} className={isSettingsOpen ? "text-cyan-500" : ""} />
+                    <GearSix size={20} weight={isSettingsOpen ? "fill" : "regular"} className={isSettingsOpen ? (isDark ? "text-[#e8e2d8]" : "text-[#2c2825]") : ""} />
                 </button>
 
                 {/* New Settings Popup */}
@@ -240,7 +324,7 @@ const TranslatorPage = () => {
                                                 onClick={() => setSettings(prev => ({ ...prev, tone: t }))}
                                                 className={`px-3 py-2 rounded-xl text-[11px] font-bold transition-all ${
                                                     settings.tone === t 
-                                                        ? "bg-cyan-500 text-white" 
+                                                        ? (isDark ? "bg-[#e8e2d8] text-[#2c2825]" : "bg-[#2c2825] text-[#e8e2d8]") 
                                                         : (isDark ? "bg-white/5 hover:bg-white/10 text-neutral-400" : "bg-neutral-50 hover:bg-neutral-100 text-neutral-600")
                                                 }`}
                                             >
@@ -282,7 +366,7 @@ const TranslatorPage = () => {
                                                 onClick={() => setSettings(prev => ({ ...prev, context: ctx.id }))}
                                                 className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-2xl text-xs font-semibold transition-all ${
                                                     settings.context === ctx.id 
-                                                        ? (isDark ? "bg-cyan-500/10 text-cyan-400 border border-cyan-500/20" : "bg-cyan-50 text-cyan-600 border border-cyan-100") 
+                                                        ? (isDark ? "bg-[#e8e2d8]/10 text-[#e8e2d8] border border-[#e8e2d8]/20" : "bg-[#2c2825]/5 text-[#2c2825] border border-[#2c2825]/10") 
                                                         : (isDark ? "hover:bg-white/5 text-neutral-400" : "hover:bg-neutral-50 text-neutral-500")
                                                 }`}
                                             >
@@ -425,8 +509,8 @@ const TranslatorPage = () => {
                         )}
                         <span>Traduci con Mistral AI</span>
                         <div className="absolute -top-1 -right-1 flex h-4 w-4">
-                            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-                            <span className="relative inline-flex rounded-full h-4 w-4 bg-cyan-500"></span>
+                            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${isDark ? "bg-[#e8e2d8]" : "bg-[#2c2825]"}`}></span>
+                            <span className={`relative inline-flex rounded-full h-4 w-4 ${isDark ? "bg-[#e8e2d8]" : "bg-[#2c2825]"}`}></span>
                         </div>
                     </button>
                 </div>
@@ -441,11 +525,11 @@ const TranslatorPage = () => {
                                 initial={{ y: 100, opacity: 0 }}
                                 animate={{ y: 0, opacity: 1 }}
                                 exit={{ y: 100, opacity: 0 }}
-                                className={`w-[450px] p-8 rounded-[2.5rem] border shadow-2xl backdrop-blur-3xl pointer-events-auto transition-colors duration-500 ${
+                                className={`w-[450px] p-8 rounded-[2.5rem] border shadow-2xl backdrop-blur-3xl pointer-events-auto flex flex-col transition-colors duration-500 ${
                                     isDark ? "bg-[#0d0d12]/90 border-white/10 shadow-black/60" : "bg-white/95 border-neutral-200 shadow-neutral-200/50"
                                 }`}
                             >
-                                <div className="flex flex-col gap-6">
+                                <div className="flex flex-col gap-6 h-full min-h-0">
                                     <div className="flex items-center justify-between">
                                         <div className="flex items-center gap-3">
                                             <div className={`p-2.5 rounded-xl ${
@@ -453,7 +537,7 @@ const TranslatorPage = () => {
                                                 focusData?.type === 'usecases' ? 'bg-emerald-500/10 text-emerald-500' :
                                                 'bg-violet-500/10 text-violet-500'
                                             }`}>
-                                                {isFocusLoading ? <Sparkle size={20} className="animate-pulse" /> : 
+                                                {isFocusLoading && !focusData?.content ? <Sparkle size={20} className="animate-pulse" /> : 
                                                  focusData?.type === 'meaning' ? <Info size={20} weight="duotone" /> :
                                                  focusData?.type === 'usecases' ? <Books size={20} weight="duotone" /> :
                                                  <Flask size={20} weight="duotone" />
@@ -461,13 +545,13 @@ const TranslatorPage = () => {
                                             </div>
                                             <div>
                                                 <h3 className="text-[10px] font-bold uppercase tracking-widest opacity-50">
-                                                    {isFocusLoading ? "Analisi in corso..." : 
+                                                    {isFocusLoading && !focusData?.content ? "Analisi in corso..." : 
                                                      focusData?.type === 'meaning' ? "Significato & Sfumature" :
                                                      focusData?.type === 'usecases' ? "Esempi d'uso" :
                                                      "Best Practices"
                                                     }
                                                 </h3>
-                                                {!isFocusLoading && selection?.text && (
+                                                {selection?.text && (
                                                     <p className="text-xs font-semibold opacity-80 truncate max-w-[200px]">"{selection.text}"</p>
                                                 )}
                                             </div>
@@ -481,7 +565,7 @@ const TranslatorPage = () => {
                                                 <Minus size={18} />
                                             </button>
                                             <button 
-                                                onClick={() => setFocusData(null)}
+                                                onClick={() => { setFocusData(null); setFocusMessages([]); }}
                                                 className={`p-2 rounded-xl transition-colors ${isDark ? "hover:bg-white/10 text-neutral-400" : "hover:bg-neutral-100 text-neutral-500"}`}
                                             >
                                                 <X size={18} />
@@ -489,8 +573,11 @@ const TranslatorPage = () => {
                                         </div>
                                     </div>
                                     
-                                    <div className="relative">
-                                        <div className={`text-base leading-relaxed max-h-[400px] overflow-y-auto pr-4 custom-scrollbar ${isDark ? "text-neutral-200" : "text-neutral-800"}`}>
+                                    <div className="relative flex-1 min-h-0">
+                                        <div 
+                                            ref={focusScrollRef}
+                                            className={`text-base leading-relaxed max-h-[400px] overflow-y-auto pr-4 custom-scrollbar ${isDark ? "text-neutral-200" : "text-neutral-800"}`}
+                                        >
                                             {isFocusLoading && !focusData?.content ? (
                                                 <div className="space-y-3">
                                                     <div className="h-4 bg-current opacity-10 rounded w-full animate-pulse" />
@@ -498,9 +585,52 @@ const TranslatorPage = () => {
                                                     <div className="h-4 bg-current opacity-10 rounded w-4/6 animate-pulse" />
                                                 </div>
                                             ) : (
-                                                focusData?.content && <MarkdownRender text={focusData.content} isStreaming={isFocusLoading} />
+                                                <div className="flex flex-col gap-6 pb-4">
+                                                    {focusData?.content && (
+                                                        <div className="p-1">
+                                                            <MarkdownRender text={focusData.content} isStreaming={isFocusLoading && focusMessages.length === 0} />
+                                                        </div>
+                                                    )}
+                                                    
+                                                    {focusMessages.map((m, idx) => (
+                                                        <div key={idx} className={`flex flex-col ${m.role === 'user' ? 'items-end' : 'items-start'}`}>
+                                                            <div className={`max-w-[90%] rounded-2xl p-4 text-sm leading-relaxed ${
+                                                                m.role === 'user' 
+                                                                    ? (isDark ? "bg-[#2c2825] text-[#e8e2d8] font-bold" : "bg-[#e8e2d8] text-[#2c2825] font-bold")
+                                                                    : (isDark ? "bg-white/5 border border-white/5" : "bg-neutral-50 border border-neutral-100 shadow-sm")
+                                                            }`}>
+                                                                <MarkdownRender 
+                                                                    text={m.content} 
+                                                                    isStreaming={isFocusLoading && idx === focusMessages.length - 1} 
+                                                                />
+                                                            </div>
+                                                        </div>
+                                                    ))}
+                                                </div>
                                             )}
                                         </div>
+                                    </div>
+
+                                    {/* Focus Chat Input */}
+                                    <div className={`mt-2 flex items-center gap-2 p-1.5 rounded-2xl border ${isDark ? "bg-white/5 border-white/10" : "bg-neutral-50 border-neutral-200"}`}>
+                                        <input 
+                                            type="text"
+                                            value={focusInput}
+                                            onChange={(e) => setFocusInput(e.target.value)}
+                                            onKeyDown={(e) => e.key === 'Enter' && handleFocusChat()}
+                                            placeholder="Fai una domanda su questo testo..."
+                                            disabled={isFocusLoading}
+                                            className="flex-1 bg-transparent px-3 py-1.5 text-xs focus:outline-none placeholder:opacity-30"
+                                        />
+                                        <button
+                                            onClick={handleFocusChat}
+                                            disabled={isFocusLoading || !focusInput.trim()}
+                                            className={`p-2 rounded-xl transition-all active:scale-90 ${
+                                                isDark ? "bg-white text-black hover:bg-neutral-200" : "bg-neutral-900 text-white hover:bg-neutral-800"
+                                            } disabled:opacity-30`}
+                                        >
+                                            {isFocusLoading ? <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" /> : <PaperPlaneTilt size={16} weight="fill" />}
+                                        </button>
                                     </div>
                                 </div>
                             </motion.div>

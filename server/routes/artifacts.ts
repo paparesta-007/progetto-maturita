@@ -435,15 +435,9 @@ router.post("/schema-tree", async (req, res) => {
             return res.status(400).json({ error: "Campo 'messages' mancante o non valido." });
         }
 
-        const modeToModelMap: Record<string, string> = {
-            fast: "openai/gpt-oss-120b",
-            balanced: "google/gemma-4-31b-it",
-            pro: "xiaomi/mimo-v2.5"
-        };
-
-        const selectedModel = (typeof model === "string" && modeToModelMap[model]) 
-            ? modeToModelMap[model] 
-            : "openai/gpt-oss-120b";
+        const selectedModel = (typeof model === "string" && model.trim() !== "") 
+            ? model 
+            : "deepseek/deepseek-v4-flash";
 
         const systemPrompt = `Sei un esperto creatore e modificatore di schemi visivi ad albero (Mind Maps / Flowcharts).
 Il tuo compito principale è TRADURRE la richiesta dell'utente in un aggiornamento pratico dell'array JSON che rappresenta lo schema.

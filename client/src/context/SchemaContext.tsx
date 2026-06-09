@@ -6,6 +6,7 @@ export interface SchemaNodeData {
     title: string;
     description: string;
     color?: string; // Soft color for text/border
+    bgColor?: string; // Background color
     x: number;
     y: number;
     children: SchemaNodeData[];
@@ -24,6 +25,7 @@ interface SchemaContextProps {
     orientation: 'vertical' | 'horizontal';
     setOrientation: (o: 'vertical' | 'horizontal') => void;
     sendMessage: (text: string, model: string) => Promise<void>;
+    clearMessages: () => void;
 }
 
 const SchemaContext = createContext<SchemaContextProps | undefined>(undefined);
@@ -42,6 +44,10 @@ export const SchemaProvider = ({ children }: { children: ReactNode }) => {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [loading, setLoading] = useState(false);
     const [orientation, setOrientation] = useState<'vertical' | 'horizontal'>('vertical');
+
+    const clearMessages = () => {
+        setMessages([]);
+    };
 
     const sendMessage = async (text: string, model: string) => {
         if (!text.trim()) return;
@@ -124,7 +130,7 @@ export const SchemaProvider = ({ children }: { children: ReactNode }) => {
     };
 
     return (
-        <SchemaContext.Provider value={{ schema, setSchema, messages, loading, orientation, setOrientation, sendMessage }}>
+        <SchemaContext.Provider value={{ schema, setSchema, messages, loading, orientation, setOrientation, sendMessage, clearMessages }}>
             {children}
         </SchemaContext.Provider>
     );

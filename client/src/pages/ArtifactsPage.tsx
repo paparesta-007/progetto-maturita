@@ -194,6 +194,7 @@ interface ArtifactCard {
     tags: string[];
     accentColor: string;
     Preview: React.FC<{ isDark: boolean }>;
+    isComingSoon?: boolean;
 }
 
 const ARTIFACTS: ArtifactCard[] = [
@@ -223,6 +224,7 @@ const ARTIFACTS: ArtifactCard[] = [
         tags: ["Creatività", "Brainstorming", "Sintesi", "Relazioni"],
         accentColor: "text-violet-500",
         Preview: MindmapPreview,
+        isComingSoon: true,
     },
     {
         icon: <ChartBarIcon size={20} weight="duotone" />,
@@ -232,6 +234,7 @@ const ARTIFACTS: ArtifactCard[] = [
         tags: ["Dati", "Azienda", "Statistica", "Report"],
         accentColor: "text-amber-500",
         Preview: AnalysisPreview,
+        isComingSoon: true,
     },
     {
         icon: <NotebookIcon size={20} weight="duotone" />,
@@ -288,58 +291,72 @@ const ArtifactsPage: React.FC = () => {
                         return (
                             <motion.button
                                 key={artifact.route}
-                                onClick={() => navigate(artifact.route)}
+                                onClick={() => !artifact.isComingSoon && navigate(artifact.route)}
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ duration: 0.35, delay: i * 0.06, ease: "easeOut" }}
-                                className={`group relative flex flex-col sm:flex-row rounded-2xl border cursor-pointer transition-all  overflow-hidden text-left ${isDark
+                                className={`group relative flex flex-col sm:flex-row rounded-2xl border cursor-pointer transition-all overflow-hidden text-left ${isDark
                                     ? "bg-neutral-900/60 border-neutral-800 hover:border-neutral-700 hover:bg-neutral-800/80"
                                     : "bg-white border-neutral-200 hover:border-neutral-300 hover:shadow-lg hover:shadow-neutral-200/50"
-                                    }`}
+                                    } ${artifact.isComingSoon ? "cursor-not-allowed" : ""}`}
                             >
-                                {/* Left Side: Preview area */}
-                                <div className={`relative w-full sm:w-80 lg:w-96 min-h-[160px] flex-shrink-0 overflow-hidden border-b sm:border-b-0 sm:border-r ${isDark ? "bg-neutral-900 border-neutral-800" : "bg-neutral-50 border-neutral-200"}`}>
-                                    <div className="absolute inset-0 transition-transform duration-500 ease-out group-hover:scale-105">
-                                        <Preview isDark={isDark} />
-                                    </div>
-                                    <div className={`absolute inset-x-0 bottom-0 h-8 sm:w-10 sm:h-full sm:right-0 sm:bottom-auto bg-gradient-to-t sm:bg-gradient-to-r ${isDark ? "from-neutral-900/90 sm:from-neutral-800/80" : "from-white/80 sm:from-white/60"} pointer-events-none`} />
-                                </div>
-
-                                {/* Right Side: Info area */}
-                                <div className="flex flex-col p-5 w-full">
-                                    <div className="flex items-start gap-3">
-                                        <div className={`mt-0.5 flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-xl transition-colors ${isDark
-                                            ? "bg-neutral-800 text-neutral-400 group-hover:text-white"
-                                            : "bg-neutral-100 text-neutral-500 group-hover:text-neutral-900"
-                                            }`}>
-                                            {artifact.icon}
-                                        </div>
-                                        <div className="flex-1 min-w-0 pr-8 relative">
-                                            <span className={`text-base font-semibold block ${isDark ? "text-white" : "text-neutral-900"}`}>
-                                                {artifact.label}
-                                            </span>
-                                            <p className={`text-sm leading-relaxed mt-1 ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>
-                                                {artifact.description}
-                                            </p>
-
-                                            <ArrowRightIcon
-                                                size={16}
-                                                weight="bold"
-                                                className={`absolute right-0 top-1 flex-shrink-0 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 ${isDark ? "text-neutral-500" : "text-neutral-400"}`}
-                                            />
+                                {/* Coming Soon Label */}
+                                {artifact.isComingSoon && (
+                                    <div className="absolute top-0 right-0 z-20 pointer-events-none">
+                                        <div className={`absolute top-[22px] right-[-32px] rotate-45 ${isDark ? "bg-[#2c2825] text-[#e8e2d8] border-[#3d3832]" : "bg-[#e8e2d8] text-[#2c2825] border-[#d6cfc4]"} text-[10px] font-black tracking-widest px-10 py-1 shadow-lg border-y uppercase`}>
+                                            Coming Soon
                                         </div>
                                     </div>
+                                )}
 
-                                    {/* Bottom Tag Row */}
-                                    <div className="mt-auto pt-4 flex flex-wrap gap-2">
-                                        {artifact.tags.map(tag => (
-                                            <span key={tag} className={`text-[11px] font-medium px-2.5 py-1 rounded-md border transition-colors ${isDark
-                                                ? "bg-neutral-800/50 border-neutral-700 text-neutral-300 group-hover:bg-neutral-800"
-                                                : "bg-neutral-50 border-neutral-200 text-neutral-600 group-hover:bg-neutral-100 group-hover:border-neutral-300"
+                                {/* Inner Content Wrapper (with opacity/grayscale for Coming Soon) */}
+                                <div className={`flex flex-col sm:flex-row w-full h-full ${artifact.isComingSoon ? "opacity-40 grayscale-[0.6]" : ""}`}>
+                                    {/* Left Side: Preview area */}
+                                    <div className={`relative w-full sm:w-80 lg:w-96 min-h-[160px] flex-shrink-0 overflow-hidden border-b sm:border-b-0 sm:border-r ${isDark ? "bg-neutral-900 border-neutral-800" : "bg-neutral-50 border-neutral-200"}`}>
+                                        <div className="absolute inset-0 transition-transform duration-500 ease-out group-hover:scale-105">
+                                            <Preview isDark={isDark} />
+                                        </div>
+                                        <div className={`absolute inset-x-0 bottom-0 h-8 sm:w-10 sm:h-full sm:right-0 sm:bottom-auto bg-gradient-to-t sm:bg-gradient-to-r ${isDark ? "from-neutral-900/90 sm:from-neutral-800/80" : "from-white/80 sm:from-white/60"} pointer-events-none`} />
+                                    </div>
+
+                                    {/* Right Side: Info area */}
+                                    <div className="flex flex-col p-5 w-full">
+                                        <div className="flex items-start gap-3">
+                                            <div className={`mt-0.5 flex-shrink-0 w-9 h-9 flex items-center justify-center rounded-xl transition-colors ${isDark
+                                                ? "bg-neutral-800 text-neutral-400 group-hover:text-white"
+                                                : "bg-neutral-100 text-neutral-500 group-hover:text-neutral-900"
                                                 }`}>
-                                                {tag}
-                                            </span>
-                                        ))}
+                                                {artifact.icon}
+                                            </div>
+                                            <div className="flex-1 min-w-0 pr-8 relative">
+                                                <span className={`text-base font-semibold block ${isDark ? "text-white" : "text-neutral-900"}`}>
+                                                    {artifact.label}
+                                                </span>
+                                                <p className={`text-sm leading-relaxed mt-1 ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>
+                                                    {artifact.description}
+                                                </p>
+
+                                                {!artifact.isComingSoon && (
+                                                    <ArrowRightIcon
+                                                        size={16}
+                                                        weight="bold"
+                                                        className={`absolute right-0 top-1 flex-shrink-0 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 ${isDark ? "text-neutral-500" : "text-neutral-400"}`}
+                                                    />
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Bottom Tag Row */}
+                                        <div className="mt-auto pt-4 flex flex-wrap gap-2">
+                                            {artifact.tags.map(tag => (
+                                                <span key={tag} className={`text-[11px] font-medium px-2.5 py-1 rounded-md border transition-colors ${isDark
+                                                    ? "bg-neutral-800/50 border-neutral-700 text-neutral-300 group-hover:bg-neutral-800"
+                                                    : "bg-neutral-50 border-neutral-200 text-neutral-600 group-hover:bg-neutral-100 group-hover:border-neutral-300"
+                                                    }`}>
+                                                    {tag}
+                                                </span>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
                             </motion.button>

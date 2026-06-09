@@ -26,6 +26,7 @@ const QuizTextbar = ({
         { label: "GPT OSS 120B", value: "openai/gpt-oss-120b:nitro", icon: <Sparkle size={16} />, description: "Potente & Libero" },
     ];
 
+    
     const handleSubmit = () => {
         if (!text.trim()) return;
         onSubmit(text, "standard", selectedModel);

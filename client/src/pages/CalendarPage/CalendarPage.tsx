@@ -8,7 +8,7 @@ import { MagicWandIcon, Clock } from "@phosphor-icons/react";
 import supabase from "../../library/supabaseclient";
 
 const HOURS = Array.from({ length: 24 }, (_, i) => i);
-const ROW_HEIGHT = 40;
+const ROW_HEIGHT = 48;
 
 /* -------------------------------------------------------
    System Styles (Shared from Chat/LandingPage)
@@ -108,7 +108,7 @@ const CalendarCell = React.memo(({ hour, day, isDark, events, onClick, selectedE
     selectedEventId?: string
 }) => {
     return (
-        <div className={`border-r border-b relative h-10 group transition-colors ${isDark ? "border-white/[0.04] hover:bg-white/[0.02]" : "border-neutral-100 hover:bg-neutral-50"}`}>
+        <div className={`border-r border-b relative h-12 group transition-colors ${isDark ? "border-white/[0.04] hover:bg-white/[0.02]" : "border-neutral-100 hover:bg-neutral-50"}`}>
             {events.map(event => (
                 <EventCard
                     key={event.id}
@@ -134,7 +134,7 @@ const CalendarRow = React.memo(({ hour, weekDays, isDark, groupedEvents, onClick
 }) => {
     return (
         <div className="contents">
-            <div className={`text-right pr-3 text-[10px] font-mono border-r h-10 flex items-center justify-end ${isDark ? "text-neutral-600 border-white/[0.04]" : "text-neutral-400 border-neutral-100"}`}>
+            <div className={`text-right pr-3 text-[10px] font-mono border-r h-12 flex items-center justify-end ${isDark ? "text-neutral-600 border-white/[0.04]" : "text-neutral-400 border-neutral-100"}`}>
                 {`${hour.toString().padStart(2, '0')}:00`}
             </div>
             {weekDays.map((day, i) => {
