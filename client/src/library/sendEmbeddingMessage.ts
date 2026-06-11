@@ -41,7 +41,7 @@ export const sendEmbeddingMessage = async (
 
         // 2. Chiamata al Backend in streaming (Endpoint RAG)
         console.log("modello del ask-pdf", model)
-        const response = await fetch("http://localhost:3000/api/docs/ask-pdf", {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/docs/ask-pdf`, {
             method: "POST",
             headers: { 
                 "Content-Type": "application/json",

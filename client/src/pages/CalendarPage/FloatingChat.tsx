@@ -90,7 +90,7 @@ const FloatingChat = () => {
         setIsLoading(true);
 
         try {
-            const response = await fetch("http://localhost:3000/api/calendar/action", {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/calendar/action`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",

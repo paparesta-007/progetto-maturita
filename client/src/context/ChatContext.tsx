@@ -197,7 +197,7 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
                     };
 
                     try {
-                        const resSQ = await fetch("http://localhost:3000/api/conversations/getSuggestedQuestion", {
+                        const resSQ = await fetch(`${import.meta.env.VITE_API_URL}/conversations/getSuggestedQuestion`, {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify(lastExchange)

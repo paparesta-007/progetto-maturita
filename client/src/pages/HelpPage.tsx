@@ -55,7 +55,7 @@ export default function HelpPage() {
       setIsLoadingTickets(true);
       if (user.email) setEmail(user.email);
 
-      const response = await fetch("http://localhost:3000/api/support/getUserTickets", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/support/getUserTickets`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId: user?.id }),
@@ -94,7 +94,7 @@ export default function HelpPage() {
     setIsSubmitting(true);
 
     try {
-      const response = await fetch("http://localhost:3000/api/support/submit", {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/support/submit`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -5,7 +5,7 @@ const createConversation = async (uuid: any, title: any) => {
         const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token;
 
-        const response = await fetch("http://localhost:3000/api/conversations/create", {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/conversations/create`, {
             method: "POST",
             headers: { 
                 "Content-Type": "application/json",

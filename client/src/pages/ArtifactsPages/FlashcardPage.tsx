@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { 
     Cards as CardsIcon,
@@ -63,7 +63,7 @@ const FlashcardPage = () => {
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token;
 
-            const response = await fetch("http://localhost:3000/api/artifacts/flashcards/generate", {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/artifacts/flashcards/generate`, {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json",
@@ -102,7 +102,7 @@ const FlashcardPage = () => {
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token;
 
-            const response = await fetch("http://localhost:3000/api/artifacts/flashcards/deep-dive", {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/artifacts/flashcards/deep-dive`, {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json",

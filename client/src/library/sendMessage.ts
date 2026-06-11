@@ -72,7 +72,7 @@ export const sendNormalMessage = async (
         const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token;
 
-        const response = await fetch("http://localhost:3000/api/completion/chat", {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/completion/chat`, {
             method: "POST",
             signal: options.signal,
             headers: { 
@@ -132,7 +132,7 @@ export const sendNormalMessage = async (
             } else if (userId) {
                 let newTitle = "New Chat";
                 try {
-                    const titleRes = await fetch("http://localhost:3000/api/conversations/getTitleConversation", {
+                    const titleRes = await fetch(`${import.meta.env.VITE_API_URL}/conversations/getTitleConversation`, {
                         method: "POST",
                         headers: { 
                             "Content-Type": "application/json",
@@ -161,7 +161,7 @@ export const sendNormalMessage = async (
         let finalSuggestedQuestions = suggestedQuestions;
         if (finalSuggestedQuestions.length === 0) {
             try {
-                const resSQ = await fetch("http://localhost:3000/api/conversations/getSuggestedQuestion", {
+                const resSQ = await fetch(`${import.meta.env.VITE_API_URL}/conversations/getSuggestedQuestion`, {
                     method: "POST",
                     headers: { 
                         "Content-Type": "application/json",
@@ -263,7 +263,7 @@ export const sendStreamedMessage = async (
         const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token;
 
-        const response = await fetch("http://localhost:3000/api/streamingOutput", {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/streamingOutput`, {
             method: "POST",
             signal: options.signal,
             headers: { 
@@ -379,7 +379,7 @@ export const sendStreamedMessage = async (
             } else if (userId) {
                 let newTitle = "New Chat";
                 try {
-                    const titleRes = await fetch("http://localhost:3000/api/conversations/getTitleConversation", {
+                    const titleRes = await fetch(`${import.meta.env.VITE_API_URL}/conversations/getTitleConversation`, {
                         method: "POST",
                         headers: { 
                             "Content-Type": "application/json",
@@ -407,7 +407,7 @@ export const sendStreamedMessage = async (
         // Fetch suggested questions after saving (so the message is secure even if this fails)
         let finalSuggestedQuestions: string[] = [];
         try {
-            const resSQ = await fetch("http://localhost:3000/api/conversations/getSuggestedQuestion", {
+            const resSQ = await fetch(`${import.meta.env.VITE_API_URL}/conversations/getSuggestedQuestion`, {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json",
@@ -505,7 +505,7 @@ export const SendQuizMessage = async (
         const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token;
 
-        const response = await fetch("http://localhost:3000/api/artifacts/quiz/generate", {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/artifacts/quiz/generate`, {
             method: "POST",
             headers: { 
                 "Content-Type": "application/json",
@@ -549,7 +549,7 @@ export const fetchQuizExplanation = async (
         const { data: { session } } = await supabase.auth.getSession();
         const token = session?.access_token;
 
-        const response = await fetch("http://localhost:3000/api/artifacts/quiz/explain", {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/artifacts/quiz/explain`, {
             method: "POST",
             headers: { 
                 "Content-Type": "application/json",

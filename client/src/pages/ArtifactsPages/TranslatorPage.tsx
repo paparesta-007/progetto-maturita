@@ -97,7 +97,7 @@ const TranslatorPage = () => {
 
             const fromLangStr = sourceLang.code === 'auto' ? "rilevando automaticamente la lingua di partenza" : `da ${sourceLang.name}`;
 
-            const response = await fetch("http://localhost:3000/api/artifacts/translate", {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/artifacts/translate`, {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json",
@@ -188,7 +188,7 @@ const TranslatorPage = () => {
             if (type === 'usecases') prompt = `Esempi d'uso per: "${selection.text}" sia in ${sourceLang.name} che in ${targetLang.name}.`;
             if (type === 'bestpractices') prompt = `Suggerimenti di traduzione e sfumature culturali per: "${selection.text}" tra ${sourceLang.name} e ${targetLang.name}.`;
 
-            const response = await fetch("http://localhost:3000/api/artifacts/translate", {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/artifacts/translate`, {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json",
@@ -237,7 +237,7 @@ const TranslatorPage = () => {
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token;
 
-            const response = await fetch("http://localhost:3000/api/artifacts/translate", {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/artifacts/translate`, {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json",
