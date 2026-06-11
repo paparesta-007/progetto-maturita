@@ -1,6 +1,6 @@
 const updateConversationTitle = async (conversationId: string, newTitle: string, user_id: string, token: string) => {
     try {
-        const response = await fetch("http://localhost:3000/api/conversations/update-title", {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/conversations/update-title`, {
             method: "PATCH",
             headers: { 
                 "Content-Type": "application/json",

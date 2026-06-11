@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { 
     Cards as CardsIcon,
@@ -30,6 +31,7 @@ interface Flashcard {
 const FlashcardPage = () => {
     const { theme } = useAuth();
     const isDark = theme === 'dark';
+    const navigate = useNavigate();
 
     const [inputText, setInputText] = useState("");
     const [difficulty, setDifficulty] = useState("Medium");
@@ -63,7 +65,7 @@ const FlashcardPage = () => {
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token;
 
-            const response = await fetch("http://localhost:3000/api/artifacts/flashcards/generate", {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/artifacts/flashcards/generate`, {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json",
@@ -102,7 +104,7 @@ const FlashcardPage = () => {
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token;
 
-            const response = await fetch("http://localhost:3000/api/artifacts/flashcards/deep-dive", {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/artifacts/flashcards/deep-dive`, {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json",
@@ -191,7 +193,19 @@ const FlashcardPage = () => {
             {/* Header */}
             <header className={`px-8 py-4 border-b ${isDark ? "border-white/5" : "border-neutral-200"}`}>
                 <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-4">
+                        <button 
+                            onClick={() => navigate("/app/artifacts")}
+                            className={`p-2.5 rounded-xl border flex items-center justify-center transition-all active:scale-95 ${
+                                isDark 
+                                    ? "bg-white/5 border-white/10 text-neutral-400 hover:text-white" 
+                                    : "bg-neutral-50 border-neutral-200 text-neutral-600 hover:text-neutral-900 shadow-sm"
+                            }`}
+                            title="Torna agli Artefatti"
+                        >
+                            <CaretLeft size={16} weight="bold" />
+                        </button>
+                        <div className="flex items-center gap-3">
                         <div className="p-2 rounded-2xl bg-indigo-500/10 text-indigo-500">
                             <CardsIcon size={20} weight="duotone" />
                         </div>
@@ -199,6 +213,7 @@ const FlashcardPage = () => {
                             <h1 className="text-lg font-bold tracking-tight">Flashcard AI</h1>
                             <p className={`text-[10px] font-medium opacity-60 ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>Metodo di studio avanzato</p>
                         </div>
+                    </div>
                     </div>
                     {cards.length > 0 && (
                         <div className={`flex items-center gap-4 px-4 py-2 rounded-2xl border ${isDark ? "bg-white/5 border-white/5" : "bg-neutral-50 border-neutral-100"}`}>

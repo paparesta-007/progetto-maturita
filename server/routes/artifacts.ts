@@ -352,10 +352,23 @@ router.post("/quiz/explain", async function (req: express.Request, res: express.
         const { domanda, opzioni, rispostaCorretta, selectedOption, modelName } = req.body;
         const selectedModel = modelName || "mistralai/mistral-small-24b-instruct-2501";
 
-        const prompt = `Spiega brevemente perché la risposta corretta è "${rispostaCorretta}" per la domanda: "${domanda}". 
-        Opzioni: A: ${opzioni.A}, B: ${opzioni.B}, C: ${opzioni.C}, D: ${opzioni.D}.
-        L'utente ha risposto "${selectedOption}". 
-        Fornisci una spiegazione didattica, chiara e concisa in Markdown.`;
+        const prompt = `Fornisci una spiegazione strutturata per la seguente domanda del quiz:
+
+**Domanda**: "${domanda}"
+- **Opzione A**: "${opzioni.A}"
+- **Opzione B**: "${opzioni.B}"
+- **Opzione C**: "${opzioni.C}"
+- **Opzione D**: "${opzioni.D}"
+
+L'utente ha risposto: "${selectedOption}".
+La risposta corretta è: "${rispostaCorretta}".
+
+Organizza la risposta seguendo RIGIDAMENTE questo schema in Markdown (senza usare tabelle):
+### Risposta corretta 
+Spiega brevemente perché la risposta corretta è "${rispostaCorretta}" (corrispondente all'opzione corretta).
+
+### Perché le altre opzioni sono sbagliate
+Elenca le altre 3 opzioni errate e spiega per ciascuna, in modo chiaro e coinciso, il motivo per cui è sbagliata.`;
 
         const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
             method: "POST",
@@ -367,7 +380,7 @@ router.post("/quiz/explain", async function (req: express.Request, res: express.
             body: JSON.stringify({
                 model: selectedModel,
                 messages: [
-                    { role: "system", content: "Sei un tutor esperto. Fornisci spiegazioni chiare e coincise per i quiz." },
+                    { role: "system", content: "Sei un tutor esperto. Fornisci spiegazioni chiare e concise per i quiz. NON usare MAI tabelle (Markdown o HTML) nelle tue spiegazioni. Per organizzare i dati, elenchi o confronti, utilizza elenchi puntati o testo semplice." },
                     { role: "user", content: prompt }
                 ],
                 temperature: 0.5,
@@ -450,6 +463,7 @@ Regole FONDAMENTALI:
 5. Usa "schema": null SOLO se la richiesta è puramente una domanda generale che non richiede modifiche alla mappa concettuale. In TUTTI gli altri casi in cui l'utente chiede di "aggiungere", "espandere", "migliorare", "completare", DEVI aggiornare lo schema.
 6. MANTENERE GLI ID ESISTENTI per i nodi che non cambi. Per i nuovi nodi che crei, genera un nuovo ID alfanumerico casuale (es. "a1b2c3d4").
 7. Struttura esatta di un nodo: { "id": "...", "title": "...", "description": "...", "children": [ ...altri nodi... ] }
+8. Nel campo "message", NON usare MAI tabelle (Markdown o HTML) nelle tue risposte. Per organizzare i dati, elenchi o confronti, utilizza elenchi puntati, grassetti o testo semplice.
 
 Stato attuale dello schema (da usare come base per le tue modifiche):
 ${JSON.stringify(currentSchema, null, 2)}

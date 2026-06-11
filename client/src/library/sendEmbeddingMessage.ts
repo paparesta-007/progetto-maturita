@@ -19,6 +19,19 @@ export const sendEmbeddingMessage = async (
 
     // 1. Aggiornamento UI Immediato (Messaggio Utente)
     setMessageHistory((prev) => [...prev, { role: 'user', content: message }]);
+
+    if (!documentId) {
+        setMessageHistory((prev) => [
+            ...prev,
+            {
+                role: 'bot',
+                content: "⚠️ Errore: Nessun documento caricato o selezionato. Attendi il caricamento completo del documento prima di inviare un messaggio.",
+                model: model?.name || "RAG Assistant",
+                logs: []
+            }
+        ]);
+        return;
+    }
     
     // Creiamo subito il messaggio del bot con un ID per aggiornarlo via via
     const botMessageId = Date.now().toString() + Math.random().toString();
@@ -41,7 +54,7 @@ export const sendEmbeddingMessage = async (
 
         // 2. Chiamata al Backend in streaming (Endpoint RAG)
         console.log("modello del ask-pdf", model)
-        const response = await fetch("http://localhost:3000/api/docs/ask-pdf", {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/docs/ask-pdf`, {
             method: "POST",
             headers: { 
                 "Content-Type": "application/json",

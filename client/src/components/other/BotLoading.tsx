@@ -1,31 +1,14 @@
-import { useState, useEffect } from 'react';
+import React from 'react';
 
 const BotLoading = () => {
-  const [index, setIndex] = useState(0);
-  const messages = [
-    "Bot is typing...",
-    "Crafting ideas...",
-    "Thinking deeply...",
-    "Gathering data..."
-  ];
-
-  useEffect(() => {
-    // Cambia testo ogni 5000ms (5 secondi)
-    const interval = setInterval(() => {
-      setIndex((prevIndex) => (prevIndex + 1) % messages.length);
-    }, 4000);
-
-    return () => clearInterval(interval);
-  }, [messages.length]);
-
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-2 py-1">
       {/* Il pallino pulsante */}
-      <div className="w-2 h-2 opacity-0 rounded-full bg-neutral-500" />
+      <div className="w-2 h-2 rounded-full bg-orange-500 animate-pulse" />
       
       {/* Il testo pulsante */}
-      <span className="text-neutral-600 animate-pulse transition-opacity duration-500">
-        {messages[index]}
+      <span className="text-sm font-medium text-neutral-500 animate-pulse">
+        Elaborazione in corso...
       </span>
     </div>
   );

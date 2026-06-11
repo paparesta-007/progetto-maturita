@@ -37,7 +37,7 @@ const UserMessage = React.memo(({ i, htmlContent, tokens = 0 }: { i: number; htm
 
     // ─── Premium Style Tokens ───
     const s = {
-        wrapper: `relative group w-full flex flex-row-reverse gap-3.5 items-start justify-start my-2`,
+        wrapper: `relative group w-full flex flex-row-reverse gap-2 sm:gap-3.5 items-start justify-start my-2`,
 
         // Avatar
         avatar: `relative flex-shrink-0`,
@@ -49,7 +49,7 @@ const UserMessage = React.memo(({ i, htmlContent, tokens = 0 }: { i: number; htm
             }`,
 
         // Message Bubble
-        bubble: `relative max-w-full md:max-w-[85%] lg:max-w-[90%] rounded-2xl rounded-tr-sm p-4 text-sm leading-relaxed transition-all duration-300 ${isDark
+        bubble: `relative max-w-full md:max-w-[85%] lg:max-w-[90%] rounded-2xl rounded-tr-sm p-3 sm:p-4 text-sm leading-relaxed transition-all duration-300 ${isDark
                 ? "text-white/90 glass-soft ring-1 ring-white/5"
                 : "text-[#2c2825] bg-[#f0ebe4]"
             }`,

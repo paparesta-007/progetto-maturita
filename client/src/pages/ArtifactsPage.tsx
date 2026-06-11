@@ -266,7 +266,7 @@ const ArtifactsPage: React.FC = () => {
     return (
         <div className={`flex flex-col h-screen overflow-hidden transition-colors duration-300 ${isDark ? "bg-neutral-950" : "bg-white"}`}>
             {/* Header */}
-            <div className="px-8 pt-8 pb-2 shrink-0">
+            <div className="pl-16 pr-8 pt-8 pb-2 shrink-0 md:px-8">
                 <h1 className={`text-2xl font-semibold tracking-tight ${isDark ? "text-white" : "text-neutral-900"}`}>
                     Artefatti
                 </h1>

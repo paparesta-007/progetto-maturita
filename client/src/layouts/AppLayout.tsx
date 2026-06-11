@@ -74,18 +74,17 @@ const AppLayout = () => {
     <ChatProvider>
       <DocumentProvider>
         <div className={style.layoutContainer}>
-          {/* Mobile and Minimized Desktop Toggle */}
-          {((isMinimized && !isLivePreview) || !isMobileMenuOpen) && (
+          {/* Mobile Menu Toggle */}
+          {!isMobileMenuOpen && (
             <button
-              className={`fixed top-4 left-4 z-50 p-2 rounded-lg transition-all 
-                ${isMinimized ? 'hidden md:block' : 'block md:hidden'} 
-                ${isDark ? "bg-neutral-900 text-white hover:bg-neutral-800" : "bg-white text-neutral-900 hover:bg-neutral-100 shadow-md"}`}
-              onClick={() => {
-                if (window.innerWidth < 768) setIsMobileMenuOpen(true);
-                else setIsMinimized(false);
-              }}
+              className={`fixed top-4 left-4 z-40 p-2.5 rounded-2xl transition-all duration-300 flex items-center justify-center border hover:scale-105 active:scale-95 block md:hidden ${
+                isDark
+                  ? "bg-[#0d0e14]/80 border-white/10 text-neutral-400 hover:text-white backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.4)]"
+                  : "bg-white/80 border-neutral-200/80 text-neutral-600 hover:text-neutral-900 backdrop-blur-md shadow-[0_4px_20px_rgba(0,0,0,0.06)]"
+              }`}
+              onClick={() => setIsMobileMenuOpen(true)}
             >
-              <ListIcon size={24} />
+              <ListIcon size={20} />
             </button>
           )}
 

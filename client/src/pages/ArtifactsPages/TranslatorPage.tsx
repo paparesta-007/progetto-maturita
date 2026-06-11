@@ -1,7 +1,9 @@
 import React, { useState, useRef, useCallback, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { 
     Translate as TranslateIcon, 
+    CaretLeft,
     Copy, 
     Check, 
     Lightning, 
@@ -40,6 +42,7 @@ const LANGUAGES = [
 const TranslatorPage = () => {
     const { theme } = useAuth();
     const isDark = theme === 'dark';
+    const navigate = useNavigate();
 
     const [sourceLang, setSourceLang] = useState(LANGUAGES[0]);
     const [targetLang, setTargetLang] = useState(LANGUAGES[2]);
@@ -97,7 +100,7 @@ const TranslatorPage = () => {
 
             const fromLangStr = sourceLang.code === 'auto' ? "rilevando automaticamente la lingua di partenza" : `da ${sourceLang.name}`;
 
-            const response = await fetch("http://localhost:3000/api/artifacts/translate", {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/artifacts/translate`, {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json",
@@ -188,7 +191,7 @@ const TranslatorPage = () => {
             if (type === 'usecases') prompt = `Esempi d'uso per: "${selection.text}" sia in ${sourceLang.name} che in ${targetLang.name}.`;
             if (type === 'bestpractices') prompt = `Suggerimenti di traduzione e sfumature culturali per: "${selection.text}" tra ${sourceLang.name} e ${targetLang.name}.`;
 
-            const response = await fetch("http://localhost:3000/api/artifacts/translate", {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/artifacts/translate`, {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json",
@@ -237,7 +240,7 @@ const TranslatorPage = () => {
             const { data: { session } } = await supabase.auth.getSession();
             const token = session?.access_token;
 
-            const response = await fetch("http://localhost:3000/api/artifacts/translate", {
+            const response = await fetch(`${import.meta.env.VITE_API_URL}/artifacts/translate`, {
                 method: "POST",
                 headers: { 
                     "Content-Type": "application/json",
@@ -286,14 +289,27 @@ const TranslatorPage = () => {
         <div className={`h-full w-full flex flex-col overflow-hidden transition-colors duration-500 ${isDark ? "bg-[#07070a] text-[#f4f1ea]" : "bg-[#fdfcfb] text-neutral-900"}`}>
             {/* Header */}
             <header className={`px-8 py-4 border-b flex items-center justify-between relative z-[100] ${isDark ? "border-white/5 bg-[#07070a]" : "border-neutral-200 bg-[#fdfcfb]"}`}>
-                <div className="flex items-center gap-3">
-                    <div className={`p-2 rounded-2xl ${isDark ? "bg-[#e8e2d8]/10 text-[#e8e2d8]" : "bg-[#2c2825]/10 text-[#2c2825]"}`}>
+                <div className="flex items-center gap-4">
+                    <button 
+                        onClick={() => navigate("/app/artifacts")}
+                        className={`p-2.5 rounded-xl border flex items-center justify-center transition-all active:scale-95 ${
+                            isDark 
+                                ? "bg-white/5 border-white/10 text-neutral-400 hover:text-white" 
+                                : "bg-neutral-50 border-neutral-200 text-neutral-600 hover:text-neutral-900 shadow-sm"
+                        }`}
+                        title="Torna agli Artefatti"
+                    >
+                        <CaretLeft size={16} weight="bold" />
+                    </button>
+                    <div className="flex items-center gap-3">
+                        <div className={`p-2 rounded-2xl ${isDark ? "bg-[#e8e2d8]/10 text-[#e8e2d8]" : "bg-[#2c2825]/10 text-[#2c2825]"}`}>
                         <TranslateIcon size={20} weight="duotone" />
                     </div>
                     <div>
                         <h1 className="text-lg font-bold tracking-tight">Traduttore Contestuale</h1>
                         <p className={`text-[10px] font-medium opacity-60 ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>Traduzione avanzata con analisi del contesto</p>
                     </div>
+                </div>
                 </div>
                 
                 <button 

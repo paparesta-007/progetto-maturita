@@ -27,7 +27,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = `//unpkg.com/pdfjs-dist@${pdfjs.version}/b
 // Stili costanti - evita ricreazione ad ogni render
 const getStyles = (isDark: boolean) => ({
     wrapper: `flex flex-col h-screen overflow-hidden relative transition-colors duration-300 ${isDark ? "bg-neutral-950" : "bg-white"}`,
-    headerText: `text-md px-4 pt-4 font-medium mb-2 ${isDark ? "text-neutral-300" : "text-neutral-700"}`,
+    headerText: `text-md pl-16 pr-4 md:px-4 pt-4 font-medium mb-2 ${isDark ? "text-neutral-300" : "text-neutral-700"}`,
     main: `flex-1 overflow-y-auto p-4 custom-scrollbar relative`,
     footer: `flex-shrink-0 w-full pt-0 px-4 pb-4 transition-colors duration-300 ${isDark ? "bg-neutral-950" : "bg-white"}`,
     disclaimer: `text-center text-[10px] mt-2 ${isDark ? "text-neutral-600" : "text-neutral-600"}`,
@@ -78,18 +78,16 @@ const DocumentPage = () => {
 
     const [showWizard, setShowWizard] = useState(false);
 
-    // Scroll to bottom con debouncing
+    // Scroll to bottom using requestAnimationFrame (smooth follow scroll)
     const scrollToBottom = useCallback((force = false) => {
         if (force) {
             isUserScrolledUp.current = false;
         }
-        if (scrollTimeoutRef.current) clearTimeout(scrollTimeoutRef.current);
-        
-        scrollTimeoutRef.current = setTimeout(() => {
-            if (messagesEndRef.current && !isUserScrolledUp.current) {
-                messagesEndRef.current.scrollIntoView({ behavior: force ? "auto" : "smooth" });
-            }
-        }, 0);
+        if (messagesEndRef.current && !isUserScrolledUp.current) {
+            requestAnimationFrame(() => {
+                messagesEndRef.current?.scrollIntoView({ behavior: force ? "auto" : "smooth" });
+            });
+        }
     }, []);
 
     const handleScroll = useCallback(() => {
@@ -154,6 +152,7 @@ const DocumentPage = () => {
             
             // Puliamo la chat essendoci spostati su un nuovo documento
             setMessageHistory([]);
+            setCurrentPage(1); // Reset page number to 1 for the newly opened document
             fetchDocument(documentId, isActive);
         }
 
@@ -164,6 +163,7 @@ const DocumentPage = () => {
 
     // Fetch per preview PDF
     useEffect(() => {
+        let active = true;
         const checkPdfPreview = async () => {
             if (!documentId || !user?.id) return;
             setPreviewLoading(true);
@@ -176,10 +176,12 @@ const DocumentPage = () => {
                 ];
 
                 for (const storagePath of candidatePaths) {
+                    if (!active) return;
                     const { data: signedData, error } = await supabase.storage
                         .from('pdfs')
                         .createSignedUrl(storagePath, 60 * 15);
 
+                    if (!active) return;
                     if (!error && signedData?.signedUrl) {
                         setPdfPreviewUrl(signedData.signedUrl);
                         return;
@@ -190,18 +192,26 @@ const DocumentPage = () => {
                     }
                 }
 
+                if (!active) return;
                 console.warn(
                     "PDF preview not found in storage. Expected one of:",
                     candidatePaths,
                     "If this is an old document, re-upload the PDF or migrate storage objects to userId/documentId.pdf"
                 );
             } catch (err) {
-                console.error("Error loading PDF preview:", err);
+                if (active) {
+                    console.error("Error loading PDF preview:", err);
+                }
             } finally {
-                setPreviewLoading(false);
+                if (active) {
+                    setPreviewLoading(false);
+                }
             }
         };
         checkPdfPreview();
+        return () => {
+            active = false;
+        };
     }, [documentId, user?.id]);
 
     // useEffect per lo scroll
@@ -288,11 +298,10 @@ const DocumentPage = () => {
                                     setMessageHistory([]);
                                 }
                             }}
-                            className={`px-3 py-1.5 text-xs rounded-md flex items-center gap-2 transition-colors ${isDark ? "bg-red-900/20 hover:bg-red-900/40 text-red-400 border border-red-500/20" : "bg-red-50 hover:bg-red-100 text-red-600 border border-red-200"}`}
+                            className={`p-2.5 rounded-xl border flex items-center justify-center transition-all active:scale-95 ${isDark ? "bg-red-900/20 hover:bg-red-900/40 text-red-400 border-red-500/20" : "bg-red-50 hover:bg-red-100 text-red-600 border-red-200 shadow-sm"}`}
                             title="Pulisci cronologia"
                         >
-                            <RotateCcw size={14} />
-                            Pulisci Chat
+                            <RotateCcw size={15} />
                         </button>
                     )}
                     {currentDocument && (
@@ -370,7 +379,6 @@ const DocumentPage = () => {
                                                 );
                                             }
                                         })}
-                                        {loading && <BotLoading />}
                                         <div ref={messagesEndRef} />
                                     </div>
                                 </div>
