@@ -164,39 +164,37 @@ const FriendlyBotLogs = ({ logs, isDark, isComplete }: { logs: string[], isDark:
     const messages = Array.from(new Set(logs.map(getFriendlyMessage).filter(Boolean)));
     if (messages.length === 0) return null;
 
-    // Mostriamo solo l'ultimo o gli ultimi due per non ingombrare
-    const displayedMessages = messages.slice(-2);
+    // Mostriamo solo l'ultimo messaggio per evidenziare la fase corrente, o "Processo completato!" se completato
+    const latestMsg = isComplete ? "Processo completato!" : (messages[messages.length - 1] || "Elaborazione in corso...");
+    const isSuccess = isComplete || latestMsg.includes("completato") || latestMsg.includes("successo");
 
     return (
-        <div className="flex flex-col gap-2 mb-3 px-1">
-            {displayedMessages.map((msg, idx) => {
-                const isLast = idx === displayedMessages.length - 1;
-                const isSuccess = msg.includes("completato") || msg.includes("successo");
-                
-                return (
-                    <motion.div
-                        key={idx}
-                        initial={{ opacity: 0, x: -10 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        className={`flex items-center gap-2.5 text-xs font-medium py-1.5 px-3 rounded-xl transition-all
-                            ${isSuccess 
-                                ? (isDark ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-emerald-50 text-emerald-600 border border-emerald-100')
-                                : (isDark ? 'text-white/60 bg-white/5 border border-white/5' : 'text-neutral-500 bg-neutral-50 border border-neutral-100')
-                            } ${!isLast ? 'opacity-50 scale-95' : 'shadow-sm'}`}
-                    >
-                        {isSuccess ? (
-                            <CheckIcon size={14} weight="bold" />
-                        ) : (
-                            <div className="flex gap-0.5">
-                                <span className="w-1 h-1 rounded-full bg-current animate-bounce [animation-delay:-0.3s]" />
-                                <span className="w-1 h-1 rounded-full bg-current animate-bounce [animation-delay:-0.15s]" />
-                                <span className="w-1 h-1 rounded-full bg-current animate-bounce" />
-                            </div>
-                        )}
-                        <span>{msg}</span>
-                    </motion.div>
-                );
-            })}
+        <div className="mb-3 px-1 overflow-hidden">
+            <AnimatePresence mode="wait">
+                <motion.div
+                    key={latestMsg}
+                    initial={{ opacity: 0, y: 15 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -15 }}
+                    transition={{ duration: 0.25, ease: "easeInOut" }}
+                    className={`flex items-center gap-2.5 text-xs font-medium py-2 px-4 rounded-full border transition-all shadow-sm
+                        ${isSuccess 
+                            ? (isDark ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-[0_0_15px_rgba(16,185,129,0.05)]' : 'bg-emerald-50 text-emerald-600 border-emerald-100 shadow-[0_2px_8px_rgba(16,185,129,0.05)]')
+                            : (isDark ? 'text-white/60 bg-white/5 border-white/5' : 'text-neutral-500 bg-neutral-50 border-neutral-100')
+                        }`}
+                >
+                    {isSuccess ? (
+                        <CheckIcon size={14} weight="bold" />
+                    ) : (
+                        <div className="flex gap-1 mr-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-delay:-0.3s]" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce [animation-delay:-0.15s]" />
+                            <span className="w-1.5 h-1.5 rounded-full bg-current animate-bounce" />
+                        </div>
+                    )}
+                    <span>{latestMsg}</span>
+                </motion.div>
+            </AnimatePresence>
         </div>
     );
 };
@@ -343,7 +341,7 @@ const BotMessage = React.memo(({
             }`,
 
         // Message Bubble
-        bubble: `relative rounded-2xl rounded-tl-sm p-5 flex-1 renderChat transition-all duration-300 max-w-full md:max-w-[85%] lg:max-w-[90%] ${isDark
+        bubble: `relative rounded-2xl rounded-tl-sm p-3 sm:p-5 flex-1 renderChat transition-all duration-300 max-w-full md:max-w-[85%] lg:max-w-[90%] ${isDark
             ? "text-white/90 glass ring-1 ring-white/10"
             : "text-neutral-700"
             } 
@@ -394,7 +392,7 @@ const BotMessage = React.memo(({
                 transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1], delay: 0.05 }}
                 className={s.wrapper}
             >
-                <div className="px-4 py-3 flex flex-row gap-3.5 items-start justify-start">
+                <div className="px-2 sm:px-4 py-3 flex flex-row gap-2 sm:gap-3.5 items-start justify-start">
 
                     {/* ─── AI Avatar ─── */}
                     <div className={s.avatar}>
@@ -413,10 +411,7 @@ const BotMessage = React.memo(({
                                 <ReasoningTimeline reasoning={reasoning} isDark={isDark} isStreaming={!isComplete} />
                             )}
                             {logs && logs.length > 0 && (
-                                <>
-                                    <FriendlyBotLogs logs={logs} isDark={isDark} isComplete={isComplete} />
-                                    <BotLogsTimeline logs={logs} isDark={isDark} isComplete={isComplete} />
-                                </>
+                                <FriendlyBotLogs logs={logs} isDark={isDark} isComplete={isComplete} />
                             )}
 
                             {children}
@@ -473,6 +468,9 @@ const BotMessage = React.memo(({
                                                 </button>
                                             ))}
                                         </div>
+                                        <p className={`text-[10px] mt-2.5 leading-normal opacity-50 italic ${isDark ? 'text-neutral-500' : 'text-neutral-400'}`}>
+                                            * Queste fonti possono contenere informazioni non incluse nella generazione della risposta.
+                                        </p>
                                     </div>
                                 );
                             })()}

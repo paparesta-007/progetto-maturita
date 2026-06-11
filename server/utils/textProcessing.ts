@@ -91,15 +91,12 @@ export function splitTextIntoChunks(
 
     function getPageAt(pos: number): number {
         if (pageMarkers.length === 0) return 1;
-        let currentPage = 1;
         for (const marker of pageMarkers) {
-            if (pos >= marker.pos) {
-                currentPage = marker.page;
-            } else {
-                break;
+            if (pos < marker.pos) {
+                return marker.page;
             }
         }
-        return currentPage;
+        return pageMarkers[pageMarkers.length - 1].page;
     }
 
     // 3️⃣ Livello 1: splitta per paragrafi (doppio newline)
@@ -131,17 +128,10 @@ export function splitTextIntoChunks(
         const finalContent = content.replace(/\[\[PAGE_BREAK:\d+\]\]/g, '').trim();
         
         if (finalContent.length >= minChunkSize) {
-            // Determiniamo la pagina: se i marker sono alla FINE della pagina,
-            // allora il testo alla posizione 'startChar' appartiene alla pagina 'marker.page + 1'
-            // del marker più recente che lo precede.
-            let page = 1;
-            for (const marker of pageMarkers) {
-                if (startChar >= marker.pos) {
-                    page = marker.page + 1;
-                } else {
-                    break;
-                }
-            }
+            // Determiniamo la pagina basandoci sulla posizione centrale del chunk
+            // per evitare offset causati da chunk che iniziano o finiscono a cavallo di un cambio pagina.
+            const middleChar = Math.floor((startChar + endChar) / 2);
+            const page = getPageAt(middleChar);
 
             chunks.push({
                 content: finalContent,

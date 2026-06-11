@@ -134,7 +134,7 @@ const CalendarRow = React.memo(({ hour, weekDays, isDark, groupedEvents, onClick
 }) => {
     return (
         <div className="contents">
-            <div className={`text-right pr-3 text-[10px] font-mono border-r h-12 flex items-center justify-end ${isDark ? "text-neutral-600 border-white/[0.04]" : "text-neutral-400 border-neutral-100"}`}>
+            <div className={`sticky left-0 z-20 text-right pr-3 text-[10px] font-mono border-r h-12 flex items-center justify-end ${isDark ? "bg-[#07070a] text-neutral-600 border-white/[0.04]" : "bg-white text-neutral-400 border-neutral-100"}`}>
                 {`${hour.toString().padStart(2, '0')}:00`}
             </div>
             {weekDays.map((day, i) => {
@@ -216,7 +216,7 @@ const CalendarPage = () => {
     const { setIsLivePreview } = useApp();
     const [error, setError] = useState("");
     const isDark = theme === 'dark';
-    const { isFloatingChat, setIsFloatingChat, events, fetchEvents, currentWeekStart, setCurrentWeekStart, chatPosition } = useCalendar();
+    const { isFloatingChat, setIsFloatingChat, events, fetchEvents, currentWeekStart, setCurrentWeekStart, chatPosition, sidebarWidth } = useCalendar();
 
     const isSidebarOpen = isFloatingChat && chatPosition === 'sidebar-right';
 
@@ -289,7 +289,10 @@ const CalendarPage = () => {
     }
 
     return (
-        <div className={`h-full flex flex-col overflow-hidden relative transition-colors duration-500 ${isDark ? "bg-[#07070a] text-[#f4f1ea] noise" : "bg-white text-neutral-900"} ${isSidebarOpen ? 'pr-[380px]' : ''}`}>
+        <div 
+            className={`h-full flex flex-col overflow-hidden relative transition-colors duration-500 ${isDark ? "bg-[#07070a] text-[#f4f1ea] noise" : "bg-white text-neutral-900"} ${isSidebarOpen ? 'md:pr-[var(--sidebar-padding)]' : ''}`}
+            style={isSidebarOpen ? { '--sidebar-padding': `${sidebarWidth}px` } as React.CSSProperties : {}}
+        >
             <CalendarStyles isDark={isDark} />
 
             {isDark && (
@@ -301,7 +304,7 @@ const CalendarPage = () => {
             )}
 
             {/* Header - Glass Effect */}
-            <div className={`p-6 flex items-center justify-between border-b z-20 ${isDark ? "bg-white/[0.02] backdrop-blur-md border-white/[0.08]" : "bg-white border-neutral-200"}`}>
+            <div className={`p-6 pl-16 md:pl-6 flex flex-col sm:flex-row gap-4 sm:items-center justify-between border-b z-20 ${isDark ? "bg-white/[0.02] backdrop-blur-md border-white/[0.08]" : "bg-white border-neutral-200"}`}>
                 <div className="flex flex-col">
                     <h1 className="text-2xl font-black tracking-tighter uppercase italic">
                         {currentWeekStart.toLocaleDateString("it-IT", { month: 'long', year: 'numeric' })}
@@ -334,7 +337,7 @@ const CalendarPage = () => {
                 <div className={`min-w-[1000px] grid grid-cols-[80px_repeat(7,1fr)] border-b ${borderColor}`}>
 
                     {/* Header Giorni */}
-                    <div className={`sticky top-0 z-30 border-r ${isDark ? "bg-[#07070a] border-white/[0.08]" : "bg-white border-neutral-200"}`}></div>
+                    <div className={`sticky top-0 left-0 z-40 border-r ${isDark ? "bg-[#07070a] border-white/[0.08]" : "bg-white border-neutral-200"}`}></div>
                     {weekDays.map((day, i) => (
                         <div key={i} className={`sticky top-0 z-30 p-4 text-center border-r transition-colors ${isDark ? "bg-[#07070a]/80 backdrop-blur-xl border-white/[0.08]" : "bg-white border-neutral-200"} ${day.toDateString() === new Date().toDateString() ? "text-orange-500" : ""}`}>
                             <div className={`text-[9px] font-mono uppercase tracking-[0.3em] mb-1 ${isDark ? "text-neutral-500" : "text-neutral-400"}`}>

@@ -204,8 +204,16 @@ const FloatingChat = () => {
                 initial={chatPosition === 'sidebar-right' ? { opacity: 0, x: 200 } : { opacity: 0, y: 20 }}
                 animate={isExiting ? (chatPosition === 'sidebar-right' ? { opacity: 0, x: 200 } : { opacity: 0, y: 20 }) : (chatPosition === 'sidebar-right' ? { opacity: 1, x: 0 } : { opacity: 1, y: 0 })}
                 transition={{ duration: 0.18, ease: "linear" }}
-                style={chatPosition === 'sidebar-right' ? { width: `${sidebarWidth}px` } : { width: '380px', height: '520px' }}
-                className={`${styles.container} ${chatPosition === 'sidebar-right' ? 'fixed top-0 right-0 h-full rounded-l-2xl' : 'fixed bottom-6 right-6 rounded-[1.5rem]'}`}
+                style={
+                    chatPosition === 'sidebar-right'
+                        ? { '--sidebar-width': `${sidebarWidth}px` } as React.CSSProperties
+                        : {}
+                }
+                className={`${styles.container} ${
+                    chatPosition === 'sidebar-right' 
+                        ? 'fixed top-0 right-0 h-full w-full md:w-[var(--sidebar-width)] rounded-none md:rounded-l-2xl' 
+                        : 'fixed bottom-4 right-4 md:bottom-6 md:right-6 rounded-[1.5rem] w-[calc(100vw-2rem)] md:w-[380px] h-[calc(100vh-6rem)] md:h-[520px] max-h-[520px]'
+                }`}
             >
                 {/* Resize handle */}
                 {chatPosition === 'sidebar-right' && (

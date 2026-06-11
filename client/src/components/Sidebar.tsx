@@ -16,6 +16,7 @@ import {
     ChevronUp,
     Search,
     Sparkles,
+    XSquareIcon,
 } from 'lucide-react';
 import { ClockCounterClockwiseIcon, DotsThreeIcon, PencilLineIcon, ShareNetworkIcon, SidebarSimpleIcon, SquaresFourIcon, TrashIcon, X as XIcon } from "@phosphor-icons/react";
 import supabase from "../library/supabaseclient";
@@ -196,7 +197,7 @@ const Sidebar = ({
         <>
             <SidebarStyles isDark={isDark} />
 
-            <nav className={`sidebar-cozy h-screen flex flex-col transition-all duration-500 ease-in-out relative ${isMinimized ? 'w-[72px]' : 'w-[280px]'} ${isMobileOpen ? 'fixed inset-y-0 left-0 z-50' : 'hidden md:flex'}`}>
+            <nav className={`sidebar-cozy h-screen flex flex-col transition-all duration-500 ease-in-out relative ${isMobileOpen ? 'w-full' : (isMinimized ? 'w-[72px]' : 'w-[280px]')} ${isMobileOpen ? 'fixed inset-y-0 left-0 z-50' : 'hidden md:flex'}`}>
                 
                 {/* Header */}
                 <div className="p-6 flex items-center justify-between">
@@ -208,15 +209,21 @@ const Sidebar = ({
                             <span className="font-semibold sidebar-text-primary tracking-tight">Smart AI</span>
                         </div>
                     )}
-                    <button onClick={() => setIsMinimized(!isMinimized)} className={`p-1.5 rounded-lg hover:bg-[#f5f3f0] ${isDark ? 'hover:bg-white/5' : ''} text-[#a3a3a3] transition-colors ${isMinimized ? 'mx-auto' : ''}`}>
-                        <SidebarSimpleIcon size={20} />
-                    </button>
+                    {isMobileOpen ? (
+                        <button onClick={() => setIsMobileOpen?.(false)} className={`p-1.5 rounded-lg hover:bg-[#f5f3f0] ${isDark ? 'hover:bg-white/5' : ''} text-[#a3a3a3] transition-colors`}>
+                            <XSquareIcon size={20} />
+                        </button>
+                    ) : (
+                        <button onClick={() => setIsMinimized(!isMinimized)} className={`p-1.5 rounded-lg hover:bg-[#f5f3f0] ${isDark ? 'hover:bg-white/5' : ''} text-[#a3a3a3] transition-colors ${isMinimized ? 'mx-auto' : ''}`}>
+                            <SidebarSimpleIcon size={20} />
+                        </button>
+                    )}
                 </div>
 
                 {/* Main Action */}
                 <div className="px-4 mb-8">
                     <button 
-                        onClick={() => { setMessageHistory([]); setCurrentConversationId(null); navigate('/app/chat/'); }}
+                        onClick={() => { setMessageHistory([]); setCurrentConversationId(null); navigate('/app/chat/'); setIsMobileOpen?.(false); }}
                         className={`w-full flex items-center gap-3 p-3 rounded-xl action-button ${isMinimized ? 'justify-center' : ''}`}
                     >
                         <Plus size={18} />
@@ -231,6 +238,7 @@ const Sidebar = ({
                         <NavLink 
                             key={item.path} 
                             to={item.path} 
+                            onClick={() => setIsMobileOpen?.(false)}
                             className={({ isActive }) => `flex items-center gap-3 px-3 py-2.5 rounded-xl nav-item-cozy ${isActive ? 'active' : ''} ${isMinimized ? 'justify-center' : ''}`}
                         >
                             {React.cloneElement(item.icon as React.ReactElement, { className: 'flex-shrink-0' })}
@@ -270,7 +278,7 @@ const Sidebar = ({
                                             </div>
                                         ) : (
                                             <>
-                                                <NavLink to={`/app/documents/${doc.document_id}`} className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm nav-item-cozy truncate group-hover:pr-10">
+                                                <NavLink to={`/app/documents/${doc.document_id}`} onClick={() => setIsMobileOpen?.(false)} className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm nav-item-cozy truncate group-hover:pr-10">
                                                     <File size={16} className="flex-shrink-0 opacity-40" />
                                                     {!isMinimized && <span className="truncate">{doc.title}</span>}
                                                 </NavLink>
@@ -351,7 +359,7 @@ const Sidebar = ({
                                             </div>
                                         ) : (
                                             <>
-                                                <NavLink to={`/app/chat/${conv.id}`} className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm nav-item-cozy truncate group-hover:pr-10">
+                                                <NavLink to={`/app/chat/${conv.id}`} onClick={() => setIsMobileOpen?.(false)} className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm nav-item-cozy truncate group-hover:pr-10">
                                                     <ClockCounterClockwiseIcon size={16} className="flex-shrink-0 opacity-40" />
                                                     {!isMinimized && <span className="truncate">{conv.title || "Untitled Chat"}</span>}
                                                 </NavLink>

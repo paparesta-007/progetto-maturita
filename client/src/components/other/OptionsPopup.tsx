@@ -98,17 +98,14 @@ const OptionsPopup: React.FC = () => {
             <button
                 type="button"
                 onClick={() => setIsOpen((p) => !p)}
-                className={`flex items-center gap-1 px-2 py-1 rounded-lg text-sm transition-colors select-none ${
+                className={`p-2 rounded-xl transition-all active:scale-95 flex items-center ${
                     isDark
-                        ? "text-neutral-400 hover:bg-neutral-800 hover:text-neutral-200"
-                        : "text-neutral-500 hover:bg-neutral-100 hover:text-neutral-800"
+                        ? "text-white/40 hover:text-white"
+                        : "text-neutral-500 hover:text-neutral-800"
                 }`}
+                title="Options"
             >
-                <SlidersHorizontalIcon size={15} />
-                <span>Options</span>
-                <motion.span animate={{ rotate: isOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                    <CaretDownIcon size={12} />
-                </motion.span>
+                <SlidersHorizontalIcon size={20} weight="bold" />
             </button>
 
             {/* Popup */}

@@ -4,10 +4,10 @@ const getCurrentDocument = async (userId: string,documentId: string) => {
    try {
         const { data, error } = await supabase
             .from('documents')
-            .select('*') // Seleziona tutte le colonne (content, metadata, embedding, ecc.)
+            .select('document_id, metadata')
             .eq('user_id', userId)      // Filtro di sicurezza per l'utente
             .eq('document_id', documentId) // Filtro sulla nuova colonna top-level
-            .order('id', { ascending: true }); // Mantiene l'ordine di inserimento dei chunk
+            .limit(1);
 
         if (error) {
             throw error;

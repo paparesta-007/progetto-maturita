@@ -149,7 +149,7 @@ router.post("/api/calendar/action", requireAuth, async (req: express.Request, re
         };
 
         const rawMessages: any[] = [
-            { role: "system", content: "Sei un Agente Calendar.\nREGOLE: 1. Chiama i tool per ogni azione. 2. Forza titolo e descrizione per ogni evento." },
+            { role: "system", content: "Sei un Agente Calendar.\nREGOLE: 1. Chiama i tool per ogni azione. 2. Forza titolo e descrizione per ogni evento. 3. NON usare MAI tabelle (Markdown o HTML) nelle tue risposte. Per organizzare o visualizzare liste di impegni, confronti o eventi, utilizza elenchi puntati o testo semplice." },
             { role: "system", content: getCurrentDateInfo() },
             ...history,
             { role: "user", content: text }

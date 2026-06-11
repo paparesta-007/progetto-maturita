@@ -243,7 +243,7 @@ const ChatContent = () => {
     // Stili CSS-in-JS (Tailwind)
     const styles = {
         wrapper: `flex flex-col h-screen w-full overflow-hidden relative transition-all duration-500 ${isDark ? "bg-[#07070a] text-[#f4f1ea] font-['Manrope']" : "bg-[#faf9f6]"}`,
-        headerText: `flex justify-between items-center w-full text-sm px-6 pt-4 font-semibold mb-2 transition-colors z-20 ${isDark ? "text-white/90" : "text-neutral-700"}`,
+        headerText: `flex justify-between items-center w-full text-sm pl-16 pr-6 md:px-6 pt-4 font-semibold mb-2 transition-colors z-20 ${isDark ? "text-white/90" : "text-neutral-700"}`,
         main: `flex-1 flex overflow-hidden relative w-full min-w-0 z-10`,
         footer: `flex-shrink-0 w-full pt-0 pb-6 transition-colors duration-300 z-20 ${isDark ? "bg-transparent" : "bg-[#faf9f6]"}`,
         disclaimer: `text-center text-[10px] mt-3 opacity-40 ${isDark ? "text-white" : "text-neutral-500"}`

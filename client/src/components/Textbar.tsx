@@ -52,6 +52,11 @@ const Textbar = () => {
             break;
     }
 
+    const isDocPage = path.includes('/app/document');
+    const docIdFromPath = isDocPage ? path.split('/').pop() : null;
+    const isDocLoading = !!(isDocPage && docIdFromPath && docIdFromPath !== 'documents' && 
+        (!docCtx.currentDocument || (docCtx.currentDocument[0]?.document_id !== docIdFromPath && docCtx.currentDocument?.document_id !== docIdFromPath)));
+
     // --- STATI LOCALI ---
     const [files, setFiles] = useState<FileWithPreview[]>([]);
     const [isGroundingActive, setIsGroundingActive] = useState(false);
@@ -217,15 +222,17 @@ const Textbar = () => {
                 <textarea
                     ref={textareaRef}
                     rows={1}
-                    placeholder={isChatPage ? `Chat with ${model?.name || "AI"}` : "Ask your document..."} // Placeholder dinamico
+                    placeholder={isChatPage ? `Chat with ${model?.name || "AI"}` : (isDocLoading ? "Caricamento documento..." : "Ask your document...")} // Placeholder dinamico
                     onChange={handleInput}
+                    disabled={isDocLoading || loading}
                     value={inputValue}
                     onKeyDown={handleKeyPress}
-                    className={styles.input}
+                    className={`${styles.input} ${(isDocLoading || loading) ? "opacity-50 cursor-not-allowed" : ""}`}
                 />
 
                 <button
-                    className={styles.sendBtn}
+                    className={`${styles.sendBtn} ${(isDocLoading || (!loading && !inputValue.trim())) ? "opacity-50 cursor-not-allowed" : ""}`}
+                    disabled={isDocLoading || (!loading && !inputValue.trim())}
                     onClick={() => { 
                         if (loading) {
                             if (isChatPage && chatCtx.abortRequest) {
@@ -245,7 +252,11 @@ const Textbar = () => {
             {/* STRUMENTI INFERIORI */}
             <div className="flex items-center justify-between px-2 pb-1">
                 <div className="flex items-center gap-3">
-                    <button className={styles.iconBtn} onClick={() => document.getElementById("file-upload")?.click()}>
+                    <button 
+                        className={`${styles.iconBtn} ${isDocLoading ? "opacity-30 cursor-not-allowed" : ""}`} 
+                        disabled={isDocLoading}
+                        onClick={() => document.getElementById("file-upload")?.click()}
+                    >
                         <Paperclip size={22} weight="bold" />
                     </button>
                     <input type="file" id="file-upload" className="hidden" onChange={handleFileChange} ref={fileInputRef} multiple />
@@ -255,7 +266,7 @@ const Textbar = () => {
                     {isChatPage && (
                         <button 
                             onClick={handleSearchClick}
-                            className={`p-2 rounded-xl transition-all active:scale-95 flex items-center gap-1.5 ${
+                            className={`p-2 rounded-xl transition-all active:scale-95 flex items-center ${
                                 functionality === "web_search"
                                     ? (isDark ? "bg-orange-500/20 text-orange-400 border border-orange-500/30" : "bg-orange-100 text-orange-600 border border-orange-200")
                                     : (isDark ? "text-white/40 hover:text-white" : "text-neutral-500 hover:text-neutral-800")
@@ -263,7 +274,6 @@ const Textbar = () => {
                             title="Search documentation or internet"
                         >
                             <GlobeIcon size={20} weight={functionality === "web_search" ? "fill" : "bold"} />
-                            <span className="text-xs font-bold uppercase tracking-wider">Search</span>
                         </button>
                     )}
 

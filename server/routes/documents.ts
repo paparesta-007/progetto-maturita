@@ -195,7 +195,7 @@ router.post("/ask-pdf", requireAuth, async (req: express.Request, res: express.R
         const { data: chunks, error } = await supabase
             .rpc('match_documents', {
                 query_embedding: embedding,
-                match_threshold: 0.5,
+                match_threshold: 0.55,
                 match_count: 8,
                 filter_user_id: user_id,
                 selected_id: document_id

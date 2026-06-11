@@ -1,4 +1,5 @@
 import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { LightningIcon, PaperPlaneRight, Sparkle, Info, Books, Flask, X, Minus } from "@phosphor-icons/react";
 import type { SelectOption } from "../../components/other/SelectPopup";
@@ -86,6 +87,7 @@ const QuizTextbar = ({
 const QuizPage = () => {
     const { theme } = useAuth();
     const isDark = theme === 'dark';
+    const navigate = useNavigate();
 
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -171,6 +173,18 @@ const QuizPage = () => {
 
     return (
         <div className={`flex flex-col h-screen w-full overflow-hidden relative transition-all duration-500 ${isDark ? "bg-[#07070a] text-[#f4f1ea]" : "bg-white text-neutral-900"}`}>
+            {/* Back Button */}
+            <button
+                onClick={() => navigate("/app/artifacts")}
+                className={`absolute top-6 left-6 z-30 p-2.5 rounded-xl border flex items-center justify-center transition-all active:scale-95 ${
+                    isDark 
+                        ? "bg-[#0d0d12]/80 border-white/10 text-neutral-400 hover:text-white backdrop-blur-md" 
+                        : "bg-white/80 border-neutral-200 text-neutral-600 hover:text-neutral-900 backdrop-blur-md shadow-sm"
+                }`}
+                title="Torna agli Artefatti"
+            >
+                <ChevronLeft size={18} />
+            </button>
             {/* Background Decorations */}
             {isDark && (
                 <>

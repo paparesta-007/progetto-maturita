@@ -19,6 +19,19 @@ export const sendEmbeddingMessage = async (
 
     // 1. Aggiornamento UI Immediato (Messaggio Utente)
     setMessageHistory((prev) => [...prev, { role: 'user', content: message }]);
+
+    if (!documentId) {
+        setMessageHistory((prev) => [
+            ...prev,
+            {
+                role: 'bot',
+                content: "⚠️ Errore: Nessun documento caricato o selezionato. Attendi il caricamento completo del documento prima di inviare un messaggio.",
+                model: model?.name || "RAG Assistant",
+                logs: []
+            }
+        ]);
+        return;
+    }
     
     // Creiamo subito il messaggio del bot con un ID per aggiornarlo via via
     const botMessageId = Date.now().toString() + Math.random().toString();
