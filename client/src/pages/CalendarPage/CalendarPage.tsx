@@ -394,7 +394,7 @@ const CalendarPage = () => {
                             exit={{ opacity: 0, y: 10 }}
                             transition={{ duration: 0.15, ease: "linear" }}
                             className={`relative w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden border
-                                ${isDark ? "bg-[#0f0f12] border-white/10 text-white" : "bg-white border-neutral-200 text-neutral-900"}`}
+                                ${isDark ? "bg-[#131215] border-[#d6cfc4]/20 text-[#f4f1ea]" : "bg-[#faf8f5] border-[#d6cfc4] text-[#2c2825]"}`}
                             onClick={(e) => e.stopPropagation()}
                         >
                             {/* Header Modale */}
@@ -416,10 +416,10 @@ const CalendarPage = () => {
                             {/* Corpo Modale */}
                             <div className="px-6 py-4 space-y-6">
                                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <div className={`p-4 rounded-xl border ${isDark ? "bg-white/[0.02] border-white/5" : "bg-neutral-50 border-neutral-100"}`}>
+                                    <div className={`p-4 rounded-xl border ${isDark ? "bg-[#d6cfc4]/[0.03] border-[#d6cfc4]/15" : "bg-[#f5f2eb] border-[#e2ddd5]"}`}>
                                         <div className="text-[9px] font-bold uppercase tracking-wider opacity-30 mb-2">Schedule</div>
                                         <div className="text-xs font-semibold mb-1">{new Date(selectedEvent.start.dateTime || selectedEvent.start.date).toLocaleDateString("it-IT", { dateStyle: 'medium' })}</div>
-                                        <div className="text-lg font-bold text-orange-500">
+                                        <div className={`text-lg font-bold ${isDark ? "text-[#d6cfc4]" : "text-[#7c7267]"}`}>
                                             {new Date(selectedEvent.start.dateTime || selectedEvent.start.date).toLocaleTimeString("it-IT", { hour: '2-digit', minute: '2-digit' })}
                                             <span className="opacity-20 mx-1">—</span>
                                             {new Date(selectedEvent.end.dateTime || selectedEvent.end.date).toLocaleTimeString("it-IT", { hour: '2-digit', minute: '2-digit' })}
@@ -428,12 +428,12 @@ const CalendarPage = () => {
 
                                     <div className="space-y-3">
                                         {selectedEvent.location && (
-                                            <div className={`p-3 rounded-xl border ${isDark ? "bg-white/[0.01] border-white/5" : "bg-neutral-50 border-neutral-100"}`}>
+                                            <div className={`p-3 rounded-xl border ${isDark ? "bg-[#d6cfc4]/[0.02] border-[#d6cfc4]/10" : "bg-[#f5f2eb]/60 border-[#e2ddd5]"}`}>
                                                 <div className="text-[8px] font-bold uppercase tracking-wider opacity-30 mb-0.5">Location</div>
                                                 <div className="text-[11px] font-medium truncate">{selectedEvent.location}</div>
                                             </div>
                                         )}
-                                        <div className={`p-3 rounded-xl border ${isDark ? "bg-white/[0.01] border-white/5" : "bg-neutral-50 border-neutral-100"}`}>
+                                        <div className={`p-3 rounded-xl border ${isDark ? "bg-[#d6cfc4]/[0.02] border-[#d6cfc4]/10" : "bg-[#f5f2eb]/60 border-[#e2ddd5]"}`}>
                                             <div className="text-[8px] font-bold uppercase tracking-wider opacity-30 mb-0.5">Status</div>
                                             <div className="flex items-center gap-1.5 text-[11px] font-medium">
                                                 <div className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
@@ -444,7 +444,7 @@ const CalendarPage = () => {
                                 </div>
 
                                 {selectedEvent.description && (
-                                    <div className={`p-4 rounded-xl border ${isDark ? "bg-white/[0.01] border-white/5" : "bg-neutral-50 border-neutral-100"}`}>
+                                    <div className={`p-4 rounded-xl border ${isDark ? "bg-[#d6cfc4]/[0.02] border-[#d6cfc4]/10" : "bg-[#f5f2eb]/60 border-[#e2ddd5]"}`}>
                                         <div className="text-[9px] font-bold uppercase tracking-wider opacity-30 mb-2">Description</div>
                                         <div
                                             className="text-[12px] leading-relaxed opacity-70 max-h-32 overflow-y-auto custom-scrollbar pr-2"
@@ -461,7 +461,8 @@ const CalendarPage = () => {
                                         href={selectedEvent.htmlLink}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-orange-500 text-black font-bold text-[11px] uppercase hover:bg-orange-400 transition-all active:scale-95"
+                                        className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-[11px] uppercase transition-all active:scale-95
+                                            ${isDark ? "bg-[#d6cfc4] hover:bg-[#c9bfb0] text-[#07070a]" : "bg-[#e8e2d8] hover:bg-[#d6cfc4] text-[#2c2825]"}`}
                                     >
                                         OPEN IN CALENDAR
                                         <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
@@ -469,7 +470,7 @@ const CalendarPage = () => {
                                 )}
                                 <button
                                     onClick={() => setSelectedEvent(null)}
-                                    className={`px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase transition-all ${isDark ? "text-white/30 hover:text-white hover:bg-white/5" : "text-neutral-400 hover:text-neutral-800"}`}
+                                    className={`px-5 py-2.5 rounded-xl text-[11px] font-bold uppercase transition-all ${isDark ? "text-[#d6cfc4]/50 hover:text-[#d6cfc4] hover:bg-white/5" : "text-neutral-400 hover:text-neutral-800"}`}
                                 >
                                     CLOSE
                                 </button>

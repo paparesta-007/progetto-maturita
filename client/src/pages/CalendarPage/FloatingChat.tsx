@@ -5,7 +5,7 @@ import { useAuth } from "../../context/AuthContext";
 import SelectPopup from "../../components/other/SelectPopup";
 import { useChat } from "../../context/ChatContext";
 import { PaperPlaneTilt, CaretDown, Minus, PencilSimple, MagicWand, Sparkle, Calendar, Clock, Notebook, Bell, BellSlash } from "@phosphor-icons/react";
-import MarkdownRender from "../../library/markdownRender";
+import GenerativeUIRenderer from "../../components/generativeUI/GenerativeUIRenderer";
 
 type ReasoningStep = { type: string; content: string };
 type ChatMessage = {
@@ -103,7 +103,8 @@ const FloatingChat = () => {
                     googleToken: session?.provider_token,
                     temperature: 0.5,
                     sendNotifications,
-                    stream: true
+                    stream: true,
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
                 })
             });
 
@@ -179,13 +180,13 @@ const FloatingChat = () => {
             ${isDark 
                 ? 'bg-white/5 border-white/10 shadow-sm' 
                 : 'bg-neutral-50 border-neutral-200 shadow-sm'}`,
-        textarea: `w-full bg-transparent resize-none outline-none text-sm h-8 placeholder-white/20 
+        textarea: `w-full bg-transparent resize-none outline-none text-[17px] h-10 placeholder-white/20 
             ${isDark ? 'text-white' : 'text-neutral-900 placeholder-neutral-400'}`,
         sendBtn: `p-2 rounded-xl transition-all active:scale-95 flex items-center justify-center
             ${isDark ? 'bg-[#f97316] text-black hover:bg-[#fb923c]' : 'bg-neutral-900 text-white hover:bg-neutral-800'}`,
-        assistantBubble: `max-w-full text-[14px] leading-relaxed relative
+        assistantBubble: `max-w-full text-[17px] leading-relaxed relative
             ${isDark ? 'text-[#f4f1ea]/80' : 'text-neutral-800'}`,
-        userBubble: `max-w-[90%] p-3.5 rounded-2xl text-[14px] font-medium
+        userBubble: `max-w-[90%] p-3.5 rounded-2xl text-[17px] font-medium
             ${isDark ? 'bg-[#f97316] text-black prose-invert' : 'bg-[#f0ebe4] text-[#2c2825]'}`
     }), [isDark]);
 
@@ -195,7 +196,7 @@ const FloatingChat = () => {
                 .custom-scrollbar::-webkit-scrollbar { width: 3px; }
                 .custom-scrollbar::-webkit-scrollbar-track { background: transparent; }
                 .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.05); border-radius: 10px; }
-                .floating-chat-markdown .renderChat { font-size: 14px; line-height: 1.6; }
+                .floating-chat-markdown .renderChat { font-size: 17px; line-height: 1.6; }
                 .floating-chat-markdown .renderChat p { margin-bottom: 0.5rem; }
                 .floating-chat-markdown .renderChat p:last-child { margin-bottom: 0; }
             `}</style>
@@ -291,7 +292,7 @@ const FloatingChat = () => {
                                         </>
                                     )}
                                     <div className={`${m.role === 'user' ? styles.userBubble : styles.assistantBubble} floating-chat-markdown w-full`}>
-                                        <MarkdownRender text={m.content} isStreaming={isLoading && i === messages.length - 1 && m.role === 'assistant'} />
+                                        <GenerativeUIRenderer text={m.content} isStreaming={isLoading && i === messages.length - 1 && m.role === 'assistant'} isDark={isDark} />
                                     </div>
                                 </div>
                             ))}

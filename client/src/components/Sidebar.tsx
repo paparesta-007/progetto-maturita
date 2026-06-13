@@ -223,7 +223,7 @@ const Sidebar = ({
                 {/* Main Action */}
                 <div className="px-4 mb-8">
                     <button 
-                        onClick={() => { setMessageHistory([]); setCurrentConversationId(null); navigate('/app/chat/'); setIsMobileOpen?.(false); }}
+                        onClick={() => { setMessageHistory([]); setCurrentConversationId(null); setCurrentConversationName(null); navigate('/app/chat/'); setIsMobileOpen?.(false); }}
                         className={`w-full flex items-center gap-3 p-3 rounded-xl action-button ${isMinimized ? 'justify-center' : ''}`}
                     >
                         <Plus size={18} />

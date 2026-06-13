@@ -11,16 +11,25 @@ type BetterViewRenderMode = "html" | "markdown";
 function isCodeOrDebugIntent(message: string): boolean {
 	if (!message || typeof message !== "string") return false;
 
-	const normalized = message.toLowerCase();
-	const codeSignals = [
-		/```[\s\S]*?```/,
-		/\b(debug|bug|errore|error|stack trace|traceback|exception|fix|refactor|compile|build failed)\b/,
-		/\b(function|class|interface|import|export|const|let|var|return|async|await|sql|query|regex)\b/,
-		/\bjavascript|typescript|python|java|c\+\+|c#|php|go|rust|html|css|react|node\b/,
-		/\bwrite code|scrivi codice|generate code|genera codice|implement|implementa\b/
+	const normalized = message.trim();
+
+	// Strong signals: actual code blocks, file paths with extensions, explicit coding requests,
+	// or clear programming syntax patterns. Avoids matching generic words like "class", "import", "bug"
+	// that appear in everyday conversation.
+	const strongCodeSignals = [
+		/```[\s\S]+?```/,                                                           // code blocks in input
+		/\.(py|js|ts|tsx|jsx|cpp|java|cs|go|rs|html|css|sh|sql|rb|php|swift|kt)\b/i, // file extensions
+		/\b(codice sorgente|scrivi codice|scrivi una funzione|implementa una classe)\b/i,
+		/\b(write code|write a function|write a script|generate code|code snippet)\b/i,
+		/\b(debuggare|fixare il codice|risolvi l'errore|stacktrace|traceback|stack trace)\b/i,
+		/\b(debug this|fix this code|fix the bug|refactor this|compile error|build failed|runtime error|syntax error)\b/i,
+		// Actual programming syntax patterns (not plain words)
+		/\b(public\s+class|private\s+class|def\s+\w+\s*\(|function\s+\w+\s*\(|const\s+\w+\s*=|let\s+\w+\s*=|var\s+\w+\s*=|import\s+\w+\s+from)\b/,
+		/=>\s*\{/,                                                                   // arrow function
+		/\b(npm|pip|cargo|gradle|maven|docker)\s+(install|run|build|start)\b/i
 	];
 
-	return codeSignals.some((rx) => rx.test(normalized));
+	return strongCodeSignals.some((rx) => rx.test(normalized));
 }
 
 router.post("/api/completion/chat", requireAuth, async function (req: express.Request, res: express.Response, next: express.NextFunction) {

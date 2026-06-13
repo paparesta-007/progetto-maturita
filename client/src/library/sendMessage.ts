@@ -141,9 +141,10 @@ export const sendNormalMessage = async (
                         body: JSON.stringify({ message }),
                     });
                     const titleData = await titleRes.json();
-                    newTitle = titleData.title || "New Chat";
+                    newTitle = titleData.title || (message.trim().split(/\s+/).slice(0, 6).join(" ") + (message.trim().split(/\s+/).length > 6 ? "..." : ""));
                 } catch (e) {
-                    console.warn("Fallimento generazione titolo, uso default");
+                    console.warn("Fallimento generazione titolo, uso fallback");
+                    newTitle = message.trim().split(/\s+/).slice(0, 6).join(" ") + (message.trim().split(/\s+/).length > 6 ? "..." : "");
                 }
 
                 const newConvData = await createConversation(userId, newTitle);
@@ -177,7 +178,7 @@ export const sendNormalMessage = async (
                         setMessageHistory((prev) => {
                             const newHistory = [...prev];
                             const lastMsgIndex = newHistory.length - 1;
-                            if (newHistory[lastMsgIndex].role === 'bot') {
+                            if (lastMsgIndex >= 0 && newHistory[lastMsgIndex].role === 'bot') {
                                 newHistory[lastMsgIndex] = {
                                     ...newHistory[lastMsgIndex],
                                     suggestedQuestions: finalSuggestedQuestions
@@ -349,7 +350,7 @@ export const sendStreamedMessage = async (
                 setMessageHistory((prev) => {
                     const newHistory = [...prev];
                     const lastMsgIndex = newHistory.length - 1;
-                    if (newHistory[lastMsgIndex].role === 'bot') {
+                    if (lastMsgIndex >= 0 && newHistory[lastMsgIndex].role === 'bot') {
                         newHistory[lastMsgIndex] = {
                             ...newHistory[lastMsgIndex],
                             content: accumulatedText,
@@ -388,9 +389,10 @@ export const sendStreamedMessage = async (
                         body: JSON.stringify({ message }),
                     });
                     const titleData = await titleRes.json();
-                    newTitle = titleData.title || "New Chat";
+                    newTitle = titleData.title || (message.trim().split(/\s+/).slice(0, 6).join(" ") + (message.trim().split(/\s+/).length > 6 ? "..." : ""));
                 } catch (e) {
-                    console.warn("Fallimento generazione titolo, uso default");
+                    console.warn("Fallimento generazione titolo, uso fallback");
+                    newTitle = message.trim().split(/\s+/).slice(0, 6).join(" ") + (message.trim().split(/\s+/).length > 6 ? "..." : "");
                 }
 
                 const newConvData = await createConversation(userId, newTitle);
@@ -423,7 +425,7 @@ export const sendStreamedMessage = async (
                     setMessageHistory((prev) => {
                         const newHistory = [...prev];
                         const lastMsgIndex = newHistory.length - 1;
-                        if (newHistory[lastMsgIndex].role === 'bot') {
+                        if (lastMsgIndex >= 0 && newHistory[lastMsgIndex].role === 'bot') {
                             newHistory[lastMsgIndex] = {
                                 ...newHistory[lastMsgIndex],
                                 suggestedQuestions: finalSuggestedQuestions
