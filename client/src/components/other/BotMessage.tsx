@@ -369,9 +369,9 @@ const BotMessage = React.memo(({
 
         // Token info tooltip
         tooltipContent: `text-left`,
-        tooltipLabel: `text-[10px] uppercase tracking-wider font-bold ${isDark ? "text-neutral-500" : "text-neutral-600"}`,
-        tooltipValue: `text-xs font-mono ${isDark ? "text-neutral-300" : "text-neutral-600"}`,
-        tooltipDivider: `h-px my-2 ${isDark ? "bg-white/[0.06]" : "bg-neutral-100"}`,
+        tooltipLabel: `text-[10px] uppercase tracking-wider font-bold ${isDark ? "text-neutral-400" : "text-neutral-500"}`,
+        tooltipValue: `text-xs font-mono ${isDark ? "text-neutral-200" : "text-neutral-700"}`,
+        tooltipDivider: `h-px my-2 ${isDark ? "bg-white/[0.08]" : "bg-neutral-200"}`,
 
         // Feedback
         feedbackUp: feedbackGiven === 'up'
@@ -555,34 +555,33 @@ const BotMessage = React.memo(({
                                 <Tooltip
                                     content={
                                         <div className={s.tooltipContent}>
-                                            <p className={s.tooltipLabel}>Modello</p>
-                                            <p className={`${s.tooltipValue} mt-0.5`}>{model || "Unknown"}</p>
+                                             <p className={s.tooltipLabel}>Modello</p>
+                                             <p className={`${s.tooltipValue} mt-0.5`}>{model || "Unknown"}</p>
 
-                                            <div className={s.tooltipDivider} />
+                                             <div className={s.tooltipDivider} />
 
-                                            <p className={s.tooltipLabel}>Utilizzo Token</p>
-                                            <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1.5">
-                                                <span className={`text-[11px] ${isDark ? "text-neutral-500" : "text-neutral-600"}`}>Input</span>
-                                                <span className={`${s.tooltipValue} text-right`}>{usage?.prompt_tokens || usage?.inputTokens || 0}</span>
+                                             <p className={s.tooltipLabel}>Utilizzo Token</p>
+                                             <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-1.5">
+                                                 <span className={`text-[11px] ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>Input</span>
+                                                 <span className={`${s.tooltipValue} text-right`}>{usage?.prompt_tokens || usage?.inputTokens || 0}</span>
 
-                                                <span className={`text-[11px] ${isDark ? "text-neutral-500" : "text-neutral-600"}`}>Output</span>
-                                                <span className={`${s.tooltipValue} text-right`}>{usage?.completion_tokens || usage?.outputTokens || 0}</span>
+                                                 <span className={`text-[11px] ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>Output</span>
+                                                 <span className={`${s.tooltipValue} text-right`}>{usage?.completion_tokens || usage?.outputTokens || 0}</span>
 
-                                                {(usage?.completion_tokens_details?.reasoning_tokens || usage?.reasoningTokens || 0) > 0 && (
-                                                    <>
-                                                        <span className={`text-[11px] ${isDark ? "text-neutral-500" : "text-neutral-600"}`}>Reasoning</span>
-                                                        <span className={`${s.tooltipValue} text-right`}>{usage?.completion_tokens_details?.reasoning_tokens || usage?.reasoningTokens}</span>
-                                                    </>
-                                                )}
+                                                 {(usage?.completion_tokens_details?.reasoning_tokens || usage?.reasoningTokens || 0) > 0 && (
+                                                     <>
+                                                         <span className={`text-[11px] ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>Reasoning</span>
+                                                         <span className={`${s.tooltipValue} text-right`}>{usage?.completion_tokens_details?.reasoning_tokens || usage?.reasoningTokens}</span>
+                                                     </>
+                                                 )}
 
-                                                <div className={`col-span-2 ${s.tooltipDivider}`} />
+                                                 <div className={`col-span-2 ${s.tooltipDivider}`} />
 
-                                                <span className={`text-[11px] font-semibold ${isDark ? "text-neutral-300" : "text-neutral-600"}`}>Totale</span>
-                                                <span className={`${s.tooltipValue} text-right font-bold ${isDark ? "text-neutral-500" : "text-neutral-900"}`}>{usage?.total_tokens || usage?.totalTokens || 0}</span>
-                                                <span className={`text-[11px] font-semibold ${isDark ? "text-neutral-300" : "text-neutral-600"}`}>Costo</span>
-                                                <span className={`${s.tooltipValue} text-right  ${isDark ? "text-white" : "text-neutral-900"}`}>${usage?.cost?.toFixed(4) || usage?.raw?.cost?.toFixed(4) || "0.0000"}</span>
-                                            </div>
-
+                                                 <span className={`text-[11px] font-semibold ${isDark ? "text-neutral-300" : "text-neutral-600"}`}>Totale</span>
+                                                 <span className={`${s.tooltipValue} text-right font-bold ${isDark ? "text-neutral-200" : "text-neutral-900"}`}>{usage?.total_tokens || usage?.totalTokens || 0}</span>
+                                                 <span className={`text-[11px] font-semibold ${isDark ? "text-neutral-300" : "text-neutral-600"}`}>Costo</span>
+                                                 <span className={`${s.tooltipValue} text-right ${isDark ? "text-white" : "text-neutral-900"}`}>${usage?.cost?.toFixed(4) || usage?.raw?.cost?.toFixed(4) || "0.0000"}</span>
+                                             </div>
                                         </div>
                                     }
                                 >

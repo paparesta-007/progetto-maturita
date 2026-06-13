@@ -90,8 +90,21 @@ Il server Express riceve la richiesta ed esegue la vera chiamata alle API di Goo
 ### L'Assistente "Floating"
 L'interfaccia utente è stata progettata per non essere invasiva. Una **Floating Chat** (chat fluttuante) o in modalità sidebar permette all'utente di interagire con l'AI mentre consulta i propri impegni. L'utente può anche cambiare modello al volo (es. passare a un modello più veloce o uno più intelligente), e interagire con il calendario mentre lo guarda, vedendo gli eventi apparire o spostarsi in tempo reale grazie alla reattività di React.
 
+### 8.4 Funzionalità Avanzate: Generative UI e Fuso Orario Dinamico
+
+Per aumentare l'efficienza e migliorare l'esperienza utente (UI/UX), il workflow agentico è stato potenziato con due importanti caratteristiche:
+
+1. **Schede Grafiche Interattive (Generative UI)**:
+   Invece di limitarsi a risposte testuali in markdown o tabelle, l'agente comunica con il frontend tramite tag speciali `<ui-component type="calendar">` contenenti i dati strutturati in JSON degli eventi. Il client intercetta questi blocchi e li renderizza come schede grafiche eleganti che mostrano chiaramente:
+   * Lo stato dell'azione (Evento Creato, Modificato, Eliminato o Trovato).
+   * Data e ora formattati in locale.
+   * Luogo, descrizione dettagliata e un collegamento diretto a Google Calendar.
+
+2. **Sincronizzazione Dinamica del Fuso Orario (Timezone)**:
+   Il client rileva in tempo reale il fuso orario impostato nel browser dell'utente (tramite l'API standard `Intl.DateTimeFormat().resolvedOptions().timeZone`) e lo trasmette al server. Il server inietta questo fuso orario sia nel contesto di date fornite all'agente (es. per calcolare correttamente concetti relativi come *"venerdì prossimo"* o *"domani alle 10"*) sia nelle chiamate di scrittura/lettura delle API di Google Calendar, prevenendo errori di prenotazione e sovrapposizioni orarie indipendentemente da dove si trovi l'utente.
+
 ---
 
-
 Invece di navigare tra menu, selezionare orari e scrivere titoli, l'utente esprime un desiderio ("Organizza una cena con amici venerdì sera") e l'AI si occupa della logica: controlla la disponibilità, formatta i dati secondo gli standard ISO 8601 e comunica con i server di Google. Questo rappresenta il futuro della produttività: meno "clic", più conversazione.
+
 

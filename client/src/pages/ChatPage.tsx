@@ -240,6 +240,21 @@ const MessageItem = React.memo(({ msg, index, isDark, sendMessage }: {
     );
 });
 
+const BETTERVIEW_PROMPTS = [
+  "Crea un pianificatore finanziario interattivo per il calcolo dell'interesse composto. Includi slider per impostare: Capitale Iniziale (0-100k€), Contributo Mensile (0-2k€), Rendimento Annuo Stimato (1-15%) e Orizzonte Temporale (1-40 anni). Mostra un grafico ad area di Chart.js che mostra la crescita del capitale divisa tra contributi versati e interessi accumulati, aggiornandolo in tempo reale al movimento degli slider.",
+  "Crea un simulatore fisico interattivo bidimensionale in HTML5 Canvas. Aggiungi slider per regolare la Gravità, il Rimbalzo (restituzione) e il Vento. L'utente deve poter cliccare sull'area del Canvas per generare delle palline colorate che cadono e rimbalzano contro i bordi del box seguendo i parametri impostati. Includi un pulsante per resettare la simulazione.",
+  "Crea un quiz interattivo a risposta multipla su Dante Alighieri e la Divina Commedia (5 domande). Mostra una barra di avanzamento, un feedback visivo immediato (verde/rosso) alla selezione della risposta, un piccolo timer da 15 secondi per domanda, ed un pannello dei risultati finale con il punteggio in percentuale e un riepilogo grafico delle risposte esatte.",
+  "Crea una guida interattiva per visualizzare le proprietà di CSS Flexbox. Includi controlli (pulsanti o dropdown) per cambiare: flex-direction, justify-content, align-items e gap. Sotto i controlli, mostra un contenitore flessibile con 4 box numerati colorati che si riposizionano istantaneamente in base alle proprietà selezionate, spiegando brevemente l'effetto pratico di ogni valore scelto.",
+  "Crea un generatore di password interattivo con annesso valutatore di sicurezza. Includi slider per la lunghezza (8-32 caratteri), checkbox per includere Maiuscole, Numeri e Simboli, e un box di input in cui l'utente può anche digitare una password personalizzata. Mostra in tempo reale la forza stimata (debole/media/forte) tramite una barra colorata, i bit di entropia calcolati e un pulsante copia-negli-appunti.",
+  "Disegna una mappa interattiva stilizzata (in SVG o layout a griglia) delle principali città italiane (Milano, Roma, Napoli, Palermo, Cagliari). Cliccando su una città, mostra una scheda meteo dettagliata sul lato destro con la temperatura attuale, vento, umidità, e un grafico Chart.js con le previsioni orarie delle successive 12 ore.",
+  "Crea una tastiera musicale/sintetizzatore virtuale interattivo a 8 tasti (un'ottava). Consenti di selezionare il tipo di onda dell'oscillatore (Sine, Square, Triangle, Sawtooth) tramite pulsanti, regolare il volume con uno slider, e suonare le note cliccando sui tasti grafici del pianoforte. Includi una piccola animazione Canvas che mostra una visualizzazione elementare delle onde sonore quando si preme un tasto.",
+  "Crea un editor Markdown interattivo in tempo reale con layout diviso in due pannelli. A sinistra una textarea dove scrivere codice markdown (supportando intestazioni, elenchi puntati, tabelle e grassetti), a destra un'anteprima HTML renderizzata all'istante durante la digitazione. Aggiungi un pulsante per caricare un testo di esempio predefinito.",
+  "Crea una scheda ricetta interattiva per il Tiramisù o le Lasagne. Aggiungi un selettore numerico (+/-) o uno slider per indicare le porzioni (da 1 a 20 persone). Moltiplica dinamicamente le dosi di tutti gli ingredienti in tempo reale. Includi una lista di controllo degli ingredienti interattiva dove l'utente può sbarrare le voci comprate/utilizzate con un'animazione.",
+  "Crea uno strumento interattivo per la verifica del contrasto colore HSL. Inserisci slider per regolare Hue, Saturation e Lightness del colore di sfondo. Calcola e mostra dinamicamente il rapporto di contrasto (contrast ratio) rispetto al testo nero ed al testo bianco secondo gli standard WCAG 2.1 (indicando se supera le soglie AA o AAA). Mostra un'anteprima visiva del testo sullo sfondo selezionato.",
+  "Crea una macchina cifrante interattiva (Cifrario di Cesare e Cifrario Atbash). Includi una textarea per il testo in chiaro, uno slider per selezionare la chiave di spostamento (da 1 a 25 per Cesare), pulsanti radio per selezionare l'algoritmo, e una textarea disabilitata per mostrare il testo cifrato aggiornato in tempo reale. Mostra una griglia visiva dell'alfabeto traslato in base alla chiave inserita.",
+  "Crea una mappa concettuale interattiva delle tecnologie web (Frontend, Backend, Database) usando D3.js. L'utente deve poter cliccare sui nodi principali per espandere o contrarre i sotto-nodi (es. cliccando su Frontend appaiono HTML, CSS, JS) con transizioni fluide, e poter inserire un nuovo sotto-nodo personalizzato tramite un campo di input e un pulsante."
+];
+
 const ChatContent = () => {
     const { user, theme } = useAuth();
     const { conversationId } = useParams();
@@ -259,8 +274,12 @@ const ChatContent = () => {
         setMessageHistory,
         sendMessage,
         abortRequest,
+        conversations,
     } = useChat();
     const [isUsageOpen, setIsUsageOpen] = useState(false);
+    const [isPromptsOpen, setIsPromptsOpen] = useState(false);
+    const [copiedIndex, setCopiedIndex] = useState<number | null>(null);
+
     const messagesEndRef = useRef<HTMLDivElement | null>(null);
     const chatContainerRef = useRef<HTMLDivElement | null>(null);
     
@@ -277,6 +296,12 @@ const ChatContent = () => {
         main: `flex-1 flex overflow-hidden relative w-full min-w-0 z-10`,
         footer: `flex-shrink-0 w-full pt-0 pb-6 transition-colors duration-300 z-20 ${isDark ? "bg-transparent" : "bg-[#faf9f6]"}`,
         disclaimer: `text-center text-[10px] mt-3 opacity-40 ${isDark ? "text-white" : "text-neutral-500"}`
+    };
+
+    const handleCopy = (text: string, index: number) => {
+        navigator.clipboard.writeText(text);
+        setCopiedIndex(index);
+        setTimeout(() => setCopiedIndex(null), 2000);
     };
 
     const scrollToBottom = (force = false) => {
@@ -317,7 +342,7 @@ const ChatContent = () => {
         
         if (!conversationId) {
             // Solo se non siamo più sincronizzati con la URL (es. tasto indietro da una chat esistente)
-            if (currentConversationId) {
+            if (currentConversationId || currentConversationName) {
                 setMessageHistory([]);
                 setCurrentConversationId(null);
                 setCurrentConversationName(null);
@@ -326,10 +351,25 @@ const ChatContent = () => {
         }
         
         if (!areConversationsLoaded) return;
+
+        // Sincronizza sempre il nome della conversazione corrente dall'elenco
+        const activeConv = conversations.find(conv => conv.id === conversationId);
+        if (activeConv) {
+            setCurrentConversationName(activeConv.title || activeConv.name || "Chat");
+        }
         
         // Evita di ricaricare i messaggi dal server se stiamo già visualizzando questa conversazione
         // (necessario quando navighiamo a un chat appena creata dalla schermata home del chat)
         if (currentConversationId === conversationId) return;
+
+        // Se l'ID cercato non è ancora presente nella lista delle conversazioni (durante la creazione),
+        // ma abbiamo dei messaggi locali in corso (messageHistory > 0), assumiamo che sia la conversazione
+        // appena creata in questa sessione. Sincronizziamo lo stato e non ricarichiamo dal server.
+        const isNewConversationTransition = !conversations.some(conv => conv.id === conversationId) && messageHistory.length > 0;
+        if (isNewConversationTransition) {
+            setCurrentConversationId(conversationId);
+            return;
+        }
 
         const isOwner = userOwnsConversation(conversationId);
         if (isOwner) {
@@ -344,7 +384,7 @@ const ChatContent = () => {
             abortRequest();
         };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [conversationId, areConversationsLoaded, user?.id, navigate]);
+    }, [conversationId, areConversationsLoaded, user?.id, navigate, conversations]);
 
     useEffect(() => {
         const handleKeyDown = (event: KeyboardEvent) => {
@@ -456,6 +496,88 @@ const ChatContent = () => {
                     </p>
                 </div>
             </footer>
+
+            {/* FLOATING PROMPTS VIEW */}
+            {isPromptsOpen && (
+                <div className={`fixed bottom-24 right-6 w-80 sm:w-96 max-h-[420px] rounded-xl shadow-2xl border flex flex-col z-50 overflow-hidden transition-all duration-300 ${
+                    isDark 
+                        ? "bg-[#0d0e14]/95 border-white/10 text-white backdrop-blur-md" 
+                        : "bg-white/95 border-neutral-200 text-neutral-800 backdrop-blur-md"
+                }`}>
+                    {/* Header */}
+                    <div className={`flex justify-between items-center p-3 border-b flex-shrink-0 ${
+                        isDark ? "border-white/10" : "border-neutral-200"
+                    }`}>
+                        <span className="font-bold text-xs flex items-center gap-1.5">
+                            <span>💡</span> Prompt di Test BetterView
+                        </span>
+                        <button 
+                            onClick={() => setIsPromptsOpen(false)}
+                            className={`p-1 rounded-lg transition-colors ${
+                                isDark ? "hover:bg-white/10 text-neutral-400 hover:text-white" : "hover:bg-neutral-200 text-neutral-500 hover:text-neutral-800"
+                            }`}
+                        >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
+
+                    {/* Prompts list */}
+                    <div className="flex-1 overflow-y-auto p-3 space-y-2.5 custom-scrollbar">
+                        {BETTERVIEW_PROMPTS.map((promptText, idx) => (
+                            <div 
+                                key={idx} 
+                                className={`p-2.5 rounded-lg border text-[11px] relative flex justify-between gap-3.5 items-start transition-all ${
+                                    isDark 
+                                        ? "bg-white/[0.02] border-white/5 hover:border-orange-500/40" 
+                                        : "bg-neutral-50/50 border-neutral-200 hover:border-orange-500/40"
+                                }`}
+                            >
+                                <p className={`leading-relaxed flex-1 font-medium whitespace-pre-wrap ${
+                                    isDark ? "text-neutral-50" : "text-neutral-900"
+                                }`}>{promptText}</p>
+                                <button 
+                                    onClick={() => handleCopy(promptText, idx)}
+                                    className={`flex-shrink-0 p-1.5 rounded-md transition-all ${
+                                        copiedIndex === idx 
+                                            ? "text-green-500 bg-green-500/10" 
+                                            : isDark 
+                                                ? "text-neutral-400 hover:text-orange-400 hover:bg-white/10" 
+                                                : "text-neutral-500 hover:text-orange-600 hover:bg-black/[0.05]"
+                                    }`}
+                                    title="Copia negli appunti"
+                                >
+                                    {copiedIndex === idx ? (
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                    ) : (
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                                        </svg>
+                                    )}
+                                </button>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* FLOATING LIGHTBULB TRIGGER BUTTON */}
+            <button
+                onClick={() => setIsPromptsOpen(prev => !prev)}
+                className={`fixed bottom-24 right-6 z-40 p-3 rounded-full shadow-lg transition-all duration-200 hover:scale-105 active:scale-95 border ${
+                    isDark 
+                        ? "bg-[#ebdcb9] border-[#dfd0aa] text-neutral-900 hover:bg-[#dfd0aa] shadow-black/40" 
+                        : "bg-[#f4ebe1] border-[#e2d4c5] text-neutral-800 hover:bg-[#ebdccf] shadow-neutral-400/20"
+                }`}
+                title="Apri Prompt di Test BetterView"
+            >
+                <svg className="w-5.5 h-5.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                </svg>
+            </button>
         </div>
     );
 };

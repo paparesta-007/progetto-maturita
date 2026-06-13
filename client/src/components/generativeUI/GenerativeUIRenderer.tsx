@@ -15,6 +15,7 @@ import { parseGenerativeUI, hasUIComponents } from '../../utils/parseGenerativeU
 // ── Component Registry ──
 import DynamicCanvas from './DynamicCanvas';
 import Sandbox from './Sandbox';
+import CalendarUI from './CalendarUI';
 
 interface GenerativeUIRendererProps {
     text: string;
@@ -29,6 +30,7 @@ interface GenerativeUIRendererProps {
 const COMPONENT_REGISTRY: Record<string, React.FC<{ data: any; isStreaming?: boolean; isDark?: boolean }>> = {
     'dynamic': DynamicCanvas,
     'sandbox': Sandbox,
+    'calendar': CalendarUI,
 };
 
 const GenerativeUIRenderer: React.FC<GenerativeUIRendererProps> = ({ text, isStreaming, isDark }) => {

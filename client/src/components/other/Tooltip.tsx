@@ -78,7 +78,7 @@ const Tooltip = ({
           /* Logica Colori: Default Light, supporta classe .dark o prop background="dark" */
           ${isForcedDark 
             ? 'bg-neutral-800 text-white border border-neutral-700' 
-            : 'bg-white text-neutral-800 border border-neutral-200 dark:bg-neutral-800 dark:text-neutral-100 dark:border-neutral-700'
+            : 'bg-white text-neutral-800 border border-neutral-200'
           }
         `}
       >
@@ -95,7 +95,7 @@ const Tooltip = ({
             /* Logica Colori Freccia */
             ${isForcedDark 
               ? 'bg-neutral-800 border-neutral-700' 
-              : 'bg-white border-neutral-200 dark:bg-neutral-800 dark:border-neutral-700'
+              : 'bg-white border-neutral-200'
             }
           `} />
         )}
