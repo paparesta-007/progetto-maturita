@@ -8,6 +8,7 @@ interface SandboxProps {
         libraries?: string[];
     };
     isStreaming?: boolean;
+    isDark?: boolean;
 }
 
 /**
@@ -17,7 +18,7 @@ interface SandboxProps {
  * Allows for interactive visualizations like Chart.js, D3, or custom widgets
  * without compromising the main application's security or styling.
  */
-const Sandbox: React.FC<SandboxProps> = ({ data, isStreaming }) => {
+const Sandbox: React.FC<SandboxProps> = ({ data, isStreaming, isDark = false }) => {
     const { html = '', script = '', css = '', libraries = [] } = data;
     const [height, setHeight] = useState(300);
     const [errors, setErrors] = useState<string[]>([]);
@@ -27,15 +28,34 @@ const Sandbox: React.FC<SandboxProps> = ({ data, isStreaming }) => {
         if (isStreaming) return '';
 
         const libs = (libraries || []).map(lib => `<script src="${lib}"></script>`).join('\n');
+        const themeModeClass = isDark ? 'dark' : 'light';
         
         return `
             <!DOCTYPE html>
-            <html>
+            <html class="${themeModeClass}">
                 <head>
                     <meta charset="utf-8">
                     <meta name="viewport" content="width=device-width, initial-scale=1">
                     <script src="https://cdn.tailwindcss.com"></script>
                     
+                    <script>
+                        tailwind.config = {
+                            darkMode: 'class',
+                            theme: {
+                                extend: {
+                                    colors: {
+                                        canvas: 'var(--theme-bg)',
+                                        surface: 'var(--theme-surface)',
+                                        'theme-border': 'var(--theme-line)',
+                                        accent: 'var(--theme-accent)',
+                                        accent2: 'var(--theme-accent2)',
+                                        muted: 'var(--theme-muted)',
+                                    }
+                                }
+                            }
+                        }
+                    </script>
+
                     <!-- Core Charting & Utils (Auto-injected) -->
                     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
                     <script src="https://cdn.jsdelivr.net/npm/luxon"></script>
@@ -45,20 +65,42 @@ const Sandbox: React.FC<SandboxProps> = ({ data, isStreaming }) => {
 
                     ${libs}
                     <style>
+                        :root {
+                            --theme-bg: ${isDark ? '#07070a' : '#faf9f6'};
+                            --theme-surface: ${isDark ? 'rgba(255,255,255,0.03)' : '#ffffff'};
+                            --theme-line: ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.08)'};
+                            --theme-accent: #f97316;
+                            --theme-accent2: #fb923c;
+                            --theme-muted: ${isDark ? 'rgba(244,241,234,0.68)' : 'rgba(0,0,0,0.6)'};
+                        }
+
                         body { 
                             margin: 0; 
-                            padding: 1rem; 
+                            padding: 0.75rem; 
                             background: transparent; 
-                            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+                            color: ${isDark ? '#f4f1ea' : '#171717'};
+                            font-family: 'Manrope', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
                             overflow: hidden;
                         }
+
+                        /* Constrain chart containers to prevent infinite resize loops */
+                        .chart-container {
+                            position: relative;
+                            width: 100%;
+                            height: 260px;
+                            max-height: 400px;
+                        }
+                        canvas {
+                            max-height: 400px;
+                        }
+
                         ${css}
                         /* Hide scrollbars but allow scrolling if needed */
                         ::-webkit-scrollbar { display: none; }
                     </style>
                 </head>
                 <body>
-                    <div id="root">${html}</div>
+                    <div id="root" class="w-full h-auto flex flex-col gap-3">${html}</div>
                     <script>
                         (function() {
                             // Error handling to capture and report to parent
@@ -74,17 +116,32 @@ const Sandbox: React.FC<SandboxProps> = ({ data, isStreaming }) => {
                                 oldConsoleError.apply(console, args);
                             };
 
+                            // Use getBoundingClientRect on #root instead of documentElement.scrollHeight
+                            // to prevent infinite resize loops with responsive charts
                             function sendHeight() {
                                 try {
-                                    const height = document.documentElement.scrollHeight;
+                                    const root = document.getElementById('root');
+                                    if (!root) return;
+                                    const rect = root.getBoundingClientRect();
+                                    const height = Math.ceil(rect.height) + 24;
                                     window.parent.postMessage({ type: 'resize-sandbox', height: height }, '*');
                                 } catch (e) {}
                             }
 
                             let rafId;
+                            let lastSentHeight = 0;
                             function handleResize() {
                                 if (rafId) cancelAnimationFrame(rafId);
-                                rafId = requestAnimationFrame(sendHeight);
+                                rafId = requestAnimationFrame(() => {
+                                    const root = document.getElementById('root');
+                                    if (!root) return;
+                                    const newHeight = Math.ceil(root.getBoundingClientRect().height) + 24;
+                                    // Only send if height changed significantly (>5px) to avoid feedback loops
+                                    if (Math.abs(newHeight - lastSentHeight) > 5) {
+                                        lastSentHeight = newHeight;
+                                        window.parent.postMessage({ type: 'resize-sandbox', height: newHeight }, '*');
+                                    }
+                                });
                             }
 
                             document.addEventListener('DOMContentLoaded', () => {
@@ -94,20 +151,20 @@ const Sandbox: React.FC<SandboxProps> = ({ data, isStreaming }) => {
                                     window.parent.postMessage({ type: 'sandbox-error', message: e.message || e.toString() }, '*');
                                     console.error("Execution Error:", e);
                                 }
-                                setTimeout(sendHeight, 100);
+                                setTimeout(sendHeight, 150);
                             });
 
-                            window.addEventListener('load', sendHeight);
+                            window.addEventListener('load', () => setTimeout(sendHeight, 200));
                             const resizeObserver = new ResizeObserver(() => {
                                 handleResize();
                             });
-                            resizeObserver.observe(document.documentElement);
+                            resizeObserver.observe(document.getElementById('root') || document.documentElement);
                         })();
                     </script>
                 </body>
             </html>
         `;
-    }, [html, script, css, libraries, isStreaming]);
+    }, [html, script, css, libraries, isStreaming, isDark]);
 
     useEffect(() => {
         const handleMessage = (event: MessageEvent) => {

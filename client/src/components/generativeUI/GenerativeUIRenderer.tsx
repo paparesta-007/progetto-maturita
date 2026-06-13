@@ -19,18 +19,19 @@ import Sandbox from './Sandbox';
 interface GenerativeUIRendererProps {
     text: string;
     isStreaming?: boolean;
+    isDark?: boolean;
 }
 
 /**
  * Maps a componentType string (from the AI) to a React component.
  * Dynamic layout system is the primary visual renderer.
  */
-const COMPONENT_REGISTRY: Record<string, React.FC<{ data: any; isStreaming?: boolean }>> = {
+const COMPONENT_REGISTRY: Record<string, React.FC<{ data: any; isStreaming?: boolean; isDark?: boolean }>> = {
     'dynamic': DynamicCanvas,
     'sandbox': Sandbox,
 };
 
-const GenerativeUIRenderer: React.FC<GenerativeUIRendererProps> = ({ text, isStreaming }) => {
+const GenerativeUIRenderer: React.FC<GenerativeUIRendererProps> = ({ text, isStreaming, isDark }) => {
     // ── Short-circuit: if no UI tags, just render markdown directly ──
     if (!hasUIComponents(text)) {
         return <MarkdownRender text={text} isStreaming={isStreaming} />;
@@ -55,7 +56,7 @@ const GenerativeUIRenderer: React.FC<GenerativeUIRendererProps> = ({ text, isStr
                     const Component = COMPONENT_REGISTRY[chunk.componentType];
 
                     if (Component) {
-                        return <Component key={`ui-${idx}`} data={chunk.data} isStreaming={isStreaming} />;
+                        return <Component key={`ui-${idx}`} data={chunk.data} isStreaming={isStreaming} isDark={isDark} />;
                     }
 
                     // Unknown component type → render a subtle warning

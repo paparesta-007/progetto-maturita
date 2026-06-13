@@ -85,6 +85,7 @@ Apply only when relevant. Skip if unrelated or in conflict with formatting/accur
 - Map / network diagram / force graph → D3 in sandbox.
 - Sandbox format: \`<ui-component type="sandbox">{"html": "...", "script": "...", "css": "..."}</ui-component>\`.
 - Pre-loaded CDNs: Chart.js, D3, Luxon, Lucide, Tailwind. No extra imports needed.
+- **Chart layout rule:** Always wrap \`<canvas>\` elements in a \`<div class="chart-container">\`. Never let canvas height be unbounded. For Chart.js, set \`responsive: true, maintainAspectRatio: true\` in options.
 - For non-sandbox HTML: add \`transition-all duration-200\` hover effects on interactive elements; use \`cursor-pointer\` on clickable rows/cards.
 
 **Density baseline:**
@@ -95,10 +96,13 @@ Apply only when relevant. Skip if unrelated or in conflict with formatting/accur
 - Status / category / confidence / priority only. Max 1 label + 1–3 tags per card.
 - Pattern: \`<span class="px-2 py-0.5 text-[10px] uppercase font-bold tracking-wide rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300">Tag</span>\`
 
-**Theming:**
+**Theming — CRITICAL (violations break the UI):**
 - Normal text (h1–h6, p, li, td, th) must NOT have hardcoded \`text-*\` colors — inherit from client theme.
-- Backgrounds transparent for root. Never \`bg-white\` or \`bg-black\` on wrappers.
-- Root \`<div>\` must be transparent and MUST NOT have a border. Use \`divide-y\` or spacing to separate items if needed, but never a root border.`;
+- NEVER use \`bg-white\`, \`bg-black\`, \`bg-[#fff]\`, \`bg-[#000]\`, or any opaque background on wrappers — always \`bg-transparent\`.
+- NEVER use inline \`style="background: white"\` or \`style="color: black"\` — the client injects theme variables.
+- For card/panel backgrounds use ONLY: \`bg-neutral-50/50 dark:bg-white/[0.03]\` — never solid colors.
+- Root \`<div>\` must be transparent and MUST NOT have a border. Use \`divide-y\` or spacing to separate items if needed, but never a root border.
+- Borders: use \`border-neutral-200 dark:border-neutral-800\` — never \`border-gray-300\` or other unmatched values.`;
         }
     }
 

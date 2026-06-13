@@ -100,8 +100,20 @@ const ChatStyles = ({ isDark }: { isDark: boolean }) => {
 const extractRenderableHtml = (content: string): string | null => {
     if (!content) return null;
 
-    const trimmed = content.trim();
-    if (!trimmed || trimmed.startsWith("```") || trimmed.startsWith("&lt;")) return null;
+    let trimmed = content.trim();
+    if (!trimmed) return null;
+
+    // Reject if content is wrapped in code fences (model violated instructions)
+    if (trimmed.startsWith("```")) return null;
+    // Reject HTML entities (escaped HTML, not real tags)
+    if (trimmed.startsWith("&lt;")) return null;
+
+    // Strip leading/trailing markdown code fences if the model wrapped HTML in them
+    // e.g. ```html\n<div>...</div>\n```
+    const fenceWrapped = trimmed.match(/^```(?:html)?\s*\n([\s\S]+?)\n\s*```$/i);
+    if (fenceWrapped) {
+        trimmed = fenceWrapped[1].trim();
+    }
 
     const htmlStart = trimmed.search(/<\s*[a-z][\w:-]*(\s[^>]*)?>/i);
     if (htmlStart < 0) return null;
@@ -124,10 +136,28 @@ const normalizeWrapperThemeClasses = (html: string, isDark: boolean): string => 
     if (isDark) {
         normalized = normalized
             .replace(/\bbg-white\b/gi, 'bg-transparent')
-            .replace(/\bbg-(neutral|gray|zinc)-(50|100)\b/gi, 'bg-transparent')
-            // Neutralize common inline white backgrounds produced by model HTML snippets.
-            .replace(/background-color\s*:\s*(#fff(?:fff)?|white|rgb\(255\s*,\s*255\s*,\s*255\))/gi, 'background-color: transparent')
-            .replace(/background\s*:\s*(#fff(?:fff)?|white|rgb\(255\s*,\s*255\s*,\s*255\))/gi, 'background: transparent');
+            // Catch arbitrary bg values like bg-[#f9f9f9], bg-[#fafafa], bg-[#fff], etc.
+            .replace(/\bbg-\[#(?:f[0-9a-f]{5}|f{3,6}|e[0-9a-f]{5})\]/gi, 'bg-transparent')
+            // Catch bg-neutral-50, bg-gray-50, bg-zinc-50, bg-slate-50 and their /opacity variants
+            .replace(/\bbg-(neutral|gray|zinc|slate)-(50|100)(?:\/\d+)?\b/gi, 'bg-transparent')
+            // Catch bg-white/XX opacity variants
+            .replace(/\bbg-white\/\d+\b/gi, 'bg-transparent')
+            // Neutralize common inline white/light backgrounds produced by model HTML snippets.
+            .replace(/background-color\s*:\s*(#fff(?:fff)?|#f[0-9a-f]{5}|white|rgb\(255\s*,\s*255\s*,\s*255\)|rgb\(\s*2[45]\d\s*,\s*2[45]\d\s*,\s*2[45]\d\s*\))/gi, 'background-color: transparent')
+            .replace(/background\s*:\s*(#fff(?:fff)?|#f[0-9a-f]{5}|white|rgb\(255\s*,\s*255\s*,\s*255\)|rgb\(\s*2[45]\d\s*,\s*2[45]\d\s*,\s*2[45]\d\s*\))/gi, 'background: transparent')
+            // Neutralize dark text colors that become invisible on dark backgrounds
+            .replace(/\btext-(neutral|gray|zinc|slate)-900\b/gi, 'text-neutral-100')
+            .replace(/\btext-(neutral|gray|zinc|slate)-800\b/gi, 'text-neutral-200')
+            .replace(/\btext-black\b/gi, 'text-neutral-100')
+            .replace(/color\s*:\s*(#000(?:000)?|black|rgb\(0\s*,\s*0\s*,\s*0\))/gi, 'color: #f4f1ea')
+            // Neutralize solid light borders that look harsh on dark mode
+            .replace(/\bborder-(neutral|gray|zinc|slate)-(100|200)\b/gi, 'border-neutral-800');
+    } else {
+        // Light mode: neutralize dark backgrounds the model may emit
+        normalized = normalized
+            .replace(/\bbg-(neutral|gray|zinc|slate)-(800|900|950)\b/gi, 'bg-transparent')
+            .replace(/\bbg-black\b/gi, 'bg-transparent')
+            .replace(/\bbg-\[#(?:0[0-9a-f]{5}|1[0-9a-f]{5}|2[0-9a-f]{5})\]/gi, 'bg-transparent');
     }
 
     return normalized;
@@ -201,7 +231,7 @@ const MessageItem = React.memo(({ msg, index, isDark, sendMessage }: {
             {msg.content === "Elaborazione in corso..." || msg.content === "Avvio della richiesta..." 
                 ? <p className="text-neutral-500 italic text-sm">{msg.content}</p> 
                 : hasStructuredUI
-                    ? <GenerativeUIRenderer text={msg.content} />
+                    ? <GenerativeUIRenderer text={msg.content} isDark={isDark} />
                     : safeHtml
                         ? <div className="genui-html" dangerouslySetInnerHTML={{ __html: safeHtml }} />
                     : <MarkdownRender text={msg.content} />
