@@ -7,8 +7,37 @@ import { getHighlighter } from "../library/shikiHighlighter";
 import { useAuth } from "../context/AuthContext";
 import { Check, Copy } from "lucide-react"; // Importa icone se vuoi usarle (opzionale)
 
+// --- PIPELINE DI RENDERING SINCRONO (Spostato fuori per inizializzazione stato) ---
+const renderMarkdownSync = (rawText: string) => {
+    // Versione sincrona e semplificata per streaming veloce
+    try {
+        let processedText = rawText;
+        
+        // Protezione e rendering LaTeX inline e block (veloce)
+        processedText = processedText.replace(/\$\$([\s\S]+?)\$\$/g, (_match, formula) => {
+            try {
+                return katex.renderToString(formula, { displayMode: true, throwOnError: false });
+            } catch { return _match; }
+        });
+        processedText = processedText.replace(/\$([^$\n]+?)\$/g, (_match, formula) => {
+            try {
+                return katex.renderToString(formula, { displayMode: false, throwOnError: false });
+            } catch { return _match; }
+        });
+
+        const tokens = marked.lexer(processedText);
+        const html = marked.parser(tokens);
+        return DOMPurify.sanitize(html, {
+            ADD_TAGS: ['math', 'semantics', 'mrow', 'mn', 'mo', 'mi', 'msup', 'msub', 'mfrac', 'mtext', 'annotation', 'annotation-xml', 'svg', 'path', 'g', 'div', 'span', 'pre', 'code', 'button', 'rect'],
+            ADD_ATTR: ['style', 'class', 'viewBox', 'd', 'fill', 'xmlns', 'width', 'height', 'data-language', 'data-code', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'x', 'y', 'rx', 'ry', 'aria-hidden']
+        });
+    } catch (e) {
+        return rawText;
+    }
+};
+
 const MarkdownRender = ({ text, isStreaming, themeOverride }: { text: string; isStreaming?: boolean; themeOverride?: 'light' | 'dark' }) => {
-    const [htmlContent, setHtmlContent] = useState<string>("");
+    const [htmlContent, setHtmlContent] = useState<string>(() => renderMarkdownSync(text));
     const [isLoading, setIsLoading] = useState<boolean>(!text);
     const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const { theme: authTheme } = useAuth();
@@ -16,34 +45,6 @@ const MarkdownRender = ({ text, isStreaming, themeOverride }: { text: string; is
     const containerRef = useRef<HTMLDivElement>(null); 
     const previousTextRef = useRef<string>("");
 
-    // --- PIPELINE DI RENDERING ---
-    const renderMarkdownSync = (rawText: string) => {
-        // Versione sincrona e semplificata per streaming veloce
-        try {
-            let processedText = rawText;
-            
-            // Protezione e rendering LaTeX inline e block (veloce)
-            processedText = processedText.replace(/\$\$([\s\S]+?)\$\$/g, (_match, formula) => {
-                try {
-                    return katex.renderToString(formula, { displayMode: true, throwOnError: false });
-                } catch { return _match; }
-            });
-            processedText = processedText.replace(/\$([^$\n]+?)\$/g, (_match, formula) => {
-                try {
-                    return katex.renderToString(formula, { displayMode: false, throwOnError: false });
-                } catch { return _match; }
-            });
-
-            const tokens = marked.lexer(processedText);
-            const html = marked.parser(tokens);
-            return DOMPurify.sanitize(html, {
-                ADD_TAGS: ['math', 'semantics', 'mrow', 'mn', 'mo', 'mi', 'msup', 'msub', 'mfrac', 'mtext', 'annotation', 'annotation-xml', 'svg', 'path', 'g', 'div', 'span', 'pre', 'code', 'button', 'rect'],
-                ADD_ATTR: ['style', 'class', 'viewBox', 'd', 'fill', 'xmlns', 'width', 'height', 'data-language', 'data-code', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'x', 'y', 'rx', 'ry', 'aria-hidden']
-            });
-        } catch (e) {
-            return rawText;
-        }
-    };
 
     const renderMarkdown = useCallback(async (rawText: string) => {
         const latexMap = new Map<string, string>();
@@ -183,13 +184,13 @@ const MarkdownRender = ({ text, isStreaming, themeOverride }: { text: string; is
 
     useEffect(() => {
         let isCancelled = false;
-        
-        if (!text || text === previousTextRef.current) return;
+
+        // Imposta immediatamente il rendering sincrono per una visualizzazione reattiva e istantanea
+        setHtmlContent(renderMarkdownSync(text));
+        setIsLoading(false);
         previousTextRef.current = text;
 
         if (isStreaming) {
-            setHtmlContent(renderMarkdownSync(text));
-            setIsLoading(false);
             return;
         }
 
@@ -198,10 +199,9 @@ const MarkdownRender = ({ text, isStreaming, themeOverride }: { text: string; is
                 const html = await renderMarkdown(text);
                 if (!isCancelled) {
                     setHtmlContent(html);
-                    setIsLoading(false);
                 }
             } catch (err) {
-                if (!isCancelled) setHtmlContent(text);
+                // Fallback gestito dal rendering sincrono iniziale
             }
         };
 

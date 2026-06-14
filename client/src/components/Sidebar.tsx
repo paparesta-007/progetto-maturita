@@ -29,60 +29,131 @@ import deleteCurrentDocument from "../services/supabase/documents/deleteCurrentD
 import updateConversationTitle from "../services/supabase/Conversation/updateConversationTitle";
 
 /* ─── Classic & Cozy Sidebar Styles ─── */
-const SidebarStyles = ({ isDark }: { isDark: boolean }) => (
-    <style>{`
-        .sidebar-cozy {
-            background: ${isDark ? '#07070a' : '#fcfbf9'};
-            border-right: 1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e5e5e5'};
-        }
+const SidebarStyles = ({ isDark, style }: { isDark: boolean; style: 'modern-glass' | 'classic-soft' }) => {
+    if (style === 'modern-glass') {
+        return (
+            <style>{`
+                .sidebar-cozy {
+                    background: ${isDark ? 'rgba(13, 14, 20, 0.75)' : 'rgba(245, 240, 235, 0.7)'};
+                    border-right: 1px solid ${isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(232, 226, 217, 0.6)'};
+                    backdrop-filter: blur(18px);
+                }
 
-        .cozy-scrollbar::-webkit-scrollbar {
-            width: 3px;
-        }
-        .cozy-scrollbar::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        .cozy-scrollbar::-webkit-scrollbar-thumb {
-            background: ${isDark ? 'rgba(255,255,255,0.1)' : '#e5e5e5'};
-            border-radius: 10px;
-        }
+                .cozy-scrollbar::-webkit-scrollbar {
+                    width: 3px;
+                }
+                .cozy-scrollbar::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .cozy-scrollbar::-webkit-scrollbar-thumb {
+                    background: ${isDark ? 'rgba(255,255,255,0.1)' : '#e5e5e5'};
+                    border-radius: 10px;
+                }
 
-        .nav-item-cozy {
-            transition: all 0.2s ease;
-            color: ${isDark ? 'rgba(255,255,255,0.5)' : '#737373'};
-        }
-        .nav-item-cozy:hover {
-            color: ${isDark ? '#ffffff' : '#171717'};
-            background: ${isDark ? 'rgba(255,255,255,0.05)' : '#f5f3f0'};
-        }
-        .nav-item-cozy.active {
-            color: ${isDark ? '#ffffff' : '#171717'};
-            background: ${isDark ? 'rgba(255,255,255,0.1)' : '#f0eee6'};
-            font-weight: 500;
-        }
+                .nav-item-cozy {
+                    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+                    color: ${isDark ? 'rgba(255,255,255,0.5)' : '#737373'};
+                }
+                .nav-item-cozy:hover {
+                    color: ${isDark ? '#ffffff' : '#171717'};
+                    background: ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)'};
+                    transform: translateX(2px);
+                }
+                .nav-item-cozy.active {
+                    color: ${isDark ? '#ffffff' : '#171717'};
+                    background: ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(249, 115, 22, 0.08)'};
+                    border-left: 3px solid #f97316;
+                    border-radius: 0 12px 12px 0;
+                    padding-left: 9px;
+                    font-weight: 600;
+                }
 
-        .action-button {
-            background: ${isDark ? 'rgba(255,255,255,0.05)' : '#f0eee6'};
-            color: ${isDark ? '#ffffff' : '#171717'};
-            border: 1px solid ${isDark ? 'rgba(255,255,255,0.1)' : '#e5e5e5'};
-            transition: all 0.2s ease;
-        }
-        .action-button:hover {
-            background: ${isDark ? 'rgba(255,255,255,0.1)' : '#e8e6de'};
-            border-color: ${isDark ? 'rgba(255,255,255,0.2)' : '#d4d4d4'};
-        }
+                .action-button {
+                    background: ${isDark ? 'rgba(255,255,255,0.05)' : 'rgba(249, 115, 22, 0.06)'};
+                    color: ${isDark ? '#ffffff' : '#f97316'};
+                    border: 1px solid ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(249, 115, 22, 0.2)'};
+                    transition: all 0.2s ease;
+                }
+                .action-button:hover {
+                    background: ${isDark ? 'rgba(255,255,255,0.1)' : 'rgba(249, 115, 22, 0.1)'};
+                    border-color: ${isDark ? 'rgba(255,255,255,0.2)' : '#f97316'};
+                    transform: scale(1.01);
+                }
 
-        .sidebar-text-muted {
-            color: ${isDark ? 'rgba(255,255,255,0.4)' : '#a3a3a3'};
-        }
-        .sidebar-text-primary {
-            color: ${isDark ? '#ffffff' : '#171717'};
-        }
-        .sidebar-border {
-            border-color: ${isDark ? 'rgba(255,255,255,0.1)' : '#e5e5e5'};
-        }
-    `}</style>
-);
+                .sidebar-text-muted {
+                    color: ${isDark ? 'rgba(255,255,255,0.4)' : '#a3a3a3'};
+                }
+                .sidebar-text-primary {
+                    color: ${isDark ? '#ffffff' : '#171717'};
+                }
+                .sidebar-border {
+                        border-color: ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(232, 226, 217, 0.4)'};
+                }
+            `}</style>
+        );
+    }
+
+    return (
+        <style>{`
+            .sidebar-cozy {
+                background: ${isDark ? '#121214' : '#fcfbf9'};
+                border-right: 1px solid ${isDark ? '#222226' : '#ebdccb'};
+            }
+
+            .cozy-scrollbar::-webkit-scrollbar {
+                width: 3px;
+            }
+            .cozy-scrollbar::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            .cozy-scrollbar::-webkit-scrollbar-thumb {
+                background: ${isDark ? '#2d2d34' : '#ebdccb'};
+                border-radius: 10px;
+            }
+
+            .nav-item-cozy {
+                transition: all 0.25s ease;
+                color: ${isDark ? 'rgba(255,255,255,0.6)' : '#6b655f'};
+                margin: 2px 8px;
+                border-radius: 10px;
+            }
+            .nav-item-cozy:hover {
+                color: ${isDark ? '#ffffff' : '#1e1a15'};
+                background: ${isDark ? '#1a1a1e' : '#f5f2eb'};
+            }
+            .nav-item-cozy.active {
+                color: ${isDark ? '#ffffff' : '#1e1a15'};
+                background: ${isDark ? '#202027' : '#ebdccb'};
+                border-left: 3px solid ${isDark ? '#f59e0b' : '#b08968'};
+                border-radius: 0 10px 10px 0;
+                padding-left: 9px;
+                font-weight: 600;
+            }
+
+            .action-button {
+                background: ${isDark ? '#1c1c21' : '#f5f2eb'};
+                color: ${isDark ? '#ffffff' : '#5c544c'};
+                border: 1px solid ${isDark ? '#2d2d34' : '#e3d6c8'};
+                transition: all 0.2s ease;
+                border-radius: 12px;
+            }
+            .action-button:hover {
+                background: ${isDark ? '#232329' : '#eadecf'};
+                border-color: ${isDark ? '#40404a' : '#c5a880'};
+            }
+
+            .sidebar-text-muted {
+                color: ${isDark ? '#6e6e77' : '#a39c94'};
+            }
+            .sidebar-text-primary {
+                color: ${isDark ? '#ffffff' : '#1e1a15'};
+            }
+            .sidebar-border {
+                border-color: ${isDark ? '#222226' : '#ebdccb'};
+            }
+        `}</style>
+    );
+};
 
 const Sidebar = ({
     isMinimized,
@@ -97,7 +168,7 @@ const Sidebar = ({
     isMobileOpen?: boolean;
     setIsMobileOpen?: (val: boolean) => void;
 }) => {
-    const { user, session, theme, setTheme } = useAuth() || { user: { displayName: "User", photoURL: null }, session: null };
+    const { user, session, theme, setTheme, stylePreferences } = useAuth() || { user: { displayName: "User", photoURL: null }, session: null, stylePreferences: {} };
     const { 
         conversations, 
         setMessageHistory, 
@@ -126,6 +197,9 @@ const Sidebar = ({
 
     const isDocumentsPage = location.pathname.includes('/app/documents');
     const isDark = theme === 'dark';
+    
+    const currentPrefs = stylePreferences?.style?.[0] || stylePreferences?.[0];
+    const navbarStyle = currentPrefs?.navbarStyle || "classic-soft";
 
     useEffect(() => {
         const fetchDetails = async () => {
@@ -195,7 +269,7 @@ const Sidebar = ({
 
     return (
         <>
-            <SidebarStyles isDark={isDark} />
+            <SidebarStyles isDark={isDark} style={navbarStyle} />
 
             <nav className={`sidebar-cozy h-screen flex flex-col transition-all duration-500 ease-in-out relative ${isMobileOpen ? 'w-full' : (isMinimized ? 'w-[72px]' : 'w-[280px]')} ${isMobileOpen ? 'fixed inset-y-0 left-0 z-50' : 'hidden md:flex'}`}>
                 
@@ -234,7 +308,9 @@ const Sidebar = ({
                 {/* Navigation */}
                 <div className="px-3 space-y-1 flex-1 overflow-y-auto cozy-scrollbar">
                     {!isMinimized && <p className="px-3 text-[10px] font-bold uppercase tracking-widest sidebar-text-muted mb-3">Workspace</p>}
-                    {mainNav.map(item => (
+                    {mainNav
+                        .filter(item => !(isMinimized && item.path === "/app/chat"))
+                        .map(item => (
                         <NavLink 
                             key={item.path} 
                             to={item.path} 

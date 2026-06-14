@@ -11,6 +11,7 @@ const PreferencesPage: React.FC = () => {
 
     const [selectedTheme, setSelectedTheme] = useState("light");
     const [fontFamily, setFontFamily] = useState("domine");
+    const [navbarStyle, setNavbarStyle] = useState("classic-soft");
 
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -24,6 +25,7 @@ const PreferencesPage: React.FC = () => {
                 // Aggiorniamo lo stato solo se i valori esistono
                 if (currentPrefs.theme) setSelectedTheme(currentPrefs.theme);
                 if (currentPrefs.fontFamily) setFontFamily(currentPrefs.fontFamily);
+                if (currentPrefs.navbarStyle) setNavbarStyle(currentPrefs.navbarStyle);
             }
 
             // Rimuoviamo il loading (simuliamo un minimo delay per fluidità UI se necessario, o rimuovilo del tutto)
@@ -40,7 +42,7 @@ const PreferencesPage: React.FC = () => {
         setSaving(true);
 
         const payload = {
-            style: [{ theme: selectedTheme, fontFamily: fontFamily }]
+            style: [{ theme: selectedTheme, fontFamily: fontFamily, navbarStyle: navbarStyle }]
         };
 
         try {
@@ -102,23 +104,39 @@ const PreferencesPage: React.FC = () => {
                     </div>
 
                     <div className={styles.card}>
-                        <div className="flex flex-col gap-5">
-                            <div>
+                        <div className="flex flex-col gap-6">
+                            <div className="flex flex-col gap-2">
                                 <label className={styles.label}>Tema Globale</label>
                                 <p className={styles.description}>Scegli l'atmosfera cromatica preferita per l'applicazione.</p>
+                                <div className="relative mt-2">
+                                    <SelectPopup
+                                        value={selectedTheme}
+                                        onChange={(value) => setSelectedTheme(value)}
+                                        options={[
+                                            { value: "light", label: "Pure Light" },
+                                            { value: "light-beige", label: "Beige Comfort" },
+                                            { value: "dark", label: "Liquid Dark" },
+                                            { value: "system", label: "Sync System" }
+                                        ]}
+                                    />
+                                </div>
                             </div>
 
-                            <div className="relative">
-                                <SelectPopup
-                                    value={selectedTheme}
-                                    onChange={(value) => setSelectedTheme(value)}
-                                    options={[
-                                        { value: "light", label: "Pure Light" },
-                                        { value: "light-beige", label: "Beige Comfort" },
-                                        { value: "dark", label: "Liquid Dark" },
-                                        { value: "system", label: "Sync System" }
-                                    ]}
-                                />
+                            <div className={`h-px ${isDark ? "bg-white/5" : "bg-neutral-100"}`} />
+
+                            <div className="flex flex-col gap-2">
+                                <label className={styles.label}>Stile Barra di Navigazione</label>
+                                <p className={styles.description}>Scegli tra un look moderno satinato o uno più classico e morbido.</p>
+                                <div className="relative mt-2">
+                                    <SelectPopup
+                                        value={navbarStyle}
+                                        onChange={(value) => setNavbarStyle(value)}
+                                        options={[
+                                            { value: "classic-soft", label: "Classic & Soft (Classico & Morbido)" },
+                                            { value: "modern-glass", label: "Modern Glass (Vibrante & Satinato)" }
+                                        ]}
+                                    />
+                                </div>
                             </div>
                         </div>
                     </div>

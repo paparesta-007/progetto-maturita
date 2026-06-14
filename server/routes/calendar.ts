@@ -315,4 +315,46 @@ router.post("/api/calendar/action", requireAuth, async (req: express.Request, re
     }
 });
 
+router.post("/api/calendar/improve-description", requireAuth, async (req: express.Request, res: express.Response) => {
+    try {
+        const { title, description } = req.body;
+        if (!title && !description) {
+            return res.status(400).json({ error: "Title or Description is required" });
+        }
+
+        const systemPrompt = "Sei un assistente AI integrato nel calendario. Il tuo compito è migliorare e arricchire la descrizione dell'evento di calendario fornito dall'utente in modo professionale, chiaro e conciso. Mantieni la descrizione breve e adatta per un evento lavorativo o personale. Ritorna SOLTANTO il testo migliorato della descrizione, senza preamboli o commenti.";
+        const userPrompt = `Titolo evento: ${title || "(Senza titolo)"}\nDescrizione attuale: ${description || "(Vuota)"}\n\nMigliora e completa questa descrizione:`;
+
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${OPENROUTER_KEY}`,
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://github.com/paparesta-007/progetto-maturita",
+                "X-Title": "Smart Calendar Assistant"
+            },
+            body: JSON.stringify({
+                model: "mistralai/ministral-8b-2512",
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: userPrompt }
+                ],
+                temperature: 0.7
+            })
+        });
+
+        if (!response.ok) {
+            const err = await response.text();
+            throw new Error(`OpenRouter error: ${err}`);
+        }
+
+        const data = await response.json();
+        const improvedDescription = data.choices?.[0]?.message?.content || "";
+        return res.json({ description: improvedDescription.trim() });
+    } catch (error: any) {
+        console.error("Error improving description:", error);
+        return res.status(500).json({ error: error.message || "Internal server error" });
+    }
+});
+
 export default router;

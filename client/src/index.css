@@ -345,3 +345,11 @@
     background-size: 40px 40px;
     opacity: 0.3;
 }
+
+/* Custom overrides for md-editor-rt to ensure full width without split screen when preview is disabled */
+.md-editor {
+    width: 100% !important;
+}
+.md-editor-preview-wrapper {
+    display: none !important;
+}

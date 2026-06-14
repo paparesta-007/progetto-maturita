@@ -26,7 +26,7 @@ const FloatingChat = () => {
     const [inputValue, setInputValue] = useState("");
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [sendNotifications, setSendNotifications] = useState(true);
+    const [sendNotifications, setSendNotifications] = useState(false);
     const [reasoning, setReasoning] = useState<string>("fast");
     const { theme, session } = useAuth();
     const { model, setModel } = useChat();

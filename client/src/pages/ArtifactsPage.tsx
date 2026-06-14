@@ -72,74 +72,6 @@ const QuizPreview = ({ isDark }: { isDark: boolean }) => {
     );
 };
 
-const MindmapPreview = ({ isDark }: { isDark: boolean }) => {
-    const c = isDark
-        ? { bg: "#1a0d2e", node: "#8b5cf6", line: "#7c3aed", leaf: "#a78bfa", muted: "#2e1065", text: "#e9d5ff" }
-        : { bg: "#f5f3ff", node: "#8b5cf6", line: "#c4b5fd", leaf: "#a78bfa", muted: "#ede9fe", text: "#5b21b6" };
-    return (
-        <svg viewBox="0 0 240 120" fill="none" className="w-full h-full">
-            <rect width="240" height="120" rx="8" fill={c.bg} />
-            {/* Center */}
-            <circle cx="120" cy="60" r="18" fill={c.node} />
-            <text x="120" y="63" textAnchor="middle" fontSize="7" fontWeight="700" fill="white">Tema</text>
-            {/* Branches */}
-            <line x1="102" y1="55" x2="45" y2="30" stroke={c.line} strokeWidth="2" />
-            <line x1="138" y1="55" x2="195" y2="30" stroke={c.line} strokeWidth="2" />
-            <line x1="102" y1="65" x2="45" y2="95" stroke={c.line} strokeWidth="2" />
-            <line x1="138" y1="65" x2="195" y2="95" stroke={c.line} strokeWidth="2" />
-            <line x1="120" y1="42" x2="120" y2="15" stroke={c.line} strokeWidth="2" />
-            {/* Nodes */}
-            <circle cx="45" cy="27" r="12" fill={c.muted} />
-            <text x="45" y="30" textAnchor="middle" fontSize="6" fill={c.text}>Idea</text>
-            <circle cx="195" cy="27" r="12" fill={c.muted} />
-            <text x="195" y="30" textAnchor="middle" fontSize="6" fill={c.text}>Link</text>
-            <circle cx="45" cy="97" r="12" fill={c.muted} />
-            <text x="45" y="100" textAnchor="middle" fontSize="6" fill={c.text}>Note</text>
-            <circle cx="195" cy="97" r="12" fill={c.muted} />
-            <text x="195" y="100" textAnchor="middle" fontSize="6" fill={c.text}>Ref</text>
-            <circle cx="120" cy="12" r="10" fill={c.muted} />
-            <text x="120" y="15" textAnchor="middle" fontSize="6" fill={c.text}>?</text>
-        </svg>
-    );
-};
-
-const AnalysisPreview = ({ isDark }: { isDark: boolean }) => {
-    const c = isDark
-        ? { bg: "#1a1400", bar1: "#f59e0b", bar2: "#d97706", bar3: "#fbbf24", grid: "#292524", text: "#a3a3a3" }
-        : { bg: "#fffbeb", bar1: "#f59e0b", bar2: "#d97706", bar3: "#fbbf24", grid: "#fde68a", text: "#78716c" };
-    const bars = [38, 62, 50, 78, 45, 90, 55, 72];
-    return (
-        <svg viewBox="0 0 240 120" fill="none" className="w-full h-full">
-            <rect width="240" height="120" rx="8" fill={c.bg} />
-            {/* Grid lines */}
-            {[30, 50, 70, 90].map(y => (
-                <line key={y} x1="30" y1={y} x2="225" y2={y} stroke={c.grid} strokeWidth="0.5" />
-            ))}
-            {/* Bars */}
-            {bars.map((h, i) => (
-                <rect
-                    key={i}
-                    x={35 + i * 24}
-                    y={105 - h}
-                    width="16"
-                    height={h}
-                    rx="3"
-                    fill={[c.bar1, c.bar2, c.bar3][i % 3]}
-                    opacity={0.8 + (i % 3) * 0.1}
-                />
-            ))}
-            {/* Axis labels */}
-            <text x="30" y="115" fontSize="6" fill={c.text}>Gen</text>
-            <text x="78" y="115" fontSize="6" fill={c.text}>Mar</text>
-            <text x="126" y="115" fontSize="6" fill={c.text}>Mag</text>
-            <text x="174" y="115" fontSize="6" fill={c.text}>Lug</text>
-            {/* Y axis */}
-            <text x="12" y="33" fontSize="5" fill={c.text}>100</text>
-            <text x="16" y="73" fontSize="5" fill={c.text}>50</text>
-        </svg>
-    );
-};
-
 const FlashcardPreview = ({ isDark }: { isDark: boolean }) => {
     const c = isDark
         ? { bg: "#0d1117", card: "#1e293b", accent: "#6366f1", text: "#f8fafc", border: "#334155" }
@@ -194,7 +126,6 @@ interface ArtifactCard {
     tags: string[];
     accentColor: string;
     Preview: React.FC<{ isDark: boolean }>;
-    isComingSoon?: boolean;
 }
 
 const ARTIFACTS: ArtifactCard[] = [
@@ -215,26 +146,6 @@ const ARTIFACTS: ArtifactCard[] = [
         tags: ["Studio", "Ripasso", "Verifica", "Gamification"],
         accentColor: "text-blue-500",
         Preview: QuizPreview,
-    },
-    {
-        icon: <ArrowsSplitIcon size={20} weight="duotone" />,
-        label: "Mappa Concettuale",
-        description: "Esplora come le idee si intrecciano tra loro tramite una mappa di nodi connessi. Permette di visualizzare le relazioni trasversali tra idee e concetti apparentemente distanti, stimolando il ragionamento creativo e garantendo una comprensione profonda della materia in tutte le sue sfaccettature.",
-        route: "/app/artifacts/mindmap",
-        tags: ["Creatività", "Brainstorming", "Sintesi", "Relazioni"],
-        accentColor: "text-violet-500",
-        Preview: MindmapPreview,
-        isComingSoon: true,
-    },
-    {
-        icon: <ChartBarIcon size={20} weight="duotone" />,
-        label: "Analisi Dati",
-        description: "Rivoluziona il modo in cui leggi tabelle o resoconti numerici. Estrapola le metriche più importanti, individua i trend nascosti e ottieni grafici pronti all'uso, accompagnati da insight generati dall'AI che spiegano chiaramente il significato dietro a statistiche, andamenti aziendali o set di dati complessi.",
-        route: "/app/artifacts/analysis",
-        tags: ["Dati", "Azienda", "Statistica", "Report"],
-        accentColor: "text-amber-500",
-        Preview: AnalysisPreview,
-        isComingSoon: true,
     },
     {
         icon: <NotebookIcon size={20} weight="duotone" />,
@@ -291,26 +202,17 @@ const ArtifactsPage: React.FC = () => {
                         return (
                             <motion.button
                                 key={artifact.route}
-                                onClick={() => !artifact.isComingSoon && navigate(artifact.route)}
+                                onClick={() => navigate(artifact.route)}
                                 initial={{ opacity: 0, x: -20 }}
                                 animate={{ opacity: 1, x: 0 }}
                                 transition={{ duration: 0.35, delay: i * 0.06, ease: "easeOut" }}
                                 className={`group relative flex flex-col sm:flex-row rounded-2xl border cursor-pointer transition-all overflow-hidden text-left ${isDark
                                     ? "bg-neutral-900/60 border-neutral-800 hover:border-neutral-700 hover:bg-neutral-800/80"
                                     : "bg-white border-neutral-200 hover:border-neutral-300 hover:shadow-lg hover:shadow-neutral-200/50"
-                                    } ${artifact.isComingSoon ? "cursor-not-allowed" : ""}`}
+                                    }`}
                             >
-                                {/* Coming Soon Label */}
-                                {artifact.isComingSoon && (
-                                    <div className="absolute top-0 right-0 z-20 pointer-events-none">
-                                        <div className={`absolute top-[22px] right-[-32px] rotate-45 ${isDark ? "bg-[#2c2825] text-[#e8e2d8] border-[#3d3832]" : "bg-[#e8e2d8] text-[#2c2825] border-[#d6cfc4]"} text-[10px] font-black tracking-widest px-10 py-1 shadow-lg border-y uppercase`}>
-                                            Coming Soon
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Inner Content Wrapper (with opacity/grayscale for Coming Soon) */}
-                                <div className={`flex flex-col sm:flex-row w-full h-full ${artifact.isComingSoon ? "opacity-40 grayscale-[0.6]" : ""}`}>
+                                {/* Inner Content Wrapper */}
+                                <div className="flex flex-col sm:flex-row w-full h-full">
                                     {/* Left Side: Preview area */}
                                     <div className={`relative w-full sm:w-80 lg:w-96 min-h-[160px] flex-shrink-0 overflow-hidden border-b sm:border-b-0 sm:border-r ${isDark ? "bg-neutral-900 border-neutral-800" : "bg-neutral-50 border-neutral-200"}`}>
                                         <div className="absolute inset-0 transition-transform duration-500 ease-out group-hover:scale-105">
@@ -336,13 +238,11 @@ const ArtifactsPage: React.FC = () => {
                                                     {artifact.description}
                                                 </p>
 
-                                                {!artifact.isComingSoon && (
-                                                    <ArrowRightIcon
-                                                        size={16}
-                                                        weight="bold"
-                                                        className={`absolute right-0 top-1 flex-shrink-0 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 ${isDark ? "text-neutral-500" : "text-neutral-400"}`}
-                                                    />
-                                                )}
+                                                <ArrowRightIcon
+                                                    size={16}
+                                                    weight="bold"
+                                                    className={`absolute right-0 top-1 flex-shrink-0 opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-300 ${isDark ? "text-neutral-500" : "text-neutral-400"}`}
+                                                />
                                             </div>
                                         </div>
 
