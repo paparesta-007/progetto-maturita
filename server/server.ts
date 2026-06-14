@@ -157,7 +157,9 @@ app.use("/", function (err: any, req: express.Request, res: express.Response, ne
     console.error(err); // Questo ti dirà se è un errore di autenticazione o di parsing
 
     res.status(500).json({
-        error: "Internal Server Error",
+        error: {
+            message: err.message || "Internal Server Error"
+        },
         details: err.message, // Ti aiuta a capire il problema durante lo sviluppo
         path: req.originalUrl
     });

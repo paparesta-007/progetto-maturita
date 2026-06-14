@@ -198,11 +198,18 @@ async function executeTool(name: string, args: any, token: string, options?: { s
 // --- ENDPOINT AGENTE ---
 router.post("/api/calendar/action", requireAuth, async (req: express.Request, res: express.Response) => {
     try {
-        const { text, modelName, messages: history = [], temperature, sendNotifications, stream = false, timezone = "Europe/Rome" } = req.body;
+        const { text, modelName, messages: history = [], temperature, sendNotifications, stream = false, timezone = "Europe/Rome", reasoning: reasoningEffort } = req.body;
         const googleToken = req.body.googleToken || req.headers['x-google-token'] || "";
         const selectedModel = modelName || "deepseek/deepseek-chat";
 
-        console.log(`[CalendarAPI] Avvio Agente: ${selectedModel} | Notifications: ${sendNotifications !== false} | Stream: ${stream} | Timezone: ${timezone}`);
+        console.log(`[CalendarAPI] Avvio Agente: ${selectedModel} | Notifications: ${sendNotifications !== false} | Stream: ${stream} | Timezone: ${timezone} | Reasoning: ${reasoningEffort}`);
+
+        const reasoningEffortMap: Record<string, string> = {
+            fast: "minimal",
+            standard: "medium",
+            accurate: "high"
+        };
+        const effortValue = reasoningEffort ? reasoningEffortMap[reasoningEffort] || "medium" : "medium";
 
         if (stream) {
             res.setHeader('Content-Type', 'application/json');
@@ -244,6 +251,7 @@ router.post("/api/calendar/action", requireAuth, async (req: express.Request, re
                     tools: TOOLS,
                     tool_choice: "auto",
                     temperature: temperature ?? 0.5,
+                    reasoning: { effort: effortValue },
                     provider: { allow_fallbacks: false }
                 })
             });

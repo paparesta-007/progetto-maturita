@@ -3,6 +3,7 @@ import getSystemPrompt from "../static/prompt/systemPrompt.js";
 import { OPENROUTER_KEY } from "../config/enviroments.js";
 import { requireAuth } from "../middleware/auth.js";
 import { applyPromptCaching } from "../utils/promptCaching.js";
+import { BETTER_VIEW_JSON_SCHEMA, supportsStructuredOutput } from "../utils/betterViewSchema.js";
 
 const router = express.Router();
 
@@ -77,6 +78,8 @@ router.post("/api/completion/chat", requireAuth, async function (req: express.Re
 			}
 		] : undefined;
 
+		const isStructured = isBetterView && betterViewRenderMode === 'html' && supportsStructuredOutput(selectedModel);
+
 		const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
 			method: "POST",
 			headers: {
@@ -93,7 +96,17 @@ router.post("/api/completion/chat", requireAuth, async function (req: express.Re
 				temperature: temperature ?? 1.0,
 				reasoning: { effort: reasoningEffort },
 				provider: { allow_fallbacks: false },
-				plugins: plugins
+				plugins: plugins,
+				...(isStructured ? {
+					response_format: {
+						type: "json_schema",
+						json_schema: {
+							name: "better_view_sections",
+							strict: true,
+							schema: BETTER_VIEW_JSON_SCHEMA
+						}
+					}
+				} : {})
 			})
 		});
 
@@ -128,9 +141,24 @@ router.post("/api/completion/chat", requireAuth, async function (req: express.Re
 		console.log(`Latenza: ${latencyMs} ms, Throughput: ${throughput.toFixed(2)} t/s`);
 		if (reasoningContent) console.log(`Reasoning presente: ${reasoningContent.length} caratteri`);
 
+		let sections = null;
+		let finalRenderMode = betterViewRenderMode;
+		if (isStructured) {
+			try {
+				const parsed = JSON.parse(text);
+				if (parsed && Array.isArray(parsed.sections)) {
+					sections = parsed.sections;
+					finalRenderMode = "structured" as any;
+				}
+			} catch (err) {
+				console.warn("Failing parsing structured output JSON:", err);
+			}
+		}
+
 		res.send({
 			text,
-			renderMode: betterViewRenderMode,
+			sections,
+			renderMode: finalRenderMode,
 			usage,
 			suggestedQuestions: [],
 			reasoning: reasoningContent,
@@ -200,6 +228,8 @@ router.post("/api/streamingOutput", requireAuth, async function (req: express.Re
 			controller.abort();
 		});
 
+		const isStructured = isBetterView && betterViewRenderMode === 'html' && supportsStructuredOutput(selectedModel);
+
 		// Configure plugins if webSearch is active (OpenRouter Web Search Plugin)
 		const plugins = webSearch ? [
 			{
@@ -207,27 +237,99 @@ router.post("/api/streamingOutput", requireAuth, async function (req: express.Re
 			}
 		] : undefined;
 
-		const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-			method: "POST",
-			signal: controller.signal,
-			headers: {
-				"Authorization": `Bearer ${OPENROUTER_KEY}`,
-				"Content-Type": "application/json",
-				"HTTP-Referer": "http://localhost:3000/streamingOutput",
-				"X-Title": "NomeTuaApp",
-				"X-OpenRouter-Cache": "true"
-			},
-			body: JSON.stringify({
-				model: selectedModel,
-				messages: messages,
-				stream: true,
-				stream_options: { include_usage: true },
-				temperature: temperature ?? 1.0,
-				reasoning: { effort: reasoningEffort },
-				provider: { allow_fallbacks: false },
-				plugins: plugins
-			})
-		});
+		let response;
+		if (isStructured) {
+			response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+				method: "POST",
+				signal: controller.signal,
+				headers: {
+					"Authorization": `Bearer ${OPENROUTER_KEY}`,
+					"Content-Type": "application/json",
+					"HTTP-Referer": "http://localhost:3000/streamingOutput",
+					"X-Title": "NomeTuaApp",
+					"X-OpenRouter-Cache": "true"
+				},
+				body: JSON.stringify({
+					model: selectedModel,
+					messages: messages,
+					stream: false,
+					temperature: temperature ?? 1.0,
+					reasoning: { effort: reasoningEffort },
+					provider: { allow_fallbacks: false },
+					plugins: plugins,
+					response_format: {
+						type: "json_schema",
+						json_schema: {
+							name: "better_view_sections",
+							strict: true,
+							schema: BETTER_VIEW_JSON_SCHEMA
+						}
+					}
+				})
+			});
+		} else {
+			response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+				method: "POST",
+				signal: controller.signal,
+				headers: {
+					"Authorization": `Bearer ${OPENROUTER_KEY}`,
+					"Content-Type": "application/json",
+					"HTTP-Referer": "http://localhost:3000/streamingOutput",
+					"X-Title": "NomeTuaApp",
+					"X-OpenRouter-Cache": "true"
+				},
+				body: JSON.stringify({
+					model: selectedModel,
+					messages: messages,
+					stream: true,
+					stream_options: { include_usage: true },
+					temperature: temperature ?? 1.0,
+					reasoning: { effort: reasoningEffort },
+					provider: { allow_fallbacks: false },
+					plugins: plugins
+				})
+			});
+		}
+
+		if (isStructured) {
+			if (!response.ok) {
+				const errorText = await response.text();
+				throw new Error(`OpenRouter Streaming Error (Structured): ${response.status} - ${errorText}`);
+			}
+
+			res.setHeader("Content-Type", "text/plain; charset=utf-8");
+			res.setHeader("Transfer-Encoding", "chunked");
+			res.setHeader("X-Accel-Buffering", "no");
+			res.flushHeaders();
+
+			const data = await response.json();
+			const text = data.choices[0]?.message?.content || "";
+			const reasoningContent = data.choices[0]?.message?.reasoning || null;
+			const usage = data.usage || {};
+
+			let sections = [];
+			try {
+				const parsed = JSON.parse(text);
+				sections = parsed.sections || [];
+			} catch (e) {
+				sections = [{ type: "markdown", content: text }];
+			}
+
+			res.write(JSON.stringify({ type: "meta", renderMode: "structured" }) + "\n");
+			
+			if (reasoningContent) {
+				res.write(JSON.stringify({ type: "reasoning", content: reasoningContent }) + "\n");
+			}
+			
+			res.write(JSON.stringify({ type: "text", content: text }) + "\n");
+			res.write(JSON.stringify({ type: "structured", sections }) + "\n");
+
+			if (Object.keys(usage).length > 0) {
+				res.write(JSON.stringify({ type: "usage", content: usage }) + "\n");
+			}
+			res.end();
+			return;
+		}
 
 		if (!response.ok || !response.body) {
 			const errorText = await response.text();
@@ -284,8 +386,13 @@ router.post("/api/streamingOutput", requireAuth, async function (req: express.Re
 					}
 				}
 			}
-		} catch (streamError) {
+		} catch (streamError: any) {
 			console.error("Errore durante lo streaming nativo:", streamError);
+			try {
+				res.write(JSON.stringify({ type: "error", error: streamError.message || "Errore durante lo streaming dei dati." }) + "\n");
+			} catch (writeErr) {
+				console.error("Impossibile trasmettere l'errore al client:", writeErr);
+			}
 		} finally {
 			res.end();
 		}

@@ -183,6 +183,95 @@ const renderLatexInHtml = (html: string): string => {
 
     return output;
 };
+
+interface StructuredSection {
+    type: 'markdown' | 'html';
+    content: string;
+}
+
+interface SectionErrorBoundaryProps {
+    children: React.ReactNode;
+}
+
+interface SectionErrorBoundaryState {
+    hasError: boolean;
+    error: Error | null;
+}
+
+class SectionErrorBoundary extends React.Component<SectionErrorBoundaryProps, SectionErrorBoundaryState> {
+    constructor(props: SectionErrorBoundaryProps) {
+        super(props);
+        this.state = { hasError: false, error: null };
+    }
+
+    static getDerivedStateFromError(error: Error): SectionErrorBoundaryState {
+        return { hasError: true, error };
+    }
+
+    componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
+        console.error("SectionErrorBoundary caught rendering error:", error, errorInfo);
+    }
+
+    render() {
+        if (this.state.hasError) {
+            return (
+                <div className="p-3 my-2 rounded-lg bg-red-500/10 border border-red-500/20 text-red-600 dark:text-red-400 text-xs">
+                    <p className="font-bold mb-1">⚠️ Errore nel rendering della sezione</p>
+                    <pre className="whitespace-pre-wrap font-mono text-[10px] opacity-80">
+                        {this.state.error?.message || "Errore sconosciuto"}
+                    </pre>
+                </div>
+            );
+        }
+        return this.props.children;
+    }
+}
+
+const HtmlSection = React.memo(({ content, isDark }: { content: string; isDark: boolean }) => {
+    if (/\<ui-component\s+type="[^"]+"/.test(content)) {
+        return <GenerativeUIRenderer text={content} isDark={isDark} />;
+    }
+    const normalizedHtml = normalizeWrapperThemeClasses(content, isDark);
+    const htmlWithLatex = renderLatexInHtml(normalizedHtml);
+    const safeHtml = DOMPurify.sanitize(htmlWithLatex, {
+        ADD_TAGS: ['svg', 'path', 'g', 'rect', 'circle', 'line', 'polyline', 'polygon', 'button', 'span', 'section', 'article', 'math', 'semantics', 'mrow', 'mn', 'mo', 'mi', 'msup', 'msub', 'mfrac', 'mtext', 'annotation', 'annotation-xml'],
+        ADD_ATTR: ['class', 'style', 'viewBox', 'd', 'fill', 'xmlns', 'width', 'height', 'stroke', 'stroke-width', 'stroke-linecap', 'stroke-linejoin', 'x', 'y', 'rx', 'ry', 'cx', 'cy', 'r', 'encoding', 'aria-hidden']
+    });
+    return (
+        <div 
+            className="genui-html" 
+            dangerouslySetInnerHTML={{ __html: safeHtml }} 
+        />
+    );
+});
+
+const StructuredSections = React.memo(({ sections, isDark }: { 
+    sections: StructuredSection[], 
+    isDark: boolean 
+}) => {
+    return (
+        <div className="flex flex-col gap-3">
+            {sections.map((section, idx) => {
+                if (section.type === 'markdown') {
+                    return (
+                        <SectionErrorBoundary key={`md-${idx}`}>
+                            <MarkdownRender text={section.content} />
+                        </SectionErrorBoundary>
+                    );
+                }
+                if (section.type === 'html') {
+                    return (
+                        <SectionErrorBoundary key={`html-${idx}`}>
+                            <HtmlSection content={section.content} isDark={isDark} />
+                        </SectionErrorBoundary>
+                    );
+                }
+                return null;
+            })}
+        </div>
+    );
+});
+
 const LivePreviewMock = () => {
     return (
         <></>
@@ -230,29 +319,31 @@ const MessageItem = React.memo(({ msg, index, isDark, sendMessage }: {
         >
             {msg.content === "Elaborazione in corso..." || msg.content === "Avvio della richiesta..." 
                 ? <p className="text-neutral-500 italic text-sm">{msg.content}</p> 
-                : hasStructuredUI
-                    ? <GenerativeUIRenderer text={msg.content} isDark={isDark} />
-                    : safeHtml
-                        ? <div className="genui-html" dangerouslySetInnerHTML={{ __html: safeHtml }} />
-                    : <MarkdownRender text={msg.content} />
+                : msg.renderMode === 'structured' && msg.sections
+                    ? <StructuredSections sections={msg.sections} isDark={isDark} />
+                    : hasStructuredUI
+                        ? <GenerativeUIRenderer text={msg.content} isDark={isDark} />
+                        : safeHtml
+                            ? <div className="genui-html" dangerouslySetInnerHTML={{ __html: safeHtml }} />
+                        : <MarkdownRender text={msg.content} />
             }
         </BotMessage>
     );
 });
 
 const BETTERVIEW_PROMPTS = [
-  "Crea un pianificatore finanziario interattivo per il calcolo dell'interesse composto. Includi slider per impostare: Capitale Iniziale (0-100k€), Contributo Mensile (0-2k€), Rendimento Annuo Stimato (1-15%) e Orizzonte Temporale (1-40 anni). Mostra un grafico ad area di Chart.js che mostra la crescita del capitale divisa tra contributi versati e interessi accumulati, aggiornandolo in tempo reale al movimento degli slider.",
-  "Crea un simulatore fisico interattivo bidimensionale in HTML5 Canvas. Aggiungi slider per regolare la Gravità, il Rimbalzo (restituzione) e il Vento. L'utente deve poter cliccare sull'area del Canvas per generare delle palline colorate che cadono e rimbalzano contro i bordi del box seguendo i parametri impostati. Includi un pulsante per resettare la simulazione.",
-  "Crea un quiz interattivo a risposta multipla su Dante Alighieri e la Divina Commedia (5 domande). Mostra una barra di avanzamento, un feedback visivo immediato (verde/rosso) alla selezione della risposta, un piccolo timer da 15 secondi per domanda, ed un pannello dei risultati finale con il punteggio in percentuale e un riepilogo grafico delle risposte esatte.",
-  "Crea una guida interattiva per visualizzare le proprietà di CSS Flexbox. Includi controlli (pulsanti o dropdown) per cambiare: flex-direction, justify-content, align-items e gap. Sotto i controlli, mostra un contenitore flessibile con 4 box numerati colorati che si riposizionano istantaneamente in base alle proprietà selezionate, spiegando brevemente l'effetto pratico di ogni valore scelto.",
-  "Crea un generatore di password interattivo con annesso valutatore di sicurezza. Includi slider per la lunghezza (8-32 caratteri), checkbox per includere Maiuscole, Numeri e Simboli, e un box di input in cui l'utente può anche digitare una password personalizzata. Mostra in tempo reale la forza stimata (debole/media/forte) tramite una barra colorata, i bit di entropia calcolati e un pulsante copia-negli-appunti.",
-  "Disegna una mappa interattiva stilizzata (in SVG o layout a griglia) delle principali città italiane (Milano, Roma, Napoli, Palermo, Cagliari). Cliccando su una città, mostra una scheda meteo dettagliata sul lato destro con la temperatura attuale, vento, umidità, e un grafico Chart.js con le previsioni orarie delle successive 12 ore.",
-  "Crea una tastiera musicale/sintetizzatore virtuale interattivo a 8 tasti (un'ottava). Consenti di selezionare il tipo di onda dell'oscillatore (Sine, Square, Triangle, Sawtooth) tramite pulsanti, regolare il volume con uno slider, e suonare le note cliccando sui tasti grafici del pianoforte. Includi una piccola animazione Canvas che mostra una visualizzazione elementare delle onde sonore quando si preme un tasto.",
-  "Crea un editor Markdown interattivo in tempo reale con layout diviso in due pannelli. A sinistra una textarea dove scrivere codice markdown (supportando intestazioni, elenchi puntati, tabelle e grassetti), a destra un'anteprima HTML renderizzata all'istante durante la digitazione. Aggiungi un pulsante per caricare un testo di esempio predefinito.",
-  "Crea una scheda ricetta interattiva per il Tiramisù o le Lasagne. Aggiungi un selettore numerico (+/-) o uno slider per indicare le porzioni (da 1 a 20 persone). Moltiplica dinamicamente le dosi di tutti gli ingredienti in tempo reale. Includi una lista di controllo degli ingredienti interattiva dove l'utente può sbarrare le voci comprate/utilizzate con un'animazione.",
-  "Crea uno strumento interattivo per la verifica del contrasto colore HSL. Inserisci slider per regolare Hue, Saturation e Lightness del colore di sfondo. Calcola e mostra dinamicamente il rapporto di contrasto (contrast ratio) rispetto al testo nero ed al testo bianco secondo gli standard WCAG 2.1 (indicando se supera le soglie AA o AAA). Mostra un'anteprima visiva del testo sullo sfondo selezionato.",
-  "Crea una macchina cifrante interattiva (Cifrario di Cesare e Cifrario Atbash). Includi una textarea per il testo in chiaro, uno slider per selezionare la chiave di spostamento (da 1 a 25 per Cesare), pulsanti radio per selezionare l'algoritmo, e una textarea disabilitata per mostrare il testo cifrato aggiornato in tempo reale. Mostra una griglia visiva dell'alfabeto traslato in base alla chiave inserita.",
-  "Crea una mappa concettuale interattiva delle tecnologie web (Frontend, Backend, Database) usando D3.js. L'utente deve poter cliccare sui nodi principali per espandere o contrarre i sotto-nodi (es. cliccando su Frontend appaiono HTML, CSS, JS) con transizioni fluide, e poter inserire un nuovo sotto-nodo personalizzato tramite un campo di input e un pulsante."
+  "Spiegami come funziona l'interesse composto con una descrizione dettagliata ed illustrativa dei concetti teorici (capitale iniziale, contributi mensili, rendimento, orizzonte temporale). Includi poi un pianificatore finanziario interattivo (mini-simulatore) con slider per impostare tali parametri e un grafico ad area Chart.js che mostri la crescita del capitale in tempo reale.",
+  "Spiegami i concetti fisici di gravità, rimbalzo (restituzione) e vento/attrito dell'aria. Associa alla spiegazione teorica un simulatore fisico bidimensionale interattivo in HTML5 Canvas, dove l'utente può cliccare per generare palline colorate che risentono dei parametri impostati tramite gli slider in tempo reale.",
+  "Presenta una spiegazione interattiva su Dante Alighieri e la struttura della Divina Commedia, descrivendo l'Inferno, il Purgatorio e il Paradiso. Aggiungi poi un mini-quiz interattivo a risposta multipla (5 domande) con barra di avanzamento, feedback visivo immediato (verde/rosso), timer di 15 secondi per domanda e pannello riepilogativo dei risultati finale.",
+  "Spiegami il funzionamento di CSS Flexbox, descrivendone i concetti cardine (asse principale, asse secondario, allineamento e distribuzione dello spazio). Integra una guida interattiva (playground) con controlli per modificare flex-direction, justify-content, align-items e gap, mostrando in tempo reale il comportamento di 4 box numerati con una spiegazione dell'effetto pratico di ogni valore.",
+  "Spiegami come viene valutata la sicurezza di una password e cos'è l'entropia crittografica. Sotto la spiegazione concettuale, includi un mini-generatore interattivo con slider di lunghezza (8-32 caratteri), checkbox per Maiuscole, Numeri, Simboli e un valutatore di forza in tempo reale (barra colorata, bit di entropia e pulsante copia).",
+  "Illustra il clima delle principali città italiane (Milano, Roma, Napoli, Palermo, Cagliari) spiegando le differenze geografiche e climatiche tra Nord, Centro, Sud e Isole. Aggiungi una mappa interattiva stilizzata (in SVG o griglia) in cui, cliccando su una città, viene visualizzata una scheda con i dettagli meteo correnti e un grafico Chart.js con le previsioni orarie per le successive 12 ore.",
+  "Spiegami come funziona il suono dal punto di vista fisico (frequenze, ampiezza, tipi di onde sonore come Sine, Square, Triangle, Sawtooth). Sotto la spiegazione teorica, aggiungi un sintetizzatore virtuale interattivo a 8 tasti (un'ottava) che consenta di modificare il tipo di onda, regolare il volume e visualizzare l'oscillazione su un Canvas quando si suona.",
+  "Spiegami la sintassi e la filosofia di Markdown e come viene convertito in HTML. Includi un editor Markdown interattivo in tempo reale con layout a due pannelli (input a sinistra, anteprima HTML renderizzata a destra) e un pulsante per caricare un testo di esempio.",
+  "Presenta la ricetta del Tiramisù o delle Lasagne spiegandone l'origine e i passaggi fondamentali. Sotto la guida, aggiungi una scheda interattiva per scalare dinamicamente le porzioni (da 1 a 20 persone) aggiornando le dosi in tempo reale e una checklist degli ingredienti interattiva.",
+  "Spiegami i criteri di accessibilità del contrasto colore WCAG 2.1 e perché sono fondamentali per le persone con disabilità visiva. Aggiungi poi un tester interattivo di contrasto HSL con slider per regolare Hue, Saturation e Lightness del background, calcolando in tempo reale il contrasto rispetto al testo bianco e nero con l'esito dei requisiti AA/AAA.",
+  "Spiegami la crittografia classica e il funzionamento del Cifrario di Cesare e del Cifrario Atbash. Aggiungi una macchina cifrante interattiva con una textarea per il testo in chiaro, uno slider per la chiave di Cesare (1-25), opzioni radio per l'algoritmo, e il risultato cifrato in tempo reale insieme ad una rappresentazione visiva dell'alfabeto traslato.",
+  "Spiegami la struttura logica e le relazioni delle tecnologie web (Frontend, Backend, Database). Rappresenta questa gerarchia attraverso una mappa concettuale interattiva ad albero usando D3.js, dove i nodi possono essere espansi o contratti al click e l'utente può inserire dinamicamente nuovi nodi tramite un form."
 ];
 
 const ChatContent = () => {

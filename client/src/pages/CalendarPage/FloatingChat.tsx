@@ -4,7 +4,7 @@ import { useCalendar } from "../../context/CalendarContext";
 import { useAuth } from "../../context/AuthContext";
 import SelectPopup from "../../components/other/SelectPopup";
 import { useChat } from "../../context/ChatContext";
-import { PaperPlaneTilt, CaretDown, Minus, PencilSimple, MagicWand, Sparkle, Calendar, Clock, Notebook, Bell, BellSlash } from "@phosphor-icons/react";
+import { PaperPlaneTilt, CaretDown, Minus, PencilSimple, MagicWand, Sparkle, Calendar, Clock, Notebook, Bell, BellSlash, LightningIcon, GaugeIcon, BrainIcon } from "@phosphor-icons/react";
 import GenerativeUIRenderer from "../../components/generativeUI/GenerativeUIRenderer";
 
 type ReasoningStep = { type: string; content: string };
@@ -14,6 +14,12 @@ type ChatMessage = {
     reasoning?: ReasoningStep[];
 };
 
+const REASONING_OPTIONS = [
+    { label: "Veloce", value: "fast", icon: <LightningIcon size={16} />, description: "Risposte rapide" },
+    { label: "Standard", value: "standard", icon: <GaugeIcon size={16} />, description: "Bilanciato" },
+    { label: "Accurato", value: "accurate", icon: <BrainIcon size={16} />, description: "Più preciso" },
+];
+
 const FloatingChat = () => {
     const { setIsFloatingChat, fetchEvents, chatPosition, setChatPosition, sidebarWidth, setSidebarWidth } = useCalendar();
     const [isExiting, setIsExiting] = useState(false);
@@ -21,6 +27,7 @@ const FloatingChat = () => {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [isLoading, setIsLoading] = useState(false);
     const [sendNotifications, setSendNotifications] = useState(true);
+    const [reasoning, setReasoning] = useState<string>("fast");
     const { theme, session } = useAuth();
     const { model, setModel } = useChat();
     const isDark = theme === 'dark';
@@ -59,7 +66,7 @@ const FloatingChat = () => {
 
     const MODEL_OPTIONS = [
         { label: "Deepseek V4 Flash", value: "deepseek/deepseek-v4-flash", description: "" },
-        { label: "Xiaomi Mimo V2 Flash", value: "xiaomi/mimo-v2-flash", description: "" },
+        { label: "Xiaomi Mimo V2.5 Flash", value: "xiaomi/mimo-v2.5", description: "" },
         { label: "Qwen3.6 Flash", value: "qwen/qwen3.6-flash", description: "" },
         { label: "Gpt-5-nano", value: "openai/gpt-5-nano", description: "" },
     ];
@@ -104,7 +111,8 @@ const FloatingChat = () => {
                     temperature: 0.5,
                     sendNotifications,
                     stream: true,
-                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone
+                    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                    reasoning
                 })
             });
 
@@ -320,6 +328,16 @@ const FloatingChat = () => {
                                 value={currentModelId}
                                 onChange={handleModelChange}
                                 placeholder={typeof model === 'object' && model !== null ? model.name : "Model"}
+                                renderLabel={(selected) => {
+                                    const label = selected?.label || (typeof model === 'object' && model !== null ? model.name : "Model");
+                                    return label.length > 8 ? label.slice(0, 8) + "..." : label;
+                                }}
+                            />
+                            <SelectPopup
+                                options={REASONING_OPTIONS}
+                                value={reasoning}
+                                onChange={setReasoning}
+                                renderLabel={(selected) => selected?.icon}
                             />
                             <button
                                 onClick={() => setSendNotifications(!sendNotifications)}

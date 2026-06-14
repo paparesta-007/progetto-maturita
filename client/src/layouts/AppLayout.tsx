@@ -69,6 +69,19 @@ const AppLayout = () => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [setTheme]);
 
+  useEffect(() => {
+    if (isFloatingChat && chatPosition === 'sidebar-right') {
+      if (!chatAutoMinimizedDone) {
+        setIsMinimized(true);
+        setChatAutoMinimizedDone(true);
+      }
+    } else {
+      if (chatAutoMinimizedDone) {
+        setIsMinimized(false);
+        setChatAutoMinimizedDone(false);
+      }
+    }
+  }, [isFloatingChat, chatPosition, chatAutoMinimizedDone, setChatAutoMinimizedDone]);
 
   return (
     <ChatProvider>
@@ -95,11 +108,6 @@ const AppLayout = () => {
             isMobileOpen={isMobileMenuOpen}
             setIsMobileOpen={setIsMobileMenuOpen}
           />
-
-          {/* Auto-minimize sidebar once when chat opens as sidebar-right */}
-          {isFloatingChat && chatPosition === 'sidebar-right' && !chatAutoMinimizedDone && (
-            (() => { setIsMinimized(true); setChatAutoMinimizedDone(true); return null; })()
-          )}
 
           <main className={`flex-1 min-w-0 overflow-hidden relative ${isMobileMenuOpen ? 'hidden md:block' : 'block'}`}>
             <Outlet />

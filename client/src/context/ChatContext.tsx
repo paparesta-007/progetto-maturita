@@ -170,11 +170,14 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
                     messages.push({
                         role: 'bot' as const,
                         content: row.content,
-                        renderMode: row.render_mode === 'html'
-                            ? 'html'
-                            : row.render_mode === 'markdown'
-                                ? 'markdown'
-                                : undefined,
+                        renderMode: row.render_mode === 'structured'
+                            ? 'structured'
+                            : row.render_mode === 'html'
+                                ? 'html'
+                                : row.render_mode === 'markdown'
+                                    ? 'markdown'
+                                    : undefined,
+                        sections: row.sections || null,
                         usage: row.usage, // Assumiamo che usage sia una colonna nella tabella messages
                         model: row.model, // Assumiamo che model sia una colonna nella tabella messages
                         suggestedQuestions: row.suggestedQuestions, // Se salvato

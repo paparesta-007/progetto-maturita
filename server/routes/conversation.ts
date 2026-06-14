@@ -50,7 +50,7 @@ router.post("/messages/create", requireAuth, async (req: express.Request, res: e
                 content: content,
                 usage: usage,
                 model: model,
-                render_mode: render_mode === 'html' ? 'html' : 'markdown',
+                render_mode: (render_mode === 'html' || render_mode === 'structured') ? 'html' : 'markdown',
                 reasoning_text: reasoning_text,
             });
 
@@ -117,7 +117,29 @@ router.get("/messages", requireAuth, async (req: express.Request, res: express.R
             return res.status(500).json({ error: error.message });
         }
 
-        res.json(data ? data.reverse() : []);
+        const reversedData = data ? data.reverse() : [];
+        const mappedData = reversedData.map((row: any) => {
+            if (row.content) {
+                const trimmed = row.content.trim();
+                if (trimmed.startsWith("{") && trimmed.endsWith("}")) {
+                    try {
+                        const parsed = JSON.parse(trimmed);
+                        if (parsed && Array.isArray(parsed.sections)) {
+                            return {
+                                ...row,
+                                render_mode: 'structured',
+                                sections: parsed.sections
+                            };
+                        }
+                    } catch (e) {
+                        // Not valid JSON, keep as is
+                    }
+                }
+            }
+            return row;
+        });
+
+        res.json(mappedData);
     } catch (error) {
         next(error);
     }

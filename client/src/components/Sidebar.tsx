@@ -246,43 +246,40 @@ const Sidebar = ({
                         </NavLink>
                     ))}
 
-                    <div className="pt-8">
-                        {!isMinimized && (
+                    {!isMinimized && (
+                        <div className="pt-8">
                             <div className="px-3 flex items-center justify-between mb-3">
                                 <p className="text-[10px] font-bold uppercase tracking-widest sidebar-text-muted">{isDocumentsPage ? "Library" : "Recent"}</p>
                                 <span className={`text-[10px] font-medium sidebar-text-muted ${isDark ? 'bg-white/10' : 'bg-[#f0eee6]'} px-1.5 py-0.5 rounded`}>{isDocumentsPage ? documentList.length : conversations.length}</span>
                             </div>
-                        )}
-                        
-                        <ul className="space-y-1" ref={convMenuRef}>
-                            {isDocumentsPage ? (
-                                documentList.map(doc => (
-                                    <li key={doc.document_id} className="relative group">
-                                        {editingId === doc.document_id ? (
-                                            <div className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm bg-[#f0eee6] dark:bg-white/5 border border-[#b08968]/30">
-                                                <File size={16} className="flex-shrink-0 opacity-40" />
-                                                <input
-                                                    autoFocus
-                                                    className={`bg-transparent border-none outline-none w-full text-sm ${isDark ? 'text-white' : 'text-[#171717]'}`}
-                                                    value={renameTitle}
-                                                    onChange={(e) => setRenameTitle(e.target.value)}
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') {
-                                                            // Handle document rename if service exists, for now just close
-                                                            setEditingId(null);
-                                                        }
-                                                        if (e.key === 'Escape') setEditingId(null);
-                                                    }}
-                                                    onBlur={() => setEditingId(null)}
-                                                />
-                                            </div>
-                                        ) : (
-                                            <>
-                                                <NavLink to={`/app/documents/${doc.document_id}`} onClick={() => setIsMobileOpen?.(false)} className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm nav-item-cozy truncate group-hover:pr-10">
+                            
+                            <ul className="space-y-1" ref={convMenuRef}>
+                                {isDocumentsPage ? (
+                                    documentList.map(doc => (
+                                        <li key={doc.document_id} className="relative group">
+                                            {editingId === doc.document_id ? (
+                                                <div className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm bg-[#f0eee6] dark:bg-white/5 border border-[#b08968]/30">
                                                     <File size={16} className="flex-shrink-0 opacity-40" />
-                                                    {!isMinimized && <span className="truncate">{doc.title}</span>}
-                                                </NavLink>
-                                                {!isMinimized && (
+                                                    <input
+                                                        autoFocus
+                                                        className={`bg-transparent border-none outline-none w-full text-sm ${isDark ? 'text-white' : 'text-[#171717]'}`}
+                                                        value={renameTitle}
+                                                        onChange={(e) => setRenameTitle(e.target.value)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') {
+                                                                setEditingId(null);
+                                                            }
+                                                            if (e.key === 'Escape') setEditingId(null);
+                                                        }}
+                                                        onBlur={() => setEditingId(null)}
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <NavLink to={`/app/documents/${doc.document_id}`} onClick={() => setIsMobileOpen?.(false)} className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm nav-item-cozy truncate group-hover:pr-10">
+                                                        <File size={16} className="flex-shrink-0 opacity-40" />
+                                                        <span className="truncate">{doc.title}</span>
+                                                    </NavLink>
                                                     <div className={`absolute right-2 top-1/2 -translate-y-1/2 flex gap-0.5 transition-all z-20 ${docMenuOpen === doc.document_id ? 'opacity-100 visible' : 'opacity-0 invisible group-hover:opacity-100 group-hover:visible'}`}>
                                                         <div className="relative">
                                                             <button 
@@ -295,7 +292,7 @@ const Sidebar = ({
                                                             >
                                                                 <DotsThreeIcon size={18} weight="bold" />
                                                             </button>
-
+ 
                                                             <AnimatePresence>
                                                                 {docMenuOpen === doc.document_id && (
                                                                     <motion.div
@@ -334,36 +331,34 @@ const Sidebar = ({
                                                             </AnimatePresence>
                                                         </div>
                                                     </div>
-                                                )}
-                                            </>
-                                        )}
-                                    </li>
-                                ))
-                            ) : (
-                                conversations.map((conv: any) => (
-                                    <li key={conv.id} className="relative group">
-                                        {editingId === conv.id ? (
-                                            <div className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm bg-[#f0eee6] dark:bg-white/5 border border-[#b08968]/30">
-                                                <ClockCounterClockwiseIcon size={16} className="flex-shrink-0 opacity-40" />
-                                                <input
-                                                    autoFocus
-                                                    className={`bg-transparent border-none outline-none w-full text-sm ${isDark ? 'text-white' : 'text-[#171717]'}`}
-                                                    value={renameTitle}
-                                                    onChange={(e) => setRenameTitle(e.target.value)}
-                                                    onKeyDown={(e) => {
-                                                        if (e.key === 'Enter') handleRename(conv.id, renameTitle);
-                                                        if (e.key === 'Escape') setEditingId(null);
-                                                    }}
-                                                    onBlur={() => handleRename(conv.id, renameTitle)}
-                                                />
-                                            </div>
-                                        ) : (
-                                            <>
-                                                <NavLink to={`/app/chat/${conv.id}`} onClick={() => setIsMobileOpen?.(false)} className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm nav-item-cozy truncate group-hover:pr-10">
+                                                </>
+                                            )}
+                                        </li>
+                                    ))
+                                ) : (
+                                    conversations.map((conv: any) => (
+                                        <li key={conv.id} className="relative group">
+                                            {editingId === conv.id ? (
+                                                <div className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm bg-[#f0eee6] dark:bg-white/5 border border-[#b08968]/30">
                                                     <ClockCounterClockwiseIcon size={16} className="flex-shrink-0 opacity-40" />
-                                                    {!isMinimized && <span className="truncate">{conv.title || "Untitled Chat"}</span>}
-                                                </NavLink>
-                                                {!isMinimized && (
+                                                    <input
+                                                        autoFocus
+                                                        className={`bg-transparent border-none outline-none w-full text-sm ${isDark ? 'text-white' : 'text-[#171717]'}`}
+                                                        value={renameTitle}
+                                                        onChange={(e) => setRenameTitle(e.target.value)}
+                                                        onKeyDown={(e) => {
+                                                            if (e.key === 'Enter') handleRename(conv.id, renameTitle);
+                                                            if (e.key === 'Escape') setEditingId(null);
+                                                        }}
+                                                        onBlur={() => handleRename(conv.id, renameTitle)}
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <NavLink to={`/app/chat/${conv.id}`} onClick={() => setIsMobileOpen?.(false)} className="flex items-center gap-3 px-3 py-2 rounded-xl text-sm nav-item-cozy truncate group-hover:pr-10">
+                                                        <ClockCounterClockwiseIcon size={16} className="flex-shrink-0 opacity-40" />
+                                                        <span className="truncate">{conv.title || "Untitled Chat"}</span>
+                                                    </NavLink>
                                                     <div className={`absolute right-2 top-1/2 -translate-y-1/2 flex gap-0.5 transition-all z-20 ${convMenuOpen === conv.id ? 'opacity-100 visible' : 'opacity-0 invisible group-hover:opacity-100 group-hover:visible'}`}>
                                                         <div className="relative">
                                                             <button 
@@ -376,7 +371,7 @@ const Sidebar = ({
                                                             >
                                                                 <DotsThreeIcon size={18} weight="bold" />
                                                             </button>
-
+ 
                                                             <AnimatePresence>
                                                                 {convMenuOpen === conv.id && (
                                                                     <motion.div
@@ -415,14 +410,14 @@ const Sidebar = ({
                                                             </AnimatePresence>
                                                         </div>
                                                     </div>
-                                                )}
-                                            </>
-                                        )}
-                                    </li>
-                                ))
-                            )}
-                        </ul>
-                    </div>
+                                                </>
+                                            )}
+                                        </li>
+                                    ))
+                                )}
+                            </ul>
+                        </div>
+                    )}
                 </div>
 
                 {/* Footer */}

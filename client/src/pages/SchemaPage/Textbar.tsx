@@ -16,7 +16,7 @@ const SchemaTextbar = () => {
 
     const MODELS: SelectOption<string>[] = [
         { label: "DeepSeek v4 Flash", value: "deepseek/deepseek-v4-flash", icon: <LightningIcon size={16} />, description: "Ultra veloce" },
-        { label: "Xiaomi Mimo V2.5 Flash", value: "xiaomi/mimo-v2-flash", icon: <BrainIcon size={16} />, description: "Intelligenza pura" },
+        { label: "Xiaomi Mimo V2.5 Flash", value: "xiaomi/mimo-v2.5", icon: <BrainIcon size={16} />, description: "Intelligenza pura" },
         { label: "Gemini 3.1 Flash Lite", value: "google/gemini-3.1-flash-lite", icon: <GaugeIcon size={16} />, description: "Versatile" },
         { label: "GPT OSS 120B", value: "openai/gpt-oss-120b", icon: <Sparkle size={16} />, description: "Potente & Libero" },
     ];

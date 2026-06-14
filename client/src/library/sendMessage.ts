@@ -33,7 +33,28 @@ export interface QuizResponse {
     error?: string;
 }
 
-export type RenderMode = 'html' | 'markdown';
+export type RenderMode = 'html' | 'markdown' | 'structured';
+
+export interface StructuredSection {
+    type: 'markdown' | 'html';
+    content: string;
+}
+
+const getErrorMessage = (errData: any, statusText: string): string => {
+    if (typeof errData?.error === 'string') {
+        return errData.error;
+    }
+    if (errData?.error?.message) {
+        return errData.error.message;
+    }
+    if (errData?.details) {
+        return errData.details;
+    }
+    if (errData?.message) {
+        return errData.message;
+    }
+    return statusText || "Errore sconosciuto";
+};
 
 // ============================================================
 // DEFAULT: Normal chat message (calls the real server)
@@ -97,16 +118,18 @@ export const sendNormalMessage = async (
 
         if (!response.ok) {
             const errData = await response.json().catch(() => ({}));
-            const errorMsg = errData?.error?.message?.toLowerCase() || JSON.stringify(errData).toLowerCase();
-            if (errorMsg.includes("image") || errorMsg.includes("vision") || errorMsg.includes("support")) {
+            const errorMsg = getErrorMessage(errData, response.statusText);
+            const lowerError = errorMsg.toLowerCase();
+            if (lowerError.includes("image") || lowerError.includes("vision") || lowerError.includes("support")) {
                 throw new Error("Il modello selezionato non supporta l'analisi di immagini.");
             }
-            throw new Error(`Errore API Chat: ${errData?.error?.message || response.statusText}`);
+            throw new Error(`Errore API Chat: ${errorMsg}`);
         }
 
         const data = await response.json();
         const responseText = data.text;
-        const renderMode: RenderMode = data.renderMode === 'html' ? 'html' : 'markdown';
+        const renderMode: RenderMode = data.renderMode;
+        const sections = data.sections || null;
         const responseUsage = data.usage || { total_tokens: 0 };
         const responseModel = model?.name || model?.name_id || "Unknown";
         const suggestedQuestions = data.suggestedQuestions || [];
@@ -114,7 +137,7 @@ export const sendNormalMessage = async (
 
         setMessageHistory((prev) => [
             ...prev,
-            { role: 'bot', content: responseText, renderMode, usage: responseUsage, model: responseModel, suggestedQuestions, reasoning: reasoningContent },
+            { role: 'bot', content: responseText, renderMode, sections, usage: responseUsage, model: responseModel, suggestedQuestions, reasoning: reasoningContent },
         ]);
 
         const messagePayload = {
@@ -122,6 +145,7 @@ export const sendNormalMessage = async (
             content: responseText,
             usage: responseUsage,
             renderMode,
+            sections,
             model: model,
             reasoning: reasoningContent
         };
@@ -289,11 +313,12 @@ export const sendStreamedMessage = async (
 
         if (!response.ok) {
             const errData = await response.json().catch(() => ({}));
-            const errorMsg = errData?.error?.message?.toLowerCase() || JSON.stringify(errData).toLowerCase();
-            if (errorMsg.includes("image") || errorMsg.includes("vision") || errorMsg.includes("support")) {
+            const errorMsg = getErrorMessage(errData, response.statusText);
+            const lowerError = errorMsg.toLowerCase();
+            if (lowerError.includes("image") || lowerError.includes("vision") || lowerError.includes("support")) {
                 throw new Error("Il modello selezionato non supporta l'analisi di immagini.");
             }
-            throw new Error(errData?.error?.message || response.statusText);
+            throw new Error(errorMsg);
         }
 
         if (!response.body) {
@@ -307,6 +332,7 @@ export const sendStreamedMessage = async (
         let accumulatedRenderMode: RenderMode = 'markdown';
         let accumulatedReasoning = "";
         let accumulatedUsage: any = {};
+        let accumulatedSections: StructuredSection[] | null = null;
         let ndjsonBuffer = "";
 
         while (!done) {
@@ -330,9 +356,11 @@ export const sendStreamedMessage = async (
                         if (data.type === "reasoning" && data.content) {
                             accumulatedReasoning += data.content;
                         } else if (data.type === "meta" && data.renderMode) {
-                            accumulatedRenderMode = data.renderMode === 'html' ? 'html' : 'markdown';
+                            accumulatedRenderMode = data.renderMode;
                         } else if (data.type === "text" && data.content) {
                             accumulatedText += data.content;
+                        } else if (data.type === "structured" && data.sections) {
+                            accumulatedSections = data.sections;
                         } else if (data.type === "usage" && data.content) {
                             accumulatedUsage = data.content;
                         } else if (data.type === "error") {
@@ -355,6 +383,7 @@ export const sendStreamedMessage = async (
                             ...newHistory[lastMsgIndex],
                             content: accumulatedText,
                             renderMode: accumulatedRenderMode,
+                            sections: accumulatedSections,
                             ...(accumulatedReasoning ? { reasoning: accumulatedReasoning } : {}),
                             ...(Object.keys(accumulatedUsage).length > 0 ? { usage: accumulatedUsage } : {})
                         };
@@ -370,6 +399,7 @@ export const sendStreamedMessage = async (
             content: accumulatedText,
             usage: Object.keys(accumulatedUsage).length > 0 ? accumulatedUsage : { total_tokens: 0 },
             renderMode: accumulatedRenderMode,
+            sections: accumulatedSections,
             model: model,
             reasoning: accumulatedReasoning
         };
@@ -442,7 +472,15 @@ export const sendStreamedMessage = async (
     } catch (error: any) {
         if (error.name === 'AbortError') {
             console.log("Stream abortito dall'utente");
-            // Non aggiungere l'errore in chat, l'utente sa di aver interrotto
+            // Rimuoviamo il placeholder vuoto se presente per non lasciare una riga vuota
+            setMessageHistory((prev) => {
+                const newHistory = [...prev];
+                const lastMsgIndex = newHistory.length - 1;
+                if (lastMsgIndex >= 0 && newHistory[lastMsgIndex].role === 'bot' && !newHistory[lastMsgIndex].content) {
+                    newHistory.pop();
+                }
+                return newHistory;
+            });
             return;
         }
 
@@ -454,7 +492,29 @@ export const sendStreamedMessage = async (
             displayError = "Il modello selezionato non supporta l'analisi di immagini.";
         }
 
-        setMessageHistory((prev) => [...prev, { role: 'bot', content: `⚠️ Errore: ${displayError}`, model: "System" }]);
+        setMessageHistory((prev) => {
+            const newHistory = [...prev];
+            const lastMsgIndex = newHistory.length - 1;
+            if (lastMsgIndex >= 0 && newHistory[lastMsgIndex].role === 'bot') {
+                if (!newHistory[lastMsgIndex].content) {
+                    // Sostituiamo il placeholder con il messaggio di errore
+                    newHistory[lastMsgIndex] = {
+                        ...newHistory[lastMsgIndex],
+                        content: `⚠️ Errore: ${displayError}`,
+                        model: "System"
+                    };
+                } else {
+                    // Appendiamo l'errore alla fine del testo parziale già ricevuto
+                    newHistory[lastMsgIndex] = {
+                        ...newHistory[lastMsgIndex],
+                        content: newHistory[lastMsgIndex].content + `\n\n⚠️ Errore durante la generazione: ${displayError}`
+                    };
+                }
+            } else {
+                newHistory.push({ role: 'bot', content: `⚠️ Errore: ${displayError}`, model: "System" });
+            }
+            return newHistory;
+        });
     } finally {
         setLoading(false);
     }
