@@ -1,3 +1,5 @@
+import { supportsStructuredOutput } from "../../utils/betterViewSchema.js";
+
 const getSystemPrompt = ({
     selectedModel,
     systemPromptUser,
@@ -52,16 +54,36 @@ Apply only when relevant. Skip if unrelated or in conflict with formatting/accur
         if (betterViewRenderMode === 'markdown') {
             systemPrompt += `\n\n**Code/Debug Mode:** Output pure Markdown only. Use fenced code blocks, bullet steps. No HTML. Keep answers structured and executable.`;
         } else {
-            systemPrompt += `\n\n**Generative UI Mode:** Render answers as living UI — raw HTML + Tailwind. Zero Markdown, zero plain text outside tags.
+            const isStructured = supportsStructuredOutput(selectedModel);
+            if (isStructured) {
+                systemPrompt += `\n\n**Generative UI Mode — Structured JSON Output:**
+Your output MUST strictly be a JSON object matching the JSON schema provided in response_format. It must contain a "sections" array. Each section in the array must be an object with:
+- "type": either "markdown" (for pure explanations, theory, step-by-step description, LaTeX math formulas using $...$ or $$...$$, bullet lists) or "html" (for Tailwind card components, custom UI widgets, simulators, interactive panels)
+- "content": the string content of that section
+
+**Strict Formatting Rules:**
+1. NEVER put markdown formatting (such as headers ##, bullet lists, or bolding) directly inside an "html" section. Keep "html" sections strictly for HTML tags.
+2. NEVER put HTML tags (such as <div>, <button>, etc.) inside a "markdown" section. Keep "markdown" sections strictly for Markdown text.
+3. Every card or interactive component in the "html" section should have a nice design, transparent background (bg-neutral-50/50 dark:bg-white/[0.03]), and follow the rules below.
+4. You can alternate sections as needed (e.g., markdown -> html -> markdown). Ensure the transition between sections is visually seamless.`;
+            } else {
+                systemPrompt += `\n\n**Generative UI Mode:** Render answers as a combination of rich explanation (standard Markdown/HTML) and interactive components.`;
+            }
+            
+            systemPrompt += `
+
+**Philosophy (Understand, don't just "do/make"):**
+- The core purpose of "Better View" is to help the user **understand** concepts, not just provide a standalone tool/application.
+- When explaining any concept, phenomenon, or system (e.g., how interest rates work, gravity, etc.), always provide a clear, educational, and visually structured description/explanation of the theory first. Use nice typography, grids, visual steps, tables, or accordion/tabs.
+- Following/below this explanation, include a mini-simulator, calculator, or interactive visualization inside a sandbox component so the user can experiment and see the concept in action.
 
 **⛔ HARD RULES — never break these:**
-- NEVER wrap output in code fences (\`\`\`html ... \`\`\`) or backticks of any kind.
-- NEVER output bare text before or after the HTML block.
+- NEVER wrap the \`<ui-component>\` tag or the HTML block in markdown code fences (\`\`\`html ... \`\`\`). Standard markdown/HTML explanation text before or after the component is allowed and encouraged.
 - If you need to display code snippets, use EXACTLY: \`<pre><code class="language-[lang]">...</code></pre>\`. Do NOT build custom UI wrappers for code blocks.
 - NEVER render a card with only a title and no body content. Every card needs ≥ 2 real content blocks.
 - NEVER leave a section visually empty. If data is sparse, use a placeholder stat, a descriptive sentence, or merge with adjacent content.
-- Output is ONE single root element: either \`<div>\` or \`<ui-component type="sandbox">\`. Nothing else.
-
+- Do not restrict the entire response to a single element if both explanation and simulation are needed. You can output standard Markdown/HTML first for the explanation, followed by a \`<ui-component type="sandbox">\` containing the interactive simulator.
+ 
 **Layout — choose by data shape:**
 - Narrative / process / explanation / mixed → single-column stack with visual separators.
 - 5+ uniform items → responsive grid: \`grid grid-cols-1 md:grid-cols-2 gap-3\`.

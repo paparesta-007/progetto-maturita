@@ -198,11 +198,18 @@ async function executeTool(name: string, args: any, token: string, options?: { s
 // --- ENDPOINT AGENTE ---
 router.post("/api/calendar/action", requireAuth, async (req: express.Request, res: express.Response) => {
     try {
-        const { text, modelName, messages: history = [], temperature, sendNotifications, stream = false, timezone = "Europe/Rome" } = req.body;
+        const { text, modelName, messages: history = [], temperature, sendNotifications, stream = false, timezone = "Europe/Rome", reasoning: reasoningEffort } = req.body;
         const googleToken = req.body.googleToken || req.headers['x-google-token'] || "";
         const selectedModel = modelName || "deepseek/deepseek-chat";
 
-        console.log(`[CalendarAPI] Avvio Agente: ${selectedModel} | Notifications: ${sendNotifications !== false} | Stream: ${stream} | Timezone: ${timezone}`);
+        console.log(`[CalendarAPI] Avvio Agente: ${selectedModel} | Notifications: ${sendNotifications !== false} | Stream: ${stream} | Timezone: ${timezone} | Reasoning: ${reasoningEffort}`);
+
+        const reasoningEffortMap: Record<string, string> = {
+            fast: "minimal",
+            standard: "medium",
+            accurate: "high"
+        };
+        const effortValue = reasoningEffort ? reasoningEffortMap[reasoningEffort] || "medium" : "medium";
 
         if (stream) {
             res.setHeader('Content-Type', 'application/json');
@@ -244,6 +251,7 @@ router.post("/api/calendar/action", requireAuth, async (req: express.Request, re
                     tools: TOOLS,
                     tool_choice: "auto",
                     temperature: temperature ?? 0.5,
+                    reasoning: { effort: effortValue },
                     provider: { allow_fallbacks: false }
                 })
             });
@@ -304,6 +312,48 @@ router.post("/api/calendar/action", requireAuth, async (req: express.Request, re
             res.write(JSON.stringify({ type: "error", content: error.message }) + "\n");
             res.end();
         }
+    }
+});
+
+router.post("/api/calendar/improve-description", requireAuth, async (req: express.Request, res: express.Response) => {
+    try {
+        const { title, description } = req.body;
+        if (!title && !description) {
+            return res.status(400).json({ error: "Title or Description is required" });
+        }
+
+        const systemPrompt = "Sei un assistente AI integrato nel calendario. Il tuo compito è migliorare e arricchire la descrizione dell'evento di calendario fornito dall'utente in modo professionale, chiaro e conciso. Mantieni la descrizione breve e adatta per un evento lavorativo o personale. Ritorna SOLTANTO il testo migliorato della descrizione, senza preamboli o commenti.";
+        const userPrompt = `Titolo evento: ${title || "(Senza titolo)"}\nDescrizione attuale: ${description || "(Vuota)"}\n\nMigliora e completa questa descrizione:`;
+
+        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${OPENROUTER_KEY}`,
+                "Content-Type": "application/json",
+                "HTTP-Referer": "https://github.com/paparesta-007/progetto-maturita",
+                "X-Title": "Smart Calendar Assistant"
+            },
+            body: JSON.stringify({
+                model: "mistralai/ministral-8b-2512",
+                messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: userPrompt }
+                ],
+                temperature: 0.7
+            })
+        });
+
+        if (!response.ok) {
+            const err = await response.text();
+            throw new Error(`OpenRouter error: ${err}`);
+        }
+
+        const data = await response.json();
+        const improvedDescription = data.choices?.[0]?.message?.content || "";
+        return res.json({ description: improvedDescription.trim() });
+    } catch (error: any) {
+        console.error("Error improving description:", error);
+        return res.status(500).json({ error: error.message || "Internal server error" });
     }
 });
 
