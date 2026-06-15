@@ -440,7 +440,56 @@ Elenca le altre 3 opzioni errate e spiega per ciascuna, in modo chiaro e coincis
     }
 });
 
+function cleanAndParseJSON(str: string): any {
+    if (typeof str !== "string") return str;
+    
+    let cleaned = str.trim();
+    
+    // Remove markdown code block wraps if they exist
+    if (cleaned.startsWith("```json")) {
+        cleaned = cleaned.substring(7);
+    } else if (cleaned.startsWith("```")) {
+        cleaned = cleaned.substring(3);
+    }
+    if (cleaned.endsWith("```")) {
+        cleaned = cleaned.substring(0, cleaned.length - 3);
+    }
+    cleaned = cleaned.trim();
+
+    try {
+        return JSON.parse(cleaned);
+    } catch (e) {
+        // Fallback: extract substring between first '{' and last '}'
+        const firstBrace = cleaned.indexOf("{");
+        const lastBrace = cleaned.lastIndexOf("}");
+        if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+            const candidate = cleaned.substring(firstBrace, lastBrace + 1);
+            try {
+                return JSON.parse(candidate);
+            } catch (innerError) {
+                // Try to clean trailing commas which often break JSON.parse
+                try {
+                    const sanitized = candidate.replace(/,\s*([}\]])/g, "$1");
+                    return JSON.parse(sanitized);
+                } catch (sanitizedError) {
+                    throw innerError;
+                }
+            }
+        }
+        throw e;
+    }
+}
+
 router.post("/schema-tree", async (req, res) => {
+    const reqId = Math.random().toString(36).substring(7);
+    const routeStart = Date.now();
+    console.log(`[Schema Tree Req ${reqId}] INIZIATA richiesta streaming alle ${new Date().toLocaleTimeString('it-IT')}`);
+
+    res.on('finish', () => {
+        const totalDuration = Date.now() - routeStart;
+        console.log(`[Schema Tree Req ${reqId}] FINITA risposta streaming inviata al client alle ${new Date().toLocaleTimeString('it-IT')} (Tempo totale server: ${totalDuration}ms)`);
+    });
+
     try {
         const { messages, currentSchema, model } = req.body;
 
@@ -474,54 +523,122 @@ ESEMPI DI COMPORTAMENTO:
 - Utente: "Spiega meglio questo concetto" -> Rispondi in "message" e AGGIORNI le description o crei nodi figli nello "schema".
 `;
 
-        const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${OPENROUTER_KEY}`,
-                "Content-Type": "application/json",
-                "X-OpenRouter-Cache": "true"
-            },
-            body: JSON.stringify({
-                model: selectedModel,
-                messages: [
-                    { 
-                        role: "system", 
-                        content: [
-                            {
-                                type: "text",
-                                text: systemPrompt,
-                                cache_control: { type: "ephemeral" }
-                            }
-                        ] 
+        const modelsToTry = [selectedModel];
+        if (selectedModel !== "google/gemini-3.1-flash-lite") {
+            modelsToTry.push("google/gemini-3.1-flash-lite");
+        }
+        if (selectedModel !== "google/gemini-3.5-flash") {
+            modelsToTry.push("google/gemini-3.5-flash");
+        }
+
+        let lastError = null;
+        let streamResponse = null;
+
+        for (let i = 0; i < modelsToTry.length; i++) {
+            const currentTryModel = modelsToTry[i];
+            console.log(`[Schema Tree Req ${reqId}] Tentativo stream ${i + 1}/${modelsToTry.length} con modello: ${currentTryModel}`);
+            
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 15000); // 15s to establish connection
+
+            try {
+                const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                    method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${OPENROUTER_KEY}`,
+                        "Content-Type": "application/json",
+                        "X-OpenRouter-Cache": "true"
                     },
-                    ...messages
-                ],
-                response_format: { type: "json_object" },
-                temperature: 0.5,
-                provider: { allow_fallbacks: false }
-            })
-        });
+                    body: JSON.stringify({
+                        model: currentTryModel,
+                        messages: [
+                            { 
+                                role: "system", 
+                                content: [
+                                    {
+                                        type: "text",
+                                        text: systemPrompt,
+                                        cache_control: { type: "ephemeral" }
+                                    }
+                                ] 
+                            },
+                            ...messages
+                        ],
+                        response_format: { type: "json_object" },
+                        temperature: 0.5,
+                        stream: true
+                    }),
+                    signal: controller.signal
+                });
 
-        if (!response.ok) {
-            const errorData = await response.json().catch(() => ({}));
-            throw new Error(`Errore API OpenRouter: ${response.status} - ${JSON.stringify(errorData)}`);
+                clearTimeout(timeoutId);
+
+                if (!response.ok || !response.body) {
+                    const errorText = await response.text().catch(() => "");
+                    throw new Error(`OpenRouter API Error (${response.status}): ${errorText}`);
+                }
+
+                streamResponse = response;
+                console.log(`[Schema Tree Req ${reqId}] Stream connesso con successo al tentativo ${i + 1}`);
+                break;
+            } catch (err: any) {
+                clearTimeout(timeoutId);
+                console.warn(`[Schema Tree Req ${reqId}] Tentativo stream ${i + 1} fallito per ${currentTryModel}:`, err.message || err);
+                lastError = err;
+            }
         }
 
-        const aiData = await response.json();
-        let aiContent = aiData?.choices?.[0]?.message?.content;
-
-        if (!aiContent) {
-            throw new Error("Risposta del modello vuota o non valida");
+        if (!streamResponse || !streamResponse.body) {
+            throw lastError || new Error("Tutti i tentativi di inizializzazione dello stream sono falliti.");
         }
 
-        // Parse JSON since response_format is json_object
-        const parsedResponse = JSON.parse(aiContent);
+        res.setHeader("Content-Type", "text/plain; charset=utf-8");
+        res.setHeader("Transfer-Encoding", "chunked");
+        res.setHeader("X-Accel-Buffering", "no");
 
-        return res.status(200).json(parsedResponse);
+        const reader = streamResponse.body.getReader();
+        const decoder = new TextDecoder("utf-8");
+        let buffer = "";
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            let boundary = buffer.lastIndexOf("\n");
+            if (boundary === -1) continue;
+
+            const completeData = buffer.substring(0, boundary);
+            buffer = buffer.substring(boundary + 1);
+
+            const lines = completeData.split("\n");
+            for (const line of lines) {
+                const trimmedLine = line.trim();
+                if (trimmedLine.startsWith("data: ")) {
+                    const dataStr = trimmedLine.slice(6);
+                    if (dataStr === "[DONE]") continue;
+
+                    try {
+                        const parsed = JSON.parse(dataStr);
+                        const textPart = parsed.choices?.[0]?.delta?.content;
+                        if (textPart) {
+                            res.write(textPart);
+                        }
+                    } catch (e) {
+                        // ignore parsing error for partial data lines
+                    }
+                }
+            }
+        }
+
+        res.end();
 
     } catch (error: any) {
         console.error("Errore generazione schema:", error);
-        return res.status(500).json({ error: "Errore interno del server", details: error.message });
+        if (!res.headersSent) {
+            return res.status(500).json({ error: "Errore interno del server", details: error.message });
+        }
+        res.end();
     }
 });
 

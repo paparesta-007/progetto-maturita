@@ -11,6 +11,7 @@ import cors from "cors";
 import {
     setupConsoleLogging,
     setupGlobalErrorHandlers,
+    setupOpenRouterLogging,
     httpLoggingMiddleware,
     logSupabaseAction,
     addClientLog,
@@ -49,6 +50,7 @@ const app: express.Express = express();
 // ────────────────────────────────────────────────────────────────
 setupConsoleLogging();
 setupGlobalErrorHandlers();
+setupOpenRouterLogging();
 
 
 const __filename = fileURLToPath(import.meta.url);

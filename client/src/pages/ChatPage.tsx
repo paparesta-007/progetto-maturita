@@ -325,7 +325,7 @@ const MessageItem = React.memo(({ msg, index, isDark, sendMessage }: {
                         ? <GenerativeUIRenderer text={msg.content} isDark={isDark} />
                         : safeHtml
                             ? <div className="genui-html" dangerouslySetInnerHTML={{ __html: safeHtml }} />
-                        : <MarkdownRender text={msg.content} />
+                        : <MarkdownRender text={msg.content} isStreaming={msg.isStreaming} />
             }
         </BotMessage>
     );

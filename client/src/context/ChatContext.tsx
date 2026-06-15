@@ -181,7 +181,9 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
                         usage: row.usage, // Assumiamo che usage sia una colonna nella tabella messages
                         model: row.model, // Assumiamo che model sia una colonna nella tabella messages
                         suggestedQuestions: row.suggestedQuestions, // Se salvato
-                        reasoning: row.reasoning_text === "none" ? null : row.reasoning_text
+                        reasoning: row.reasoning_text === "none" ? null : row.reasoning_text,
+                        isComplete: true,
+                        isStreaming: false
                     });
                 }
 
