@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback, useMemo } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback, useMemo, useRef } from "react";
 import getAllConversation from "../services/supabase/Conversation/getAllConversation";
 import { useAuth } from "./AuthContext";
 import getMessages from "../services/supabase/Conversation/getMessages";
@@ -48,7 +48,32 @@ const ChatContext = createContext<ChatContextType | undefined>(undefined);
 
 // 2. Provider
 export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
-    const { user ,systemPrompt, personalInfo, tone, allowedCustomInstructions} = useAuth();
+    const { user ,systemPrompt, personalInfo, tone, allowedCustomInstructions, theme} = useAuth();
+    const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+    const [authModalReason, setAuthModalReason] = useState("");
+    const [authPasswordInput, setAuthPasswordInput] = useState("");
+    const [authErrorMessage, setAuthErrorMessage] = useState("");
+    const pendingAuthRef = useRef<((value: string | null) => void) | null>(null);
+
+    const handleConfirmAuth = useCallback(() => {
+        if (authPasswordInput === "diavolorosso07") {
+            setIsAuthModalOpen(false);
+            if (pendingAuthRef.current) {
+                pendingAuthRef.current(authPasswordInput);
+                pendingAuthRef.current = null;
+            }
+        } else {
+            setAuthErrorMessage("Password errata. Riprova.");
+        }
+    }, [authPasswordInput]);
+
+    const handleCancelAuth = useCallback(() => {
+        setIsAuthModalOpen(false);
+        if (pendingAuthRef.current) {
+            pendingAuthRef.current(null);
+            pendingAuthRef.current = null;
+        }
+    }, []);
     // const [inputValue, setInputValue] = useState("");
     const [messageHistory, setMessageHistory] = useState<{ role: 'user' | 'bot'; content: string; renderMode?: RenderMode; usage?: any, model: string, suggestedQuestions?: string[], reasoning?: string | null, logs?: string[], isComplete?: boolean }[]>([]); // Per tenere traccia della cronologia dei messaggi
     const [loading, setLoading] = useState(false);
@@ -111,6 +136,31 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
         const controller = new AbortController();
         setAbortController(controller);
 
+        let adminPassword = undefined;
+        const isExpensiveModel = model && (Number(model.cost_per_input_token || 0) + Number(model.cost_per_output_token || 0)) > 2;
+        const isWebSearch = functionality === "web_search";
+
+        if (isExpensiveModel || isWebSearch) {
+            let reasonStr = "Essendo questo un progetto open source, la ricerca web e i modelli ad alto costo (> 2€/1M tokens) richiedono verifica amministratore per evitare abusi.";
+            
+            
+            setAuthModalReason(reasonStr);
+            setAuthPasswordInput("");
+            setAuthErrorMessage("");
+            setIsAuthModalOpen(true);
+
+            const entered = await new Promise<string | null>((resolve) => {
+                pendingAuthRef.current = resolve;
+            });
+
+            if (!entered) {
+                setAbortController(null);
+                setLoading(false);
+                return;
+            }
+            adminPassword = entered;
+        }
+
         const chatOptions: ChatOptions = {
             systemPrompt,
             personalInfo,
@@ -121,7 +171,8 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
             temperature,
             attachedFiles: files,
             signal: controller.signal,
-            webSearch: functionality === "web_search"
+            webSearch: functionality === "web_search",
+            adminPassword
         };
 
         try {
@@ -160,10 +211,27 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
 
                 // Messaggio utente
                 if (row.sender) {
+                    let content = row.sender;
+                    let files = undefined;
+
+                    // Cercare blocco metadata dei file
+                    const fileMetaRegex = /\[FILES_METADATA:(.+)\]$/s;
+                    const match = content.match(fileMetaRegex);
+                    if (match) {
+                        try {
+                            const parsed = JSON.parse(match[1]);
+                            files = parsed.files;
+                            content = content.replace(fileMetaRegex, "").trim();
+                        } catch (e) {
+                            console.error("Failed to parse file metadata:", e);
+                        }
+                    }
+
                     messages.push({
                         role: 'user' as const,
-                        content: row.sender,
-                        model: row.model || "" // Provide default model for user messages
+                        content: content,
+                        model: row.model || "", // Provide default model for user messages
+                        files: files
                     });
                 }
                 if (row.content) {
@@ -312,6 +380,87 @@ export const ChatProvider = ({ children }: { children: React.ReactNode }) => {
     return (
         <ChatContext.Provider value={contextValue}>
             {children}
+
+            {/* Custom Admin Auth Modal */}
+            {isAuthModalOpen && (
+                <div className="fixed inset-0 z-[999] flex items-center justify-center p-4">
+                    <div 
+                        className="absolute inset-0 bg-black/70 backdrop-blur-md animate-fade-in"
+                        onClick={handleCancelAuth}
+                    />
+                    <div className={`relative w-full max-w-md p-6 rounded-3xl shadow-2xl border transition-all duration-300 ${
+                        theme === 'dark' 
+                            ? "bg-[#0d0e14] border-white/10 text-white" 
+                            : "bg-white border-neutral-200 text-neutral-900"
+                    }`}>
+                        <div className="flex flex-col gap-4">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-lg font-bold">Verifica Amministratore</h3>
+                                <button 
+                                    onClick={handleCancelAuth}
+                                    className={`p-1.5 rounded-lg transition-colors ${
+                                        theme === 'dark' ? "hover:bg-white/10 text-neutral-400" : "hover:bg-neutral-100 text-neutral-500"
+                                    }`}
+                                >
+                                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+                            
+                            <p className={`text-sm leading-relaxed ${
+                                theme === 'dark' ? "text-neutral-400" : "text-neutral-500"
+                            }`}>
+                                {authModalReason}
+                            </p>
+
+                            <div className="flex flex-col gap-1.5">
+                                <label className="text-xs font-semibold uppercase tracking-wider opacity-60">Password</label>
+                                <input 
+                                    type="password" 
+                                    value={authPasswordInput}
+                                    onChange={(e) => {
+                                        setAuthPasswordInput(e.target.value);
+                                        setAuthErrorMessage("");
+                                    }}
+                                    onKeyDown={(e) => {
+                                        if (e.key === 'Enter') handleConfirmAuth();
+                                    }}
+                                    placeholder="Inserisci la password ADMIN_ACCESS"
+                                    className={`w-full px-4 py-3 rounded-2xl border focus:outline-none focus:ring-2 focus:ring-orange-500 transition-all ${
+                                        theme === 'dark' 
+                                            ? "bg-white/5 border-white/10 text-white placeholder-white/20" 
+                                            : "bg-neutral-50 border-neutral-200 text-neutral-900 placeholder-neutral-400"
+                                    }`}
+                                    autoFocus
+                                />
+                                {authErrorMessage && (
+                                    <span className="text-xs text-red-500 font-semibold">{authErrorMessage}</span>
+                                )}
+                            </div>
+
+                            <div className="flex gap-3 mt-2">
+                                <button 
+                                    onClick={handleCancelAuth}
+                                    className={`flex-1 py-3 rounded-2xl font-bold transition-all ${
+                                        theme === 'dark' ? "bg-white/5 hover:bg-white/10" : "bg-neutral-100 hover:bg-neutral-200 text-neutral-600"
+                                    }`}
+                                >
+                                    Annulla
+                                </button>
+                                <button 
+                                    onClick={handleConfirmAuth}
+                                    className={`flex-1 py-3 rounded-2xl font-bold transition-all active:scale-95 ${
+                                        theme === 'dark' ? "bg-orange-500 text-black hover:bg-orange-400" : "bg-neutral-900 text-white hover:bg-neutral-800"
+                                    }`}
+                                >
+                                    Verifica
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
         </ChatContext.Provider>
     );
 };

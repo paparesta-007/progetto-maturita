@@ -18,7 +18,7 @@ export const sendEmbeddingMessage = async (
     if (!message.trim()) return;
 
     // 1. Aggiornamento UI Immediato (Messaggio Utente)
-    setMessageHistory((prev) => [...prev, { role: 'user', content: message }]);
+    setMessageHistory((prev) => [...prev, { role: 'user', content: message, files: attachedFiles }]);
 
     if (!documentId) {
         setMessageHistory((prev) => [

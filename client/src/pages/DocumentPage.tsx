@@ -351,6 +351,7 @@ const DocumentPage = () => {
                                                         key={`${documentId}-user-${index}`}
                                                         i={index} 
                                                         htmlContent={msg.content} 
+                                                        files={msg.files}
                                                     />
                                                 );
                                             } else {

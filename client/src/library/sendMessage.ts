@@ -14,6 +14,7 @@ export interface ChatOptions {
     attachedFiles?: any[];
     signal?: AbortSignal;
     webSearch?: boolean;
+    adminPassword?: string;
 }
 
 export interface QuizQuestion {
@@ -76,14 +77,14 @@ export const sendNormalMessage = async (
     const { systemPrompt, personalInfo, tone, allowedCustomInstructions, reasoning } = options;
 
     if (!message.trim()) return;
-    setMessageHistory((prev) => [...prev, { role: 'user', content: message }]);
+    setMessageHistory((prev) => [...prev, { role: 'user', content: message, files: options.attachedFiles }]);
 
     const historyForBackend = messageHistory.map(msg => ({
         role: msg.role === 'bot' ? 'assistant' : 'user',
         content: msg.content
     }));
 
-    if ((model.cost_per_input_token + model.cost_per_output_token) > 2) {
+    if ((model.cost_per_input_token + model.cost_per_output_token) > 2 && !options.adminPassword) {
         console.warn("Costo modello troppo elevato");
         return;
     }
@@ -112,7 +113,8 @@ export const sendNormalMessage = async (
                 temperature: options.temperature,
                 attachedFiles: options.attachedFiles,
                 isBetterView,
-                webSearch: options.webSearch
+                webSearch: options.webSearch,
+                adminPassword: options.adminPassword
             }),
         });
 
@@ -140,8 +142,18 @@ export const sendNormalMessage = async (
             { role: 'bot', content: responseText, renderMode, sections, usage: responseUsage, model: responseModel, suggestedQuestions, reasoning: reasoningContent, isComplete: true, isStreaming: false },
         ]);
 
+        let senderWithMeta = message;
+        if (options.attachedFiles && options.attachedFiles.length > 0) {
+            const filesMeta = options.attachedFiles.map(f => ({
+                name: f.name,
+                type: f.type,
+                size: f.size
+            }));
+            senderWithMeta += `\n\n[FILES_METADATA:${JSON.stringify({ files: filesMeta })}]`;
+        }
+
         const messagePayload = {
-            sender: message,
+            sender: senderWithMeta,
             content: responseText,
             usage: responseUsage,
             renderMode,
@@ -266,7 +278,7 @@ export const sendStreamedMessage = async (
 
     const { systemPrompt, personalInfo, tone, allowedCustomInstructions, reasoning } = options;
 
-    const userMsg = { role: 'user' as const, content: message };
+    const userMsg = { role: 'user' as const, content: message, files: options.attachedFiles };
     const modelLabel = model?.name ?? model?.name_id ?? "Unknown";
     const botMsgPlaceholder = { role: 'bot' as const, content: "Avvio della richiesta...", model: modelLabel, renderMode: 'markdown' as RenderMode, isStreaming: true, isComplete: false };
 
@@ -279,7 +291,7 @@ export const sendStreamedMessage = async (
             content: msg.content
         }));
 
-        if (model.cost_per_input_token + model.cost_per_output_token > 2) {
+        if (model.cost_per_input_token + model.cost_per_output_token > 2 && !options.adminPassword) {
             console.warn("Costo alto rilevato");
             setLoading(false);
             return;
@@ -307,7 +319,8 @@ export const sendStreamedMessage = async (
                 temperature: options.temperature,
                 attachedFiles: options.attachedFiles,
                 isBetterView,
-                webSearch: options.webSearch // Aggiunto flag webSearch
+                webSearch: options.webSearch,
+                adminPassword: options.adminPassword
             }),
         });
 
@@ -411,8 +424,18 @@ export const sendStreamedMessage = async (
         });
 
         // Save the message after streaming is complete
+        let senderWithMeta = message;
+        if (options.attachedFiles && options.attachedFiles.length > 0) {
+            const filesMeta = options.attachedFiles.map(f => ({
+                name: f.name,
+                type: f.type,
+                size: f.size
+            }));
+            senderWithMeta += `\n\n[FILES_METADATA:${JSON.stringify({ files: filesMeta })}]`;
+        }
+
         const messagePayload = {
-            sender: message,
+            sender: senderWithMeta,
             content: accumulatedText,
             usage: Object.keys(accumulatedUsage).length > 0 ? accumulatedUsage : { total_tokens: 0 },
             renderMode: accumulatedRenderMode,

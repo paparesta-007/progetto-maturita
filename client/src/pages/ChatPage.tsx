@@ -303,7 +303,7 @@ const MessageItem = React.memo(({ msg, index, isDark, sendMessage }: {
     }, [msg.content, msg.renderMode, hasStructuredUI, isDark]);
 
     if (msg.role === 'user') {
-        return <UserMessage i={index} htmlContent={msg.content} />;
+        return <UserMessage i={index} htmlContent={msg.content} files={msg.files} />;
     }
 
     return (
