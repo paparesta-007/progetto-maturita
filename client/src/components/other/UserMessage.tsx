@@ -1,11 +1,46 @@
 import React, { useEffect, useState } from "react";
-import { User, Copy as CopyIcon, Check as CheckIcon, PencilSimple } from "@phosphor-icons/react";
+import { User, Copy as CopyIcon, Check as CheckIcon, PencilSimple, FilePdf, FileDoc, FileXls, FileCode, FileImage, File } from "@phosphor-icons/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useAuth } from "../../context/AuthContext";
 import Tooltip from "./Tooltip";
 import selectUserDetails from "../../services/supabase/User/SelectuserDetails";
 
-const UserMessage = React.memo(({ i, htmlContent, tokens = 0 }: { i: number; htmlContent: string; tokens?: number }) => {
+const getFileIcon = (fileName: string) => {
+    const ext = fileName?.split('.').pop()?.toLowerCase();
+    switch (ext) {
+        case 'pdf':
+            return <FilePdf size={20} weight="bold" className="text-red-400" />;
+        case 'doc':
+        case 'docx':
+        case 'odt':
+            return <FileDoc size={20} weight="bold" className="text-blue-400" />;
+        case 'xls':
+        case 'xlsx':
+        case 'ods':
+        case 'csv':
+            return <FileXls size={20} weight="bold" className="text-green-400" />;
+        case 'js':
+        case 'ts':
+        case 'tsx':
+        case 'jsx':
+        case 'py':
+        case 'html':
+        case 'css':
+        case 'json':
+            return <FileCode size={20} weight="bold" className="text-yellow-400" />;
+        case 'png':
+        case 'jpg':
+        case 'jpeg':
+        case 'gif':
+        case 'webp':
+        case 'svg':
+            return <FileImage size={20} weight="bold" className="text-purple-400" />;
+        default:
+            return <File size={20} weight="bold" />;
+    }
+};
+
+const UserMessage = React.memo(({ i, htmlContent, tokens = 0, files }: { i: number; htmlContent: string; tokens?: number; files?: any[] }) => {
     const { user, theme } = useAuth() || { user: { id: null }, theme: 'light' };
     const [userDetails, setUserDetails] = useState<{ full_name: string | null; avatar_url: string | null } | null>(null);
     const [copied, setCopied] = useState(false);
@@ -63,6 +98,28 @@ const UserMessage = React.memo(({ i, htmlContent, tokens = 0 }: { i: number; htm
 
         // Token Badge
         tokenBadge: `text-[10px] font-medium px-1.5 py-0.5 rounded ml-2 select-none ${isDark ? "text-neutral-600 bg-white/[0.02]" : "text-neutral-600 bg-black/[0.02]"
+            }`,
+
+        // File Card
+        fileCard: `flex items-center gap-3 p-2.5 rounded-xl border transition-all duration-300 max-w-sm w-full ${isDark
+                ? "bg-black/30 border-white/5 text-neutral-200 hover:bg-black/45"
+                : "bg-white/60 border-[#dcd5c9] text-[#2c2825] hover:bg-white/80 shadow-sm"
+            }`,
+        fileIconContainer: `w-10 h-10 flex items-center justify-center rounded-lg flex-shrink-0 ${isDark
+                ? "bg-white/5 text-neutral-400"
+                : "bg-[#e8e2d9]/60 text-neutral-600"
+            }`,
+        fileName: `text-xs font-semibold truncate max-w-[180px] ${isDark
+                ? "text-neutral-200"
+                : "text-[#2c2825]"
+            }`,
+        fileSize: `text-[10px] ${isDark
+                ? "text-neutral-500"
+                : "text-[#8c8278]"
+            }`,
+        fileDivider: `border-b my-2.5 w-full ${isDark
+                ? "border-white/5"
+                : "border-black/[0.06]"
             }`
     };
 
@@ -99,12 +156,32 @@ const UserMessage = React.memo(({ i, htmlContent, tokens = 0 }: { i: number; htm
             <div className="flex flex-col items-end min-w-0">
 
                 {/* Message Bubble */}
-                <div
-                    className={s.bubble}
-                    // Apply a specific class for typography handling if you use the global CSS from BotMessage
-                    // or rely on Tailwind's prose/text utilities.
-                    dangerouslySetInnerHTML={{ __html: htmlContent }}
-                />
+                <div className={s.bubble}>
+                    {files && files.length > 0 && (
+                        <div className="flex flex-col gap-2 mb-3 w-full">
+                            {files.map((file, idx) => {
+                                const isImage = file.type === "image_url" || (file.url && file.url.startsWith("data:image/"));
+                                return (
+                                    <div key={idx} className={s.fileCard}>
+                                        {isImage && file.url ? (
+                                            <img src={file.url} alt="attached file" className="w-10 h-10 object-cover rounded-lg bg-neutral-100 flex-shrink-0 ring-1 ring-black/5" />
+                                        ) : (
+                                            <div className={s.fileIconContainer}>
+                                                {getFileIcon(file.name)}
+                                            </div>
+                                        )}
+                                        <div className="flex flex-col overflow-hidden text-left">
+                                            <span className={s.fileName}>{file.name || "File"}</span>
+                                            {file.size && <span className={s.fileSize}>{(file.size / 1024).toFixed(0)} KB</span>}
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                            <div className={s.fileDivider} />
+                        </div>
+                    )}
+                    <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
+                </div>
 
                 {/* Action Bar (Copy, Edit, Tokens) */}
                 <div className={s.actionBar}>

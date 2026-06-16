@@ -304,3 +304,37 @@ export function addClientLog(
         clientLogs.pop();
     }
 }
+
+/**
+ * Intercetta tutte le chiamate fetch verso OpenRouter per loggare inizio e fine
+ */
+export function setupOpenRouterLogging() {
+    const originalFetch = global.fetch;
+    if (!originalFetch) return;
+
+    (global as any).fetch = async function (input: any, init?: any): Promise<Response> {
+        const url = typeof input === 'string'
+            ? input
+            : (input instanceof URL ? input.toString() : (input && (input as any).url) || '');
+
+        if (url && url.includes('openrouter.ai')) {
+            const startTime = Date.now();
+            const timestampStart = new Date().toLocaleTimeString('it-IT', { hour12: false });
+            console.log(`[OpenRouter API Call] INIZIATA chiamata a ${url} alle ${timestampStart}`);
+
+            try {
+                const response = await originalFetch(input, init);
+                const duration = Date.now() - startTime;
+                const timestampEnd = new Date().toLocaleTimeString('it-IT', { hour12: false });
+                console.log(`[OpenRouter API Call] FINITA chiamata a ${url} alle ${timestampEnd} (Durata: ${duration}ms, Status: ${response.status})`);
+                return response;
+            } catch (error: any) {
+                const duration = Date.now() - startTime;
+                const timestampEnd = new Date().toLocaleTimeString('it-IT', { hour12: false });
+                console.log(`[OpenRouter API Call] ERRORE chiamata a ${url} alle ${timestampEnd} dopo ${duration}ms - Error: ${error instanceof Error ? error.message : String(error)}`);
+                throw error;
+            }
+        }
+        return originalFetch(input, init);
+    };
+}

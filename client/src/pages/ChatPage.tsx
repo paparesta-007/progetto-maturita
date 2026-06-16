@@ -303,7 +303,7 @@ const MessageItem = React.memo(({ msg, index, isDark, sendMessage }: {
     }, [msg.content, msg.renderMode, hasStructuredUI, isDark]);
 
     if (msg.role === 'user') {
-        return <UserMessage i={index} htmlContent={msg.content} />;
+        return <UserMessage i={index} htmlContent={msg.content} files={msg.files} />;
     }
 
     return (
@@ -325,7 +325,7 @@ const MessageItem = React.memo(({ msg, index, isDark, sendMessage }: {
                         ? <GenerativeUIRenderer text={msg.content} isDark={isDark} />
                         : safeHtml
                             ? <div className="genui-html" dangerouslySetInnerHTML={{ __html: safeHtml }} />
-                        : <MarkdownRender text={msg.content} />
+                        : <MarkdownRender text={msg.content} isStreaming={msg.isStreaming} />
             }
         </BotMessage>
     );

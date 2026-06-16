@@ -67,7 +67,7 @@ const FloatingChat = () => {
     const MODEL_OPTIONS = [
         { label: "Deepseek V4 Flash", value: "deepseek/deepseek-v4-flash", description: "" },
         { label: "Xiaomi Mimo V2.5 Flash", value: "xiaomi/mimo-v2.5", description: "" },
-        { label: "Qwen3.6 Flash", value: "qwen/qwen3.6-flash", description: "" },
+        { label: "Ling 2.6 Flash", value: "inclusionai/ling-2.6-flash", description: "" },
         { label: "Gpt-5-nano", value: "openai/gpt-5-nano", description: "" },
     ];
 

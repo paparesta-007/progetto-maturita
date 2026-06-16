@@ -44,7 +44,8 @@ const getModels = async () => {
                     name: cleanName,
                     provider: PROVIDER_NAMES[providerId] || providerId,
                     cost_per_input_token: Number(m.pricing?.prompt || 0) * 1000000,
-                    cost_per_output_token: Number(m.pricing?.completion || 0) * 1000000
+                    cost_per_output_token: Number(m.pricing?.completion || 0) * 1000000,
+                    input_modalities: m.architecture?.input_modalities || ["text"]
                 };
             });
 

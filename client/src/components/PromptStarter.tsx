@@ -11,7 +11,7 @@ const getGreeting = () => {
     return "Buonasera";
 };
 
-const ALL_SUGGESTIONS = [
+const GENERAL_SUGGESTIONS = [
     {
         "title": "Automobile",
         "desc": "Spiegazioni e curiosità sui veicoli",
@@ -217,6 +217,58 @@ const ALL_SUGGESTIONS = [
     }
 ];
 
+const BETTERVIEW_SUGGESTIONS = [
+    {
+        "title": "Cerchio Goniometrico",
+        "desc": "Simulazione interattiva di trigonometria",
+        "icon": <AtomIcon size={20} />,
+        "prompt": "Spiegami i concetti di seno, coseno e tangente in trigonometria. Includi un cerchio goniometrico interattivo in SVG/HTML in cui l'utente può trascinare un punto sul cerchio per cambiare l'angolo e vedere in tempo reale il valore di seno, coseno e tangente con le relative proiezioni colorate graficamente.",
+        "color": "#ff7200"
+    },
+    {
+        "title": "Bubble & Selection Sort",
+        "desc": "Visualizzatore di algoritmi di ordinamento",
+        "icon": <KeyboardIcon size={20} />,
+        "prompt": "Spiegami come funzionano gli algoritmi di ordinamento Bubble Sort e Selection Sort. Includi un visualizzatore interattivo in HTML e CSS dove viene mostrato un array di barre ad altezze diverse e l'utente può avviarne l'ordinamento passo-passo o in tempo reale, controllando la velocità con uno slider.",
+        "color": "#6366f1"
+    },
+    {
+        "title": "Gioco della Vita di Conway",
+        "desc": "Simulatore di automi cellulari",
+        "icon": <Microchip size={20} />,
+        "prompt": "Spiegami il concetto di automa cellulare e in particolare il Gioco della Vita di Conway. Includi un simulatore interattivo in HTML con una griglia cliccabile in cui l'utente può inserire cellule vive, avviare/mettere in pausa la simulazione, regolare la velocità e caricare schemi noti come il Glider.",
+        "color": "#2c7c54"
+    },
+    {
+        "title": "Elettronica di Base",
+        "desc": "Simulatore di circuiti e legge di Ohm",
+        "icon": <LightbulbIcon size={20} />,
+        "prompt": "Spiegami la Legge di Ohm (V = R * I) e le basi dei circuiti elettrici in corrente continua. Sotto la spiegazione, inserisci un simulatore interattivo di circuito semplice in SVG in cui l'utente può modificare il voltaggio della batteria e la resistenza di una lampadina tramite slider, vedendo in tempo reale la luminosità della lampadina cambiare e la corrente scorrere nel circuito.",
+        "color": "#ffcc28"
+    },
+    {
+        "title": "Espressioni Regolari",
+        "desc": "Tester ed spiegatore di pattern RegEx",
+        "icon": <StarsIcon size={20} />,
+        "prompt": "Spiegami come funzionano le espressioni regolari (RegEx) principali come caratteri jolly, quantificatori e classi. Sotto, realizza un tester interattivo in cui l'utente può digitare una RegEx (es. email o telefono), inserire un testo di prova e vedere le corrispondenze evidenziate graficamente in tempo reale con una spiegazione dei gruppi catturati.",
+        "color": "#ff5733"
+    },
+    {
+        "title": "Editor di Pixel Art",
+        "desc": "Grafica RGB e matrici binarie",
+        "icon": <PaintBrushIcon size={20} />,
+        "prompt": "Spiegami come i computer rappresentano le immagini digitali tramite pixel e colori RGB. Aggiungi un mini-editor di Pixel Art interattivo con una griglia 8x8 o 16x16 in cui l'utente può scegliere un colore da una tavolozza, colorare i singoli pixel cliccando/trascinando, cancellare, e visualizzare la conversione in una matrice binaria o in CSS Box-Shadow in tempo reale.",
+        "color": "#26c6da"
+    },
+    {
+        "title": "Codice Morse",
+        "desc": "Traduttore e segnalatore acustico",
+        "icon": <BookIcon size={20} />,
+        "prompt": "Spiegami la storia e la logica dietro il Codice Morse. Sotto la spiegazione, fornisci un codificatore/decodificatore interattivo in tempo reale che converte il testo in codice Morse (punti e linee) e viceversa, includendo un pulsante per 'riprodurre' il segnale sia visivamente (un cerchio che si illumina) sia acusticamente usando le Web Audio API.",
+        "color": "#e76f51"
+    }
+];
+
 const SuggestionCard = React.memo(({ item, isDark, onClick }: { item: any, isDark: boolean, onClick: () => void }) => {
     const cardStyles = `flex flex-col text-left p-4 border rounded-xl transition-all group ${isDark
         ? "bg-neutral-900/40 border-neutral-800 hover:bg-neutral-800 hover:border-neutral-700"
@@ -247,9 +299,14 @@ const PromptStarter = ({ showSuggestions = true }: { showSuggestions?: boolean }
     const { isTemporaryConversation, setDraftMessage } = useChat();
 
     const randomSuggestions = useMemo(() => {
-        return [...ALL_SUGGESTIONS]
+        const randomGeneral = [...GENERAL_SUGGESTIONS]
             .sort(() => 0.5 - Math.random())
-            .slice(0, 4);
+            .slice(0, 2);
+        const randomBetterView = [...BETTERVIEW_SUGGESTIONS]
+            .sort(() => 0.5 - Math.random())
+            .slice(0, 2);
+        return [...randomGeneral, ...randomBetterView]
+            .sort(() => 0.5 - Math.random());
     }, []);
 
     const styles = useMemo(() => ({

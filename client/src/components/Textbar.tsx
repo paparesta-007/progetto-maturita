@@ -68,32 +68,23 @@ const Textbar = () => {
     const textareaRef = useRef<HTMLTextAreaElement | null>(null);
     const [functionality, setFunctionality] = useState<string>("default");
     const [reasoning, setReasoning] = useState<string>("fast");
-    const [showSearchConfirm, setShowSearchConfirm] = useState(false);
+
+    const hasImage = useMemo(() => files.some(f => f.originalFile.type.startsWith('image/')), [files]);
+    const modelSupportsVision = useMemo(() => {
+        if (!model) return true;
+        if (!model.input_modalities) return true;
+        return model.input_modalities.includes("image");
+    }, [model]);
 
     useEffect(() => {
         if (!isChatPage) return;
         setInputValue(chatCtx.draftMessage || "");
     }, [isChatPage, chatCtx.draftMessage]);
-
     const handleSearchClick = useCallback(() => {
         if (functionality === "web_search") {
             setFunctionality("default");
         } else {
-            setShowSearchConfirm(true);
-        }
-    }, [functionality]);
-
-    const confirmSearch = useCallback(() => {
-        setFunctionality("web_search");
-        setShowSearchConfirm(false);
-    }, []);
-
-    const cancelSearch = useCallback(() => {
-        setShowSearchConfirm(false);
-        // Se eravamo già su web_search (difficile via UI ma per sicurezza) 
-        // o se stavamo provando ad attivarlo, torniamo a default
-        if (functionality !== "web_search") {
-            setFunctionality("default");
+            setFunctionality("web_search");
         }
     }, [functionality]);
 
@@ -128,14 +119,17 @@ const Textbar = () => {
     }, [isChatPage, chatCtx]);
 
     const handleSendMessage = useCallback(async () => {
+        if (hasImage && !modelSupportsVision) return;
         try {
             const filePromises = files.map(file => {
-                return new Promise<{ type: string, url: string }>((resolve, reject) => {
+                return new Promise<{ type: string, url: string, name: string, size: number }>((resolve, reject) => {
                     const reader = new FileReader();
                     reader.readAsDataURL(file.originalFile);
                     reader.onload = () => resolve({
                         type: file.originalFile.type.startsWith('image/') ? 'image_url' : 'file_url',
-                        url: reader.result as string
+                        url: reader.result as string,
+                        name: file.name,
+                        size: file.originalFile.size
                     });
                     reader.onerror = error => reject(error);
                 });
@@ -147,16 +141,16 @@ const Textbar = () => {
         } catch (error) {
             console.error("Errore conversione file:", error);
         }
-    }, [files, inputValue, functionality, reasoning, sendMessage, resetTextarea]);
+    }, [files, inputValue, functionality, reasoning, sendMessage, resetTextarea, hasImage, modelSupportsVision]);
 
     const handleKeyPress = useCallback((e: React.KeyboardEvent<HTMLTextAreaElement>) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
-            if (inputValue.trim()) {
+            if (inputValue.trim() && !(hasImage && !modelSupportsVision)) {
                 handleSendMessage();
             }
         }
-    }, [inputValue, handleSendMessage]);
+    }, [inputValue, handleSendMessage, hasImage, modelSupportsVision]);
 
     const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
         const selectedFiles = event.target.files;
@@ -195,25 +189,32 @@ const Textbar = () => {
 
             {/* ALLEGATI */}
             {files.length > 0 && (
-                <div className="flex flex-wrap gap-2 px-1">
-                    {files.map((file, index) => (
-                        <div key={index} className={styles.fileItem}>
-                            {file.previewUrl ? (
-                                <img src={file.previewUrl} alt="preview" className="w-8 h-8 object-cover rounded-md bg-neutral-100" />
-                            ) : (
-                                <div className={`w-8 h-8 flex items-center justify-center rounded-md ${isDark ? "bg-neutral-700" : "bg-neutral-100"}`}>
-                                    <Paperclip size={16} className={isDark ? "text-neutral-300" : "text-neutral-500"} />
+                <div className="flex flex-col gap-1.5 px-1">
+                    <div className="flex flex-wrap gap-2">
+                        {files.map((file, index) => (
+                            <div key={index} className={styles.fileItem}>
+                                {file.previewUrl ? (
+                                    <img src={file.previewUrl} alt="preview" className="w-8 h-8 object-cover rounded-md bg-neutral-100" />
+                                ) : (
+                                    <div className={`w-8 h-8 flex items-center justify-center rounded-md ${isDark ? "bg-neutral-700" : "bg-neutral-100"}`}>
+                                        <Paperclip size={16} className={isDark ? "text-neutral-300" : "text-neutral-500"} />
+                                    </div>
+                                )}
+                                <div className="flex flex-col">
+                                    <span className={`text-xs font-medium max-w-[120px] truncate ${isDark ? "text-neutral-200" : "text-neutral-700"}`}>{file.name}</span>
+                                    <span className="text-[10px] text-neutral-600">{(file.originalFile.size / 1024).toFixed(0)} KB</span>
                                 </div>
-                            )}
-                            <div className="flex flex-col">
-                                <span className={`text-xs font-medium max-w-[120px] truncate ${isDark ? "text-neutral-200" : "text-neutral-700"}`}>{file.name}</span>
-                                <span className="text-[10px] text-neutral-600">{(file.originalFile.size / 1024).toFixed(0)} KB</span>
+                                <button onClick={() => removeFile(index)} className="absolute top-1 right-1 text-neutral-600 hover:text-red-500 transition-colors">
+                                    <XIcon size={14} weight="bold" />
+                                </button>
                             </div>
-                            <button onClick={() => removeFile(index)} className="absolute top-1 right-1 text-neutral-600 hover:text-red-500 transition-colors">
-                                <XIcon size={14} weight="bold" />
-                            </button>
+                        ))}
+                    </div>
+                    {hasImage && !modelSupportsVision && (
+                        <div className="text-xs text-red-500 font-semibold mt-1 flex items-center gap-1.5 animate-pulse">
+                            ⚠️ Il modello selezionato ({model?.name}) non supporta le immagini. Rimuovi l'immagine o cambia modello.
                         </div>
-                    ))}
+                    )}
                 </div>
             )}
 
@@ -231,8 +232,8 @@ const Textbar = () => {
                 />
 
                 <button
-                    className={`${styles.sendBtn} ${(isDocLoading || (!loading && !inputValue.trim())) ? "opacity-50 cursor-not-allowed" : ""}`}
-                    disabled={isDocLoading || (!loading && !inputValue.trim())}
+                    className={`${styles.sendBtn} ${(isDocLoading || (!loading && !inputValue.trim()) || (hasImage && !modelSupportsVision)) ? "opacity-50 cursor-not-allowed" : ""}`}
+                    disabled={isDocLoading || (!loading && !inputValue.trim()) || (hasImage && !modelSupportsVision)}
                     onClick={() => { 
                         if (loading) {
                             if (isChatPage && chatCtx.abortRequest) {
@@ -305,60 +306,7 @@ const Textbar = () => {
                 </div>
             </div>
 
-            {/* Confirmation Modal for Web Search */}
-            <AnimatePresence>
-                {showSearchConfirm && (
-                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-                        <motion.div 
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            onClick={cancelSearch}
-                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                        />
-                        <motion.div 
-                            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-                            animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-                            className={`relative w-full max-w-md p-6 rounded-3xl shadow-2xl border ${
-                                isDark ? "bg-[#0d0e14] border-white/10 text-white" : "bg-white border-neutral-200 text-neutral-900"
-                            }`}
-                        >
-                            <div className="flex flex-col items-center text-center gap-4">
-                                <div className={`p-4 rounded-full ${isDark ? "bg-orange-500/20 text-orange-400" : "bg-orange-100 text-orange-600"}`}>
-                                    <GlobeIcon size={32} weight="fill" />
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-bold">Attivare Ricerca Web?</h3>
-                                    <p className={`mt-2 text-sm leading-relaxed ${isDark ? "text-neutral-400" : "text-neutral-500"}`}>
-                                        La ricerca web permette all'IA di consultare internet e documentazioni esterne (come OpenRouter). 
-                                        <br /><br />
-                                        <span className="font-bold text-orange-500">Nota sui costi:</span> Questa funzione richiede l'uso di crediti aggiuntivi per ogni ricerca effettuata. Sei sicuro di voler procedere?
-                                    </p>
-                                </div>
-                                <div className="flex flex-col w-full gap-2 mt-2">
-                                    <button 
-                                        onClick={confirmSearch}
-                                        className={`w-full py-3 rounded-2xl font-bold transition-all active:scale-95 ${
-                                            isDark ? "bg-orange-500 text-black hover:bg-orange-400" : "bg-black text-white hover:bg-neutral-800"
-                                        }`}
-                                    >
-                                        Sì, attiva ricerca web
-                                    </button>
-                                    <button 
-                                        onClick={cancelSearch}
-                                        className={`w-full py-3 rounded-2xl font-bold transition-all ${
-                                            isDark ? "bg-white/5 text-white hover:bg-white/10" : "bg-neutral-100 text-neutral-600 hover:bg-neutral-200"
-                                        }`}
-                                    >
-                                        Annulla
-                                    </button>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
+            {/* Web Search Confirmation Modal removed - password verification is now checked on send */}
         </div>
     );
 };

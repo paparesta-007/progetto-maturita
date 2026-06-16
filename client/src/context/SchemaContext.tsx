@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from "react";
+import React, { createContext, useContext, useState, ReactNode, useCallback, useMemo } from "react";
 import { useAuth } from "./AuthContext";
 
 export interface SchemaNodeData {
@@ -68,6 +68,57 @@ const positionNodes = (nodes: SchemaNodeData[], startX: number, startY: number):
     });
 };
 
+const repairPartialJSON = (jsonStr: string): string => {
+    let cleaned = jsonStr.trim();
+    if (cleaned.startsWith("```json")) {
+        cleaned = cleaned.substring(7);
+    } else if (cleaned.startsWith("```")) {
+        cleaned = cleaned.substring(3);
+    }
+    cleaned = cleaned.trim();
+
+    let insideString = false;
+    let escaped = false;
+    const stack: string[] = [];
+
+    for (let i = 0; i < cleaned.length; i++) {
+        const char = cleaned[i];
+        if (escaped) {
+            escaped = false;
+            continue;
+        }
+        if (char === '\\') {
+            escaped = true;
+            continue;
+        }
+        if (char === '"') {
+            insideString = !insideString;
+            continue;
+        }
+        if (!insideString) {
+            if (char === '{') {
+                stack.push('}');
+            } else if (char === '[') {
+                stack.push(']');
+            } else if (char === '}' || char === ']') {
+                if (stack.length > 0 && stack[stack.length - 1] === char) {
+                    stack.pop();
+                }
+            }
+        }
+    }
+
+    let repaired = cleaned;
+    if (insideString) {
+        repaired += '"';
+    }
+    while (stack.length > 0) {
+        const closingToken = stack.pop();
+        repaired += closingToken;
+    }
+    return repaired;
+};
+
 export const SchemaProvider = ({ children }: { children: ReactNode }) => {
     const { session } = useAuth();
 
@@ -83,15 +134,15 @@ export const SchemaProvider = ({ children }: { children: ReactNode }) => {
     const [loading, setLoading] = useState(false);
     const [orientation, setOrientation] = useState<'vertical' | 'horizontal'>('vertical');
 
-    const clearMessages = () => {
+    const clearMessages = useCallback(() => {
         setMessages([]);
-    };
+    }, []);
 
-    const sendMessage = async (text: string, model: string) => {
+    const sendMessage = useCallback(async (text: string, model: string) => {
         if (!text.trim()) return;
 
         const newMessages: ChatMessage[] = [...messages, { role: "user", content: text }];
-        setMessages(newMessages);
+        setMessages([...newMessages, { role: "assistant", content: "" }]);
         setLoading(true);
 
         try {
@@ -108,33 +159,68 @@ export const SchemaProvider = ({ children }: { children: ReactNode }) => {
                 })
             });
 
-            if (!response.ok) {
-                throw new Error("Errore durante la richiesta");
+            if (!response.ok || !response.body) {
+                throw new Error("Errore durante la richiesta o stream non disponibile");
             }
 
-            const data = await response.json();
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let accumulatedText = "";
+            let lastParsedMessage = "";
 
-            setMessages(prev => [...prev, { role: "assistant", content: data.message || "Schema aggiornato." }]);
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
 
-            if (data.schema && Array.isArray(data.schema)) {
-                const positionedSchema = positionNodes(data.schema, 100, 100);
-                setSchema(positionedSchema);
+                const chunk = decoder.decode(value, { stream: true });
+                accumulatedText += chunk;
+
+                const repairedText = repairPartialJSON(accumulatedText);
+                try {
+                    const parsed = JSON.parse(repairedText);
+                    
+                    if (parsed.message !== undefined && parsed.message !== lastParsedMessage) {
+                        lastParsedMessage = parsed.message;
+                        setMessages(prev => {
+                            const newHist = [...prev];
+                            if (newHist.length > 0 && newHist[newHist.length - 1].role === "assistant") {
+                                newHist[newHist.length - 1] = { role: "assistant", content: parsed.message || "" };
+                            }
+                            return newHist;
+                        });
+                    }
+
+                    if (parsed.schema && Array.isArray(parsed.schema)) {
+                        const positionedSchema = positionNodes(parsed.schema, 100, 100);
+                        setSchema(positionedSchema);
+                    }
+                } catch (e) {
+                    // Skip frames with incomplete/un-repairable JSON
+                }
             }
 
         } catch (error) {
             console.error("Errore Schema Builder:", error);
-            setMessages(prev => [...prev, { role: "assistant", content: "Errore durante l'elaborazione." }]);
+            setMessages(prev => {
+                const newHist = [...prev];
+                if (newHist.length > 0 && newHist[newHist.length - 1].role === "assistant" && !newHist[newHist.length - 1].content) {
+                    newHist[newHist.length - 1] = { role: "assistant", content: "Errore durante l'elaborazione." };
+                } else {
+                    newHist.push({ role: "assistant", content: "Errore durante l'elaborazione." });
+                }
+                return newHist;
+            });
         } finally {
             setLoading(false);
         }
-    };
+    }, [messages, schema, session]);
 
-    const expandNodeWithAI = async (nodeId: string, nodeTitle: string, model: string = "deepseek/deepseek-v4-flash") => {
+    const expandNodeWithAI = useCallback(async (nodeId: string, nodeTitle: string, model: string = "deepseek/deepseek-v4-flash") => {
         setLoading(true);
         const promptText = `Per favore espandi il nodo "${nodeTitle}" (ID: ${nodeId}) aggiungendo esattamente 3 sotto-nodi (nodi figli) correlati nello schema. Per ogni sotto-nodo fornisci un titolo chiaro ed una descrizione esplicativa nel rispettivo campo description. Mantieni intatto tutto il resto dello schema attuale.`;
         
         const newMessages: ChatMessage[] = [...messages, { role: "user", content: `Espandi con AI il nodo: "${nodeTitle}"` }];
-        setMessages(newMessages);
+        setMessages([...newMessages, { role: "assistant", content: "" }]);
 
         try {
             const response = await fetch(`${import.meta.env.VITE_API_URL}/artifacts/schema-tree`, {
@@ -150,27 +236,76 @@ export const SchemaProvider = ({ children }: { children: ReactNode }) => {
                 })
             });
 
-            if (!response.ok) {
-                throw new Error("Errore durante la richiesta");
+            if (!response.ok || !response.body) {
+                throw new Error("Errore durante la richiesta o stream non disponibile");
             }
 
-            const data = await response.json();
-            setMessages(prev => [...prev, { role: "assistant", content: data.message || `Il nodo "${nodeTitle}" è stato espanso con successo.` }]);
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let accumulatedText = "";
+            let lastParsedMessage = "";
 
-            if (data.schema && Array.isArray(data.schema)) {
-                const positionedSchema = positionNodes(data.schema, 100, 100);
-                setSchema(positionedSchema);
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                accumulatedText += chunk;
+
+                const repairedText = repairPartialJSON(accumulatedText);
+                try {
+                    const parsed = JSON.parse(repairedText);
+                    
+                    if (parsed.message !== undefined && parsed.message !== lastParsedMessage) {
+                        lastParsedMessage = parsed.message;
+                        setMessages(prev => {
+                            const newHist = [...prev];
+                            if (newHist.length > 0 && newHist[newHist.length - 1].role === "assistant") {
+                                newHist[newHist.length - 1] = { role: "assistant", content: parsed.message || "" };
+                            }
+                            return newHist;
+                        });
+                    }
+
+                    if (parsed.schema && Array.isArray(parsed.schema)) {
+                        const positionedSchema = positionNodes(parsed.schema, 100, 100);
+                        setSchema(positionedSchema);
+                    }
+                } catch (e) {
+                    // Skip frames with incomplete/un-repairable JSON
+                }
             }
+
         } catch (error) {
             console.error("Errore AI Node Expansion:", error);
-            setMessages(prev => [...prev, { role: "assistant", content: "Errore durante l'espansione del nodo con AI." }]);
+            setMessages(prev => {
+                const newHist = [...prev];
+                if (newHist.length > 0 && newHist[newHist.length - 1].role === "assistant" && !newHist[newHist.length - 1].content) {
+                    newHist[newHist.length - 1] = { role: "assistant", content: "Errore durante l'espansione del nodo con AI." };
+                } else {
+                    newHist.push({ role: "assistant", content: "Errore durante l'espansione del nodo con AI." });
+                }
+                return newHist;
+            });
         } finally {
             setLoading(false);
         }
-    };
+    }, [messages, schema, session]);
+
+    const contextValue = useMemo(() => ({
+        schema,
+        setSchema,
+        messages,
+        loading,
+        orientation,
+        setOrientation,
+        sendMessage,
+        expandNodeWithAI,
+        clearMessages
+    }), [schema, messages, loading, orientation, sendMessage, expandNodeWithAI, clearMessages]);
 
     return (
-        <SchemaContext.Provider value={{ schema, setSchema, messages, loading, orientation, setOrientation, sendMessage, expandNodeWithAI, clearMessages }}>
+        <SchemaContext.Provider value={contextValue}>
             {children}
         </SchemaContext.Provider>
     );

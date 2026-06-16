@@ -268,7 +268,7 @@ const MarkdownRender = ({ text, isStreaming, themeOverride }: { text: string; is
         >
             <div dangerouslySetInnerHTML={{ __html: htmlContent || text }} />
             {isStreaming && (
-                <span className="inline-block w-2 h-4 ml-1 bg-blue-500/60 animate-pulse rounded-sm align-middle" />
+                <span className="inline-block w-2 h-4 ml-1 bg-orange-500/80 animate-pulse rounded-sm align-middle" />
             )}
         </div>
     );

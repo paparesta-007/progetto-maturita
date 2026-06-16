@@ -18,7 +18,9 @@ import {
     Copy,
     ArrowUp,
     ArrowDown,
-    Sparkle
+    Sparkle,
+    MagnifyingGlass,
+    Image as ImageIcon
 } from '@phosphor-icons/react';
 import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
@@ -88,7 +90,7 @@ const moveNodeSibling = (nodes: SchemaNodeData[], id: string, direction: 'up' | 
 };
 
 // --- 1. The Recursive Node Component ---
-const SchemaNode = ({ 
+const SchemaNode = React.memo(({ 
     node, 
     onUpdate, 
     onAddChild, 
@@ -334,6 +336,19 @@ const SchemaNode = ({
             )}
         </li>
     );
+});
+
+const countNodes = (nodes: SchemaNodeData[]): number => {
+    return nodes.reduce((acc, node) => {
+        return acc + 1 + (node.children ? countNodes(node.children) : 0);
+    }, 0);
+};
+
+const getTreeDepth = (nodes: SchemaNodeData[]): number => {
+    if (!nodes || nodes.length === 0) return 0;
+    return Math.max(...nodes.map(node => {
+        return 1 + (node.children ? getTreeDepth(node.children) : 0);
+    }));
 };
 
 // --- 2. The Main Parent Component ---
@@ -356,6 +371,36 @@ const SchemaBuilder = ({
     const [isPanning, setIsPanning] = useState(false);
     const [lastMousePos, setLastMousePos] = useState({ x: 0, y: 0 });
     const [searchQuery, setSearchQuery] = useState("");
+
+    const resetView = () => {
+        setZoom(1);
+        setPan({ x: 0, y: 0 });
+    };
+
+    // Keyboard Shortcuts for Zoom and Pan
+    useEffect(() => {
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) {
+                return;
+            }
+            if (e.key === 'Escape') {
+                setSearchQuery("");
+            } else if (e.ctrlKey || e.metaKey) {
+                if (e.key === '=' || e.key === '+') {
+                    e.preventDefault();
+                    setZoom(prev => Math.min(prev + 0.1, 3));
+                } else if (e.key === '-') {
+                    e.preventDefault();
+                    setZoom(prev => Math.max(prev - 0.1, 0.2));
+                } else if (e.key === '0') {
+                    e.preventDefault();
+                    resetView();
+                }
+            }
+        };
+        window.addEventListener('keydown', handleKeyDown);
+        return () => window.removeEventListener('keydown', handleKeyDown);
+    }, []);
 
     const updateTree = (nodes: SchemaNodeData[], id: string, action: string, payload?: any): SchemaNodeData[] => {
         return nodes.reduce((acc: SchemaNodeData[], node) => {
@@ -381,36 +426,36 @@ const SchemaBuilder = ({
         }, []);
     };
 
-    const handleUpdate = (id: string, field: string, value: any) => {
+    const handleUpdate = useCallback((id: string, field: string, value: any) => {
         setSchema((prev) => updateTree(prev, id, 'UPDATE', { field, value }));
-    };
+    }, [setSchema]);
 
-    const handleAddChild = (id: string) => {
+    const handleAddChild = useCallback((id: string) => {
         setSchema((prev) => updateTree(prev, id, 'ADD_CHILD'));
-    };
+    }, [setSchema]);
 
-    const handleDelete = (id: string) => {
+    const handleDelete = useCallback((id: string) => {
         setSchema((prev) => updateTree(prev, id, 'DELETE'));
-    };
+    }, [setSchema]);
 
-    const handleDuplicate = (id: string) => {
+    const handleDuplicate = useCallback((id: string) => {
         setSchema((prev) => duplicateInTree(prev, id));
-    };
+    }, [setSchema]);
 
-    const handleMoveSibling = (id: string, direction: 'up' | 'down') => {
+    const handleMoveSibling = useCallback((id: string, direction: 'up' | 'down') => {
         setSchema((prev) => moveNodeSibling(prev, id, direction));
-    };
+    }, [setSchema]);
 
-    const handleAIExpand = (id: string, title: string) => {
+    const handleAIExpand = useCallback((id: string, title: string) => {
         expandNodeWithAI(id, title);
-    };
+    }, [expandNodeWithAI]);
 
-    const handleAddRoot = () => {
-        setSchema([
-            ...schema,
+    const handleAddRoot = useCallback(() => {
+        setSchema((prev) => [
+            ...prev,
             { id: generateId(), title: '', description: '', x: 0, y: 0, children: [] }
         ]);
-    };
+    }, [setSchema]);
 
     // Zoom Logic
     const handleWheel = (e: React.WheelEvent) => {
@@ -455,9 +500,41 @@ const SchemaBuilder = ({
         };
     }, [isPanning, handleMouseMove]);
 
-    const resetView = () => {
-        setZoom(1);
-        setPan({ x: 0, y: 0 });
+    // Export as PNG
+    const exportAsPNG = async () => {
+        if (!orgTreeRef.current) return;
+        
+        const oldZoom = zoom;
+        const oldPan = pan;
+
+        try {
+            // Reset for capture
+            setZoom(1);
+            setPan({ x: 0, y: 0 });
+
+            // Wait for render
+            await new Promise(resolve => setTimeout(resolve, 500));
+
+            const element = orgTreeRef.current;
+            const dataUrl = await toPng(element, {
+                backgroundColor: isDark ? '#07070a' : '#fcfbf9',
+                quality: 1,
+                pixelRatio: 2,
+                skipFonts: true
+            });
+
+            const linkElement = document.createElement('a');
+            linkElement.setAttribute('href', dataUrl);
+            linkElement.setAttribute('download', 'schema.png');
+            linkElement.click();
+
+        } catch (error) {
+            console.error('Errore durante esportazione PNG:', error);
+            alert('Errore durante l\'esportazione del PNG. Riprova.');
+        } finally {
+            setZoom(oldZoom);
+            setPan(oldPan);
+        }
     };
 
     // Export Logic
@@ -529,6 +606,10 @@ const SchemaBuilder = ({
             ? (isDark ? 'bg-[#0f0f11] border-[#222226]' : 'bg-[#fafaf7] border-[#ebdccb]')
             : (isDark ? 'bg-[#07070a] border-white/[0.05]' : 'bg-[#f9fafb] border-neutral-200')
     }`;
+    // Double click to reset pan/zoom
+    const handleDoubleClick = () => {
+        resetView();
+    };
 
     return (
         <div className={`flex flex-col flex-1 h-full min-h-0 ${pageBg}`}>
@@ -537,12 +618,12 @@ const SchemaBuilder = ({
                 {/* Left Side: Title & Assistant Toggle */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full lg:w-auto">
                     <div className="flex flex-col text-left">
-                        <span className={`text-[9px] font-black tracking-widest uppercase opacity-55 ${navbarStyle === 'classic-soft' ? 'text-[#b08968]' : 'text-neutral-500'}`}>
+                        <span className={`text-[9px] font-black tracking-widest uppercase opacity-55`}>
                             Artefatti
                         </span>
                         <h2 className={`text-lg font-extrabold tracking-tight transition-colors ${
                             isDark ? 'text-white' : 'text-neutral-900'
-                        } ${navbarStyle === 'classic-soft' ? 'font-serif text-[#1e1a15] dark:text-[#f4f1ea]' : ''}`}>
+                        } ${isDark && navbarStyle === 'classic-soft' ? 'text-[#ebdcb9]' : ''}`}>
                             Schema Riassuntivo
                         </h2>
                     </div>
@@ -552,8 +633,8 @@ const SchemaBuilder = ({
                         title={isChatOpen ? "Nascondi l'assistente chat AI" : "Mostra l'assistente chat AI"}
                         className={`flex items-center justify-center gap-2 text-[10px] font-black tracking-widest uppercase px-3.5 py-2 rounded-xl transition-all shadow-sm border active:scale-95 hover:scale-102 ${
                             isChatOpen
-                                ? (isDark ? 'bg-orange-500 text-black border-orange-500 font-bold' : 'bg-[#b08968] text-white border-[#b08968] font-bold')
-                                : (isDark ? 'bg-[#1c1c21] text-neutral-400 border-white/5 hover:text-white' : 'bg-[#f5f2eb] text-neutral-500 border-[#ebdccb] hover:text-neutral-900')
+                                ? (isDark ? 'bg-[#ebdcb9] text-black border-[#dfd0aa] font-bold' : 'bg-neutral-900 text-white border-neutral-900 font-bold')
+                                : (isDark ? 'bg-[#1c1c21] text-neutral-400 border-white/5 hover:text-white' : 'bg-white text-neutral-600 border-neutral-200 hover:text-neutral-900')
                         }`}
                     >
                         <span>🪄</span>
@@ -564,7 +645,7 @@ const SchemaBuilder = ({
                 {/* Center Side: Node Search query */}
                 <div className="relative w-full sm:w-64">
                     <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-neutral-400">
-                        <MagnifyingGlassPlus size={15} />
+                        <MagnifyingGlass size={15} />
                     </span>
                     <input
                         type="text"
@@ -574,8 +655,8 @@ const SchemaBuilder = ({
                         title="Evidenzia i nodi dello schema che contengono questo testo"
                         className={`w-full text-xs pl-8.5 pr-8 py-2 rounded-xl border focus:outline-none transition-all ${
                             isDark
-                                ? 'bg-[#18181b] border-white/10 text-white placeholder-white/30 focus:border-orange-500/50'
-                                : 'bg-[#f5f2eb] border-[#ebdccb] text-neutral-900 placeholder-neutral-500 focus:border-[#b08968]'
+                                ? 'bg-neutral-900 border-white/10 text-white placeholder-neutral-500 focus:border-white/20 focus:ring-1 focus:ring-white/20'
+                                : 'bg-white border-neutral-200 text-neutral-900 placeholder-neutral-400 focus:border-neutral-400 focus:ring-1 focus:ring-neutral-400'
                         }`}
                     />
                     {searchQuery && (
@@ -601,7 +682,7 @@ const SchemaBuilder = ({
                             onClick={() => setOrientation('vertical')} 
                             className={`p-1.5 rounded-lg transition-all ${
                                 orientation === 'vertical' 
-                                    ? (isDark ? 'bg-[#f59e0b] text-black font-bold' : 'bg-[#b08968] text-white font-bold') 
+                                    ? (isDark ? 'bg-orange-500 text-black font-bold' : 'bg-neutral-900 text-white font-bold') 
                                     : (isDark ? 'hover:bg-white/5 text-neutral-400' : 'hover:bg-black/5 text-neutral-600')
                             }`} 
                             title="Layout Verticale (connessioni dall'alto in basso)"
@@ -612,7 +693,7 @@ const SchemaBuilder = ({
                             onClick={() => setOrientation('horizontal')} 
                             className={`p-1.5 rounded-lg transition-all ${
                                 orientation === 'horizontal' 
-                                    ? (isDark ? 'bg-[#f59e0b] text-black font-bold' : 'bg-[#b08968] text-white font-bold') 
+                                    ? (isDark ? 'bg-orange-500 text-black font-bold' : 'bg-neutral-900 text-white font-bold') 
                                     : (isDark ? 'hover:bg-white/5 text-neutral-400' : 'hover:bg-black/5 text-neutral-600')
                             }`} 
                             title="Layout Orizzontale (connessioni da sinistra a destra)"
@@ -668,6 +749,17 @@ const SchemaBuilder = ({
                             <FileCode size={14} /> JSON
                         </button>
                         <button 
+                            onClick={exportAsPNG}
+                            title="Esporta il rendering visuale dello schema in un'immagine PNG"
+                            className={`flex items-center gap-1.5 text-[10px] font-black tracking-widest uppercase px-3 py-1.5 rounded-xl transition-all ${
+                                navbarStyle === 'classic-soft'
+                                    ? (isDark ? 'bg-[#1c1c21] text-neutral-300 hover:bg-[#232329] border border-[#222226]' : 'bg-[#f5f2eb] text-[#5c544c] hover:bg-[#eadecf] border border-[#e3d6c8]')
+                                    : (isDark ? 'bg-neutral-800 text-white hover:bg-neutral-700' : 'bg-neutral-200 text-black hover:bg-neutral-300')
+                            }`}
+                        >
+                            <ImageIcon size={14} /> PNG
+                        </button>
+                        <button 
                             onClick={exportAsPDF}
                             title="Esporta il rendering visuale dello schema in un documento PDF"
                             className={`flex items-center gap-1.5 text-[10px] font-black tracking-widest uppercase px-3 py-1.5 rounded-xl transition-all ${
@@ -699,9 +791,7 @@ const SchemaBuilder = ({
                         onClick={handleAddRoot} 
                         title="Aggiungi un nuovo nodo radice indipendente al livello principale"
                         className={`text-[10px] font-black tracking-widest uppercase px-4 py-2 rounded-xl transition-all shadow-md active:scale-95 ${
-                            navbarStyle === 'classic-soft'
-                                ? (isDark ? 'bg-[#f59e0b] text-black hover:bg-[#d97706]' : 'bg-[#b08968] text-white hover:bg-[#9a7352]')
-                                : (isDark ? 'bg-white text-black hover:bg-neutral-200' : 'bg-black text-white hover:bg-neutral-800')
+                            isDark ? 'bg-[#ebdcb9] text-black hover:bg-[#dfd0aa]' : 'bg-neutral-900 text-white hover:bg-neutral-800'
                         }`}
                     >
                         + Aggiungi Radice
@@ -856,6 +946,7 @@ const SchemaBuilder = ({
                     ref={containerRef}
                     onWheel={handleWheel}
                     onMouseDown={handleMouseDown}
+                    onDoubleClick={handleDoubleClick}
                     onContextMenu={(e) => e.preventDefault()}
                     className={canvasContainerClass} 
                     style={{
@@ -869,11 +960,11 @@ const SchemaBuilder = ({
                         </div>
                     ) : (
                         <div 
-                            ref={orgTreeRef}
-                            className={`org-tree min-w-max ${orientation === 'horizontal' ? 'horizontal-root' : ''}`}
-                            style={{ 
-                                transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-                            }}
+                             ref={orgTreeRef}
+                             className={`org-tree min-w-max ${orientation === 'horizontal' ? 'horizontal-root' : ''}`}
+                             style={{ 
+                                 transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+                             }}
                         >
                             <ul className={orientation === 'horizontal' ? 'horizontal' : ''}>
                                 {schema.map((node) => (
@@ -895,9 +986,16 @@ const SchemaBuilder = ({
                         </div>
                     )}
 
+                    {/* Floating Info Stats */}
+                    <div className="absolute bottom-4 right-4 flex items-center gap-2.5 px-3.5 py-2 rounded-xl border text-[10px] font-bold uppercase tracking-wider shadow-md backdrop-blur-md z-20 transition-all duration-300 pointer-events-none select-none border-neutral-200 bg-white/90 text-neutral-600 dark:border-white/10 dark:bg-[#0d0e14]/90 dark:text-neutral-400">
+                        <span>Nodi: {countNodes(schema)}</span>
+                        <span className="opacity-30">•</span>
+                        <span>Livelli: {getTreeDepth(schema)}</span>
+                    </div>
+
                     {/* Hint */}
                     <div className="absolute bottom-4 left-4 text-[10px] opacity-40 uppercase tracking-widest font-bold">
-                        Rotellina per Zoom • Tasto Destro per Pan
+                        Rotellina per Zoom • Tasto Destro per Pan • Doppio Click per Centrare
                     </div>
                 </div>
             </div>
@@ -1028,4 +1126,4 @@ const SchemaPage = () => {
     );
 };
 
-export default SchemaPage;chemaPage;
+export default SchemaPage;

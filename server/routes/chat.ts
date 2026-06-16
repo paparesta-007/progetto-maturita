@@ -1,13 +1,156 @@
 import express from "express";
 import getSystemPrompt from "../static/prompt/systemPrompt.js";
-import { OPENROUTER_KEY } from "../config/enviroments.js";
+import { OPENROUTER_KEY, ADMIN_ACCESS } from "../config/enviroments.js";
 import { requireAuth } from "../middleware/auth.js";
 import { applyPromptCaching } from "../utils/promptCaching.js";
 import { BETTER_VIEW_JSON_SCHEMA, supportsStructuredOutput } from "../utils/betterViewSchema.js";
+import { PDFParse } from "pdf-parse";
+import * as xlsx from "xlsx";
+import mammoth from "mammoth";
 
 const router = express.Router();
 
+async function processFilesForPrompt(attachedFiles: any[], message: string, supportsVision: boolean): Promise<any> {
+	let textAttachments = "";
+	const imageAttachments: any[] = [];
+
+	if (attachedFiles && attachedFiles.length > 0) {
+		for (const f of attachedFiles) {
+			if (f.type === "image_url") {
+				if (supportsVision) {
+					imageAttachments.push({
+						type: "image_url",
+						image_url: { url: f.url }
+					});
+				} else {
+					textAttachments += `\n\n[Allegato Immagine: ${f.name || "Immagine"} - Non visibile perché il modello selezionato non supporta l'analisi di immagini]`;
+				}
+			} else if (f.type === "file_url") {
+				try {
+					const matches = f.url.match(/^data:(.+);base64,(.+)$/);
+					if (matches) {
+						const mimeType = matches[1];
+						const base64Data = matches[2];
+						const dataBuffer = Buffer.from(base64Data, "base64");
+						const fileName = f.name || "allegato";
+						const fileExt = fileName.split('.').pop()?.toLowerCase();
+
+						if (mimeType === "application/pdf" || fileExt === "pdf") {
+							const parser = new PDFParse({ data: dataBuffer });
+							const result = await parser.getText({ pageJoiner: "\n" });
+							let extractedText = result.text || "";
+							await parser.destroy();
+
+							const MAX_CHARS = 150000;
+							if (extractedText.length > MAX_CHARS) {
+								extractedText = extractedText.substring(0, MAX_CHARS) + "\n... [Contenuto troncato per motivi di spazio] ...";
+							}
+
+							textAttachments += `\n\n--- INIZIO FILE PDF ALLEGATO: ${fileName} ---\n${extractedText}\n--- FINE FILE PDF ALLEGATO: ${fileName} ---\n`;
+						} else if (fileExt === "docx") {
+							const docxResult = await mammoth.extractRawText({ buffer: dataBuffer });
+							let extractedText = docxResult.value || "";
+
+							const MAX_CHARS = 150000;
+							if (extractedText.length > MAX_CHARS) {
+								extractedText = extractedText.substring(0, MAX_CHARS) + "\n... [Contenuto troncato per motivi di spazio] ...";
+							}
+
+							textAttachments += `\n\n--- INIZIO DOCUMENTO WORD ALLEGATO: ${fileName} ---\n${extractedText}\n--- FINE DOCUMENTO WORD ALLEGATO: ${fileName} ---\n`;
+						} else if (fileExt === "xlsx" || fileExt === "xls") {
+							const workbook = xlsx.read(dataBuffer, { type: "buffer" });
+							let excelText = "";
+							workbook.SheetNames.forEach(sheetName => {
+								const worksheet = workbook.Sheets[sheetName];
+								const sheetCsv = xlsx.utils.sheet_to_csv(worksheet);
+								excelText += `\n[Foglio: ${sheetName}]\n${sheetCsv}\n`;
+							});
+
+							const MAX_CHARS = 150000;
+							if (excelText.length > MAX_CHARS) {
+								excelText = excelText.substring(0, MAX_CHARS) + "\n... [Contenuto troncato per motivi di spazio] ...";
+							}
+
+							textAttachments += `\n\n--- INIZIO FOGLIO DI CALCOLO ALLEGATO: ${fileName} ---\n${excelText}\n--- FINE FOGLIO DI CALCOLO ALLEGATO: ${fileName} ---\n`;
+						} else {
+							// Leggi come testo (UTF-8) per csv, json, txt, etc.
+							let extractedText = dataBuffer.toString("utf-8");
+							
+							const MAX_CHARS = 150000;
+							if (extractedText.length > MAX_CHARS) {
+								extractedText = extractedText.substring(0, MAX_CHARS) + "\n... [Contenuto troncato per motivi di spazio] ...";
+							}
+
+							textAttachments += `\n\n--- INIZIO FILE ALLEGATO: ${fileName} ---\n${extractedText}\n--- FINE FILE ALLEGATO: ${fileName} ---\n`;
+						}
+					}
+				} catch (err) {
+					console.error("Errore durante l'estrazione del testo dal file allegato:", err);
+					textAttachments += `\n\n[Errore: Impossibile leggere il contenuto del file ${f.name || "allegato"}]`;
+				}
+			}
+		}
+	}
+
+	const finalMessage = message + textAttachments;
+
+	if (imageAttachments.length > 0) {
+		return [
+			{ type: "text", text: finalMessage || "Immagine in allegato" },
+			...imageAttachments
+		];
+	} else {
+		return finalMessage;
+	}
+}
+
 type BetterViewRenderMode = "html" | "markdown";
+
+let cachedModels: any[] = [];
+let lastFetchTime = 0;
+
+async function getOpenRouterModels(): Promise<any[]> {
+	const now = Date.now();
+	if (cachedModels.length > 0 && (now - lastFetchTime < 3600000)) {
+		return cachedModels;
+	}
+	try {
+		const res = await fetch("https://openrouter.ai/api/v1/models");
+		if (res.ok) {
+			const data = await res.json();
+			cachedModels = data.data || [];
+			lastFetchTime = now;
+		}
+	} catch (e) {
+		console.error("Errore recupero info modelli da OpenRouter:", e);
+	}
+	return cachedModels;
+}
+
+async function checkModelPriceAccess(modelName: string, userPassword?: string, webSearch?: boolean): Promise<boolean> {
+	if (webSearch) {
+		if (!userPassword || userPassword !== ADMIN_ACCESS) {
+			return false;
+		}
+	}
+
+	const models = await getOpenRouterModels();
+	const modelInfo = models.find(m => m.id === modelName);
+	if (!modelInfo) {
+		return true;
+	}
+
+	const costInput = Number(modelInfo.pricing?.prompt || 0) * 1000000;
+	const costOutput = Number(modelInfo.pricing?.completion || 0) * 1000000;
+	const totalCost = costInput + costOutput;
+
+	if (totalCost > 2) {
+		if (!userPassword || userPassword !== ADMIN_ACCESS) {
+			return false;
+		}
+	}
+	return true;
+}
 
 function isCodeOrDebugIntent(message: string): boolean {
 	if (!message || typeof message !== "string") return false;
@@ -35,10 +178,16 @@ function isCodeOrDebugIntent(message: string): boolean {
 
 router.post("/api/completion/chat", requireAuth, async function (req: express.Request, res: express.Response, next: express.NextFunction) {
 	try {
-		const { message, history: rawHistory, modelName, systemPromptUser, personalInfo, tone, allowedCustomInstructions, reasoning, isBetterView, temperature, webSearch } = req.body;
+		const { message, history: rawHistory, modelName, systemPromptUser, personalInfo, tone, allowedCustomInstructions, reasoning, isBetterView, temperature, webSearch, adminPassword } = req.body;
 		const history = Array.isArray(rawHistory) ? rawHistory : [];
 
 		const selectedModel = modelName ? modelName : "google/gemini-2.0-flash-001";
+
+		const allowed = await checkModelPriceAccess(selectedModel, adminPassword, webSearch);
+		if (!allowed) {
+			res.status(403).json({ error: "Accesso negato: Il modello selezionato o la ricerca web richiedono privilegi di amministratore. Inserisci la password corretta." });
+			return;
+		}
 		const betterViewRenderMode: BetterViewRenderMode = isBetterView && !isCodeOrDebugIntent(message || "") ? "html" : "markdown";
 		const systemPrompt = getSystemPrompt({ selectedModel, systemPromptUser, personalInfo, tone, allowedCustomInstructions, isBetterView, betterViewRenderMode } as any);
 
@@ -49,18 +198,11 @@ router.post("/api/completion/chat", requireAuth, async function (req: express.Re
 		};
 		const reasoningEffort = reasoning ? reasoningEffortMap[reasoning] || "medium" : "medium";
 
-		let userContent: any = message;
-		if (req.body.attachedFiles && req.body.attachedFiles.length > 0) {
-			userContent = [{ type: "text", text: message || "Immagine in allegato" }];
-			req.body.attachedFiles.forEach((f: any) => {
-				if (f.type === "image_url") {
-					userContent.push({
-						type: "image_url",
-						image_url: { url: f.url }
-					});
-				}
-			});
-		}
+		const models = await getOpenRouterModels();
+		const modelInfo = models.find(m => m.id === selectedModel);
+		const supportsVision = modelInfo?.architecture?.input_modalities?.includes("image") ?? true;
+
+		const userContent = await processFilesForPrompt(req.body.attachedFiles, message, supportsVision);
 
 		const rawMessages = [
 			{ role: "system", content: systemPrompt },
@@ -177,8 +319,14 @@ router.post("/api/streamingOutput", requireAuth, async function (req: express.Re
 	try {
 
 		const { message, history, modelName, systemPromptUser, personalInfo,
-			tone, allowedCustomInstructions, reasoning, isBetterView, temperature, webSearch } = req.body;
+			tone, allowedCustomInstructions, reasoning, isBetterView, temperature, webSearch, adminPassword } = req.body;
 		const selectedModel = modelName ? modelName : "google/gemini-2.0-flash-001";
+
+		const allowed = await checkModelPriceAccess(selectedModel, adminPassword, webSearch);
+		if (!allowed) {
+			res.status(403).json({ error: "Accesso negato: Il modello selezionato o la ricerca web richiedono privilegi di amministratore. Inserisci la password corretta." });
+			return;
+		}
 		const betterViewRenderMode: BetterViewRenderMode = isBetterView && !isCodeOrDebugIntent(message || "") ? "html" : "markdown";
 
 		console.log("Received reasoning level from client:", reasoning);
@@ -202,18 +350,11 @@ router.post("/api/streamingOutput", requireAuth, async function (req: express.Re
 			betterViewRenderMode
 		} as any);
 
-		let userContent: any = message;
-		if (req.body.attachedFiles && req.body.attachedFiles.length > 0) {
-			userContent = [{ type: "text", text: message || "Immagine in allegato" }];
-			req.body.attachedFiles.forEach((f: any) => {
-				if (f.type === "image_url") {
-					userContent.push({
-						type: "image_url",
-						image_url: { url: f.url }
-					});
-				}
-			});
-		}
+		const models = await getOpenRouterModels();
+		const modelInfo = models.find(m => m.id === selectedModel);
+		const supportsVision = modelInfo?.architecture?.input_modalities?.includes("image") ?? true;
+
+		const userContent = await processFilesForPrompt(req.body.attachedFiles, message, supportsVision);
 
 		const rawMessages = [
 			{ role: "system", content: systemPrompt },
