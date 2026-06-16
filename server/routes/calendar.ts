@@ -212,8 +212,12 @@ router.post("/api/calendar/action", requireAuth, async (req: express.Request, re
         const effortValue = reasoningEffort ? reasoningEffortMap[reasoningEffort] || "medium" : "medium";
 
         if (stream) {
-            res.setHeader('Content-Type', 'application/json');
+            res.setHeader('Content-Type', 'text/plain; charset=utf-8');
             res.setHeader('Transfer-Encoding', 'chunked');
+            res.setHeader("X-Accel-Buffering", "no");
+            if (typeof (res as any).flushHeaders === 'function') {
+                (res as any).flushHeaders();
+            }
         }
 
         const sendChunk = (data: any) => {
@@ -223,7 +227,7 @@ router.post("/api/calendar/action", requireAuth, async (req: express.Request, re
         };
 
         const rawMessages: any[] = [
-            { role: "system", content: "Sei un Agente Calendar.\nREGOLE:\n1. Chiama i tool per ogni azione.\n2. Forza sempre titolo e descrizione per ogni evento.\n3. NON usare MAI tabelle (Markdown o HTML) nelle tue risposte.\n4. Ogni volta che visualizzi degli eventi (list_events) o completi un'operazione di scrittura (create_event, update_event, delete_event), fornisci una descrizione testuale concisa e inserisci alla fine della risposta un blocco Generative UI per visualizzare graficamente l'azione in una scheda elegante:\n<ui-component type=\"calendar\">{\"action\": \"create|update|delete|list\", \"events\": [{\"id\": \"...\", \"summary\": \"...\", \"start\": \"...\", \"end\": \"...\", \"description\": \"...\", \"location\": \"...\", \"htmlLink\": \"...\"}]}</ui-component>\nAssicurati che il JSON dentro i tag sia valido, non contenga commenti ed elenchi esattamente gli eventi coinvolti." },
+            { role: "system", content: "Sei un Agente Calendar.\nREGOLE:\n1. Chiama i tool per ogni azione.\n2. NON creare MAI un evento a meno che l'utente non ti chieda ESPLICITAMENTE di crearlo, salvarlo o aggiungerlo (es. 'crea l'evento', 'salvalo', 'aggiungilo al calendario'). Se l'utente esprime solo un'intenzione o una necessità (es. 'devo andare al negozio ora', 'ho una riunione alle 15'), devi prima controllare il calendario usando `list_events` e poi proporre all'utente le opzioni disponibili o gli orari liberi, chiedendogli conferma prima di procedere, senza creare l'evento in automatico.\n3. Forza sempre titolo e descrizione per ogni evento quando lo crei o lo modifichi.\n4. NON usare MAI tabelle (Markdown o HTML) nelle tue risposte.\n5. Ogni volta che proponi degli slot o orari liberi, considera l'orario corrente. Qualsiasi fascia oraria o slot antecedente all'ora corrente è considerata nel passato e NON può essere proposta come slot libero o disponibile per oggi.\n6. Ogni volta che visualizzi degli eventi (list_events) o completi un'operazione di scrittura (create_event, update_event, delete_event), fornisci una descrizione testuale concisa e inserisci alla fine della risposta un blocco Generative UI per visualizzare graficamente l'azione in una scheda elegante. Per risparmiare token, includi solo titolo (summary), data/ora inizio (start) e data/ora fine (end) nel JSON degli eventi:\n<ui-component type=\"calendar\">{\"action\": \"create|update|delete|list\", \"events\": [{\"summary\": \"...\", \"start\": \"...\", \"end\": \"...\"}]}</ui-component>\nAssicurati che il JSON dentro i tag sia valido, non contenga commenti ed elenchi esattamente gli eventi coinvolti." },
             { role: "system", content: getCurrentDateInfo(timezone) },
             ...history,
             { role: "user", content: text }
@@ -234,10 +238,17 @@ router.post("/api/calendar/action", requireAuth, async (req: express.Request, re
         const reasoning: any[] = [];
         let finalResponse = "";
 
+        const controller = new AbortController();
+        req.on("close", () => {
+            console.log("[CalendarAPI] Client disconnesso prima della fine. Aborto richiesta.");
+            controller.abort();
+        });
+
         for (let i = 0; i < 6; i++) {
             console.log(`[CalendarAPI] Step ${i+1}...`);
             const apiRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
                 method: "POST",
+                signal: controller.signal,
                 headers: {
                     "Authorization": `Bearer ${OPENROUTER_KEY}`,
                     "Content-Type": "application/json",
@@ -252,49 +263,247 @@ router.post("/api/calendar/action", requireAuth, async (req: express.Request, re
                     tool_choice: "auto",
                     temperature: temperature ?? 0.5,
                     reasoning: { effort: effortValue },
-                    provider: { allow_fallbacks: false }
+                    provider: { allow_fallbacks: false },
+                    stream: stream
                 })
             });
 
             if (!apiRes.ok) throw new Error(`OpenRouter Error: ${await apiRes.text()}`);
-            const data = await apiRes.json();
-            const choice = data.choices[0];
-            const msg = choice.message;
 
-            if (msg.content) {
-                const chunk = { type: "text", content: msg.content };
-                sendChunk(chunk);
-                reasoning.push({ type: "text", content: msg.content });
-                finalResponse = msg.content;
-            }
+            if (stream) {
+                if (!apiRes.body) throw new Error("OpenRouter response body is null");
+                const reader = (apiRes.body as any).getReader();
+                const decoder = new TextDecoder("utf-8");
+                let buffer = "";
+                let accumulatedContent = "";
+                const toolCallsMap: Record<number, {
+                    id?: string;
+                    type?: string;
+                    function?: {
+                        name?: string;
+                        arguments?: string;
+                    }
+                }> = {};
 
-            if (msg.tool_calls) {
-                cachedMessages.push(msg);
-                for (const toolCall of msg.tool_calls) {
-                    const name = toolCall.function.name;
-                    const args = JSON.parse(toolCall.function.arguments);
-                    console.log(`[CalendarAPI] Eseguo tool: ${name}`);
-                    
-                    const rStep = { type: "tool_call", content: `🛠️ ${name}: ${JSON.stringify(args)}` };
-                    reasoning.push(rStep);
-                    sendChunk({ type: "reasoning", reasoningType: "tool_call", content: rStep.content });
+                let streamDone = false;
+                while (!streamDone) {
+                    const { done, value } = await reader.read();
+                    if (done) {
+                        streamDone = true;
+                        break;
+                    }
 
-                    const result = await executeTool(name, args, googleToken, { sendNotifications, timezone });
-                    
-                    const rResult = { type: "tool_result", content: `📦 ${name}: ${JSON.stringify(result).substring(0, 100)}` };
-                    reasoning.push(rResult);
-                    sendChunk({ type: "reasoning", reasoningType: "tool_result", content: rResult.content });
+                    buffer += decoder.decode(value, { stream: true });
+                    const lines = buffer.split("\n");
+                    buffer = lines.pop() || "";
 
-                    cachedMessages.push({
-                        role: "tool",
-                        tool_call_id: toolCall.id,
-                        name: name,
-                        content: JSON.stringify(result)
-                    });
+                    for (const line of lines) {
+                        const trimmedLine = line.trim();
+                        if (trimmedLine.startsWith("data: ")) {
+                            const dataStr = trimmedLine.slice(6);
+                            if (dataStr === "[DONE]") {
+                                streamDone = true;
+                                break;
+                            }
+
+                            try {
+                                const parsed = JSON.parse(dataStr);
+                                const choice = parsed.choices?.[0];
+                                if (!choice) continue;
+
+                                const delta = choice.delta;
+                                if (!delta) continue;
+
+                                if (delta.content) {
+                                    accumulatedContent += delta.content;
+                                    sendChunk({ type: "text", content: delta.content });
+                                }
+
+                                if (delta.tool_calls) {
+                                    for (const tcDelta of delta.tool_calls) {
+                                        const index = tcDelta.index;
+                                        if (index === undefined) continue;
+
+                                        if (!toolCallsMap[index]) {
+                                            toolCallsMap[index] = {
+                                                id: tcDelta.id,
+                                                type: tcDelta.type || "function",
+                                                function: {
+                                                    name: tcDelta.function?.name || "",
+                                                    arguments: tcDelta.function?.arguments || ""
+                                                }
+                                            };
+                                        } else {
+                                            const tc = toolCallsMap[index];
+                                            if (tcDelta.id) tc.id = tcDelta.id;
+                                            if (tcDelta.type) tc.type = tcDelta.type;
+                                            if (tcDelta.function) {
+                                                if (tcDelta.function.name) {
+                                                    tc.function = tc.function || {};
+                                                    tc.function.name = (tc.function.name || "") + tcDelta.function.name;
+                                                }
+                                                if (tcDelta.function.arguments) {
+                                                    tc.function = tc.function || {};
+                                                    tc.function.arguments = (tc.function.arguments || "") + tcDelta.function.arguments;
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (parseError) {
+                                console.warn("⚠️ Error parsing JSON chunk:", parseError);
+                            }
+                        }
+                    }
                 }
-                continue;
+
+                // Gestione buffer residuo
+                if (buffer.trim()) {
+                    const trimmedLine = buffer.trim();
+                    if (trimmedLine.startsWith("data: ")) {
+                        const dataStr = trimmedLine.slice(6);
+                        if (dataStr !== "[DONE]") {
+                            try {
+                                const parsed = JSON.parse(dataStr);
+                                const choice = parsed.choices?.[0];
+                                const delta = choice?.delta;
+                                if (delta) {
+                                    if (delta.content) {
+                                        accumulatedContent += delta.content;
+                                        sendChunk({ type: "text", content: delta.content });
+                                    }
+                                    if (delta.tool_calls) {
+                                        for (const tcDelta of delta.tool_calls) {
+                                            const index = tcDelta.index;
+                                            if (index !== undefined) {
+                                                if (!toolCallsMap[index]) {
+                                                    toolCallsMap[index] = {
+                                                        id: tcDelta.id,
+                                                        type: tcDelta.type || "function",
+                                                        function: {
+                                                            name: tcDelta.function?.name || "",
+                                                            arguments: tcDelta.function?.arguments || ""
+                                                        }
+                                                    };
+                                                } else {
+                                                    const tc = toolCallsMap[index];
+                                                    if (tcDelta.id) tc.id = tcDelta.id;
+                                                    if (tcDelta.type) tc.type = tcDelta.type;
+                                                    if (tcDelta.function) {
+                                                        if (tcDelta.function.name) {
+                                                            tc.function = tc.function || {};
+                                                            tc.function.name = (tc.function.name || "") + tcDelta.function.name;
+                                                        }
+                                                        if (tcDelta.function.arguments) {
+                                                            tc.function = tc.function || {};
+                                                            tc.function.arguments = (tc.function.arguments || "") + tcDelta.function.arguments;
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            } catch (e) {
+                                console.warn("⚠️ Leftover buffer parsing failed:", e);
+                            }
+                        }
+                    }
+                }
+
+                const toolCalls = Object.keys(toolCallsMap)
+                    .map(key => parseInt(key, 10))
+                    .sort((a, b) => a - b)
+                    .map(idx => {
+                        const tc = toolCallsMap[idx];
+                        return {
+                            id: tc.id || `call_${Math.random().toString(36).substring(2, 9)}`,
+                            type: tc.type || "function",
+                            function: {
+                                name: tc.function?.name || "",
+                                arguments: tc.function?.arguments || ""
+                            }
+                        };
+                    });
+
+                const msg: any = { role: "assistant" };
+                if (accumulatedContent) {
+                    msg.content = accumulatedContent;
+                    reasoning.push({ type: "text", content: accumulatedContent });
+                    finalResponse = accumulatedContent;
+                }
+                if (toolCalls.length > 0) {
+                    msg.tool_calls = toolCalls;
+                }
+
+                if (toolCalls.length > 0) {
+                    cachedMessages.push(msg);
+                    for (const toolCall of toolCalls) {
+                        const name = toolCall.function.name;
+                        const args = JSON.parse(toolCall.function.arguments);
+                        console.log(`[CalendarAPI] Eseguo tool: ${name}`);
+
+                        const rStep = { type: "tool_call", content: `🛠️ ${name}: ${JSON.stringify(args)}` };
+                        reasoning.push(rStep);
+                        sendChunk({ type: "reasoning", reasoningType: "tool_call", content: rStep.content });
+
+                        const result = await executeTool(name, args, googleToken, { sendNotifications, timezone });
+
+                        const rResult = { type: "tool_result", content: `📦 ${name}: ${JSON.stringify(result).substring(0, 100)}` };
+                        reasoning.push(rResult);
+                        sendChunk({ type: "reasoning", reasoningType: "tool_result", content: rResult.content });
+
+                        cachedMessages.push({
+                            role: "tool",
+                            tool_call_id: toolCall.id,
+                            name: name,
+                            content: JSON.stringify(result)
+                        });
+                    }
+                    continue;
+                }
+                break;
+
+            } else {
+                const data = await apiRes.json();
+                const choice = data.choices[0];
+                const msg = choice.message;
+
+                if (msg.content) {
+                    const chunk = { type: "text", content: msg.content };
+                    sendChunk(chunk);
+                    reasoning.push({ type: "text", content: msg.content });
+                    finalResponse = msg.content;
+                }
+
+                if (msg.tool_calls) {
+                    cachedMessages.push(msg);
+                    for (const toolCall of msg.tool_calls) {
+                        const name = toolCall.function.name;
+                        const args = JSON.parse(toolCall.function.arguments);
+                        console.log(`[CalendarAPI] Eseguo tool: ${name}`);
+
+                        const rStep = { type: "tool_call", content: `🛠️ ${name}: ${JSON.stringify(args)}` };
+                        reasoning.push(rStep);
+                        sendChunk({ type: "reasoning", reasoningType: "tool_call", content: rStep.content });
+
+                        const result = await executeTool(name, args, googleToken, { sendNotifications, timezone });
+
+                        const rResult = { type: "tool_result", content: `📦 ${name}: ${JSON.stringify(result).substring(0, 100)}` };
+                        reasoning.push(rResult);
+                        sendChunk({ type: "reasoning", reasoningType: "tool_result", content: rResult.content });
+
+                        cachedMessages.push({
+                            role: "tool",
+                            tool_call_id: toolCall.id,
+                            name: name,
+                            content: JSON.stringify(result)
+                        });
+                    }
+                    continue;
+                }
+                break;
             }
-            break;
         }
 
         if (stream) {
